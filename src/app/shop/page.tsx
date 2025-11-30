@@ -1,6 +1,7 @@
 "use client";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductContext";
+import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,6 +13,7 @@ const CATEGORIES = ["All", "Hoodies", "Tees", "Pants", "Outerwear", "Accessories
 export default function Shop() {
   const { addToCart } = useCart();
   const { products, loading } = useProducts();
+  const toast = useToast();
   const [activeCategory, setActiveCategory] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -141,6 +143,7 @@ export default function Shop() {
                           quantity: 1,
                           size: "M" // Default size for quick add
                         });
+                        toast.success(`${product.name} added to bag`);
                       }}
                       className="absolute bottom-4 left-4 right-4 bg-white text-black py-3 text-sm tracking-wider font-medium opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white text-center"
                     >

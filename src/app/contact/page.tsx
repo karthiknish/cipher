@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useToast } from "@/context/ToastContext";
 import { 
   Mail, 
   Phone, 
@@ -19,6 +20,7 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +29,7 @@ export default function ContactPage() {
     setIsSubmitting(false);
     setIsSubmitted(true);
     setFormData({ name: "", email: "", subject: "", message: "" });
+    toast.success("Message sent successfully!");
   };
 
   return (

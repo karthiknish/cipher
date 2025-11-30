@@ -8,7 +8,9 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   User,
-  UserCredential
+  UserCredential,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -147,6 +149,32 @@ export async function signOut(): Promise<AuthResult> {
   } catch (error: unknown) {
     const firebaseError = error as { message?: string };
     return { success: false, error: firebaseError.message || "Sign out failed" };
+  }
+}
+
+/**
+ * Sign in with Google
+ */
+export async function signInWithGoogle(): Promise<AuthResult> {
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const userCredential = await signInWithPopup(auth, provider);
+    
+    // Create user document if it doesn't exist
+    await createUserDocument(userCredential.user);
+    
+    return { success: true, user: userCredential.user };
+  } catch (error: unknown) {
+    const firebaseError = error as { code?: string; message?: string };
+    
+    // Handle popup closed by user
+    if (firebaseError.code === 'auth/popup-closed-by-user') {
+      return { success: false, error: 'Sign-in cancelled' };
+    }
+    
+    const errorMessage = getAuthErrorMessage(firebaseError.code);
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -391,4 +419,4 @@ export async function getUserOrders(userId: string): Promise<FirestoreResult<Ord
 // Exports
 // ============================================
 
-export { app, auth, db, storage, where, collection, doc, query, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp };
+export { app, auth, db, storage, where, collection, doc, query, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp };

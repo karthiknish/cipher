@@ -3,17 +3,22 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { signOut } from "@/lib/firebase";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
   const { user } = useAuth();
   const { cart } = useCart();
+  const toast = useToast();
+  const { wishlist } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const wishlistCount = wishlist.length;
 
   const navLinks = [
     { href: "/shop", label: "SHOP" },
@@ -22,6 +27,7 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     await signOut();
+    toast.info("Signed out successfully");
     setUserMenuOpen(false);
   };
 
@@ -58,6 +64,16 @@ export default function Navbar() {
 
           {/* Right Icons */}
           <div className="flex items-center gap-6">
+            {/* Wishlist */}
+            <Link href="/wishlist" className="relative hover:opacity-60 transition-opacity">
+              <Heart className="w-5 h-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+
             {/* User Menu */}
             {user ? (
               <div className="relative">
@@ -80,6 +96,20 @@ export default function Navbar() {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
                       </div>
+                      <Link
+                        href="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                      >
+                        MY PROFILE
+                      </Link>
+                      <Link
+                        href="/wishlist"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                      >
+                        MY WISHLIST
+                      </Link>
                       <Link
                         href="/orders"
                         onClick={() => setUserMenuOpen(false)}
@@ -145,6 +175,18 @@ export default function Navbar() {
                 ))}
                 {user ? (
                   <>
+                    <Link                      href="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
+                    >
+                      MY PROFILE
+                    </Link>
+                    <Link                      href="/wishlist"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
+                    >
+                      MY WISHLIST
+                    </Link>
                     <Link
                       href="/orders"
                       onClick={() => setMobileMenuOpen(false)}

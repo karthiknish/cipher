@@ -107,7 +107,7 @@ export default function Home() {
 
       {/* Service Bar */}
       <section className="bg-black text-white py-5 border-b border-white/10">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-6 md:px-12">
           <div className="flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-4">
             {SERVICE_FEATURES.map((feature, i) => (
               <div
@@ -124,7 +124,7 @@ export default function Home() {
 
       {/* Collections Grid */}
       <section className="py-20 md:py-32 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-6 md:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -182,7 +182,7 @@ export default function Home() {
 
       {/* Bestsellers */}
       <section className="py-20 md:py-32 bg-neutral-50">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-6 md:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -236,7 +236,7 @@ export default function Home() {
 
       {/* AI Try-On Feature */}
       <section className="py-20 md:py-32 bg-black text-white">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-6 md:px-12">
           <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -326,7 +326,7 @@ export default function Home() {
 
       {/* Newsletter */}
       <section className="py-20 md:py-32 bg-neutral-100">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-6 md:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

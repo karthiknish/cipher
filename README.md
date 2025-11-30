@@ -4,11 +4,66 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 
 ## Features
 
-- **Shop**: Browse the latest streetwear collection with advanced filtering and animations.
-- **Virtual Try-On**: Upload your photo and describe your look to see how the clothes fit, powered by Generative AI.
-- **Cart**: Fully functional shopping cart with persistent state management.
-- **Authentication**: User login via Firebase (Email/Password).
-- **Expert Design**: High-end UI with smooth animations using Framer Motion and Lucide React icons.
+### Core Shopping
+- **Shop**: Browse the latest streetwear collection with advanced filtering and animations
+- **Cart**: Fully functional shopping cart with persistent state management
+- **Checkout**: Complete checkout flow with shipping and order confirmation
+- **Orders**: Order history with status tracking
+
+### Virtual Try-On (AI-Powered)
+- Upload your photo and describe your look to see how the clothes fit
+- Powered by Google Gemini AI for realistic visualization
+
+### Wishlist System
+- Save items for later with heart icon toggle
+- Persistent across sessions (Firebase for logged-in users, localStorage for guests)
+- Quick add-to-cart from wishlist page
+- Wishlist count indicator in navbar
+
+### Product Reviews & Ratings
+- Star ratings (1-5) with visual display
+- Written reviews with optional photo uploads
+- Verified purchase badges
+- "Helpful" voting system
+- Average rating calculation per product
+
+### AI Size Recommendation
+- Input height, weight, and fit preference (slim/regular/relaxed)
+- Intelligent size matching using BMI-based body estimation
+- Confidence score for recommendations
+- Alternative size suggestions
+- Category-specific size charts (Tees, Hoodies, Outerwear, Pants)
+
+### Recently Viewed Products
+- Automatic tracking of browsed products
+- Display up to 10 most recent items
+- Quick navigation back to previously viewed products
+- Persistent across page navigation
+
+### "Complete the Look" Suggestions
+- Smart outfit pairing recommendations
+- Category-based complementary item suggestions
+- Quick add-to-cart from suggestions
+- Contextual styling ideas on product pages
+
+### Live Inventory Alerts
+- Real-time stock level indicators ("Only 3 left!")
+- Live viewer count ("12 people viewing this")
+- Recent purchase notifications for urgency
+- Dynamic updates every few seconds
+
+### Product Comparison
+- Side-by-side comparison of up to 3 products
+- Compare price, category, sizes, and materials
+- Floating comparison drawer
+- Easy add/remove products from comparison
+
+### User Experience
+- **Authentication**: User login via Firebase (Email/Password)
+- **Toast Notifications**: Central notification system for all user actions
+- **Admin Panel**: Product management (Add/Edit/Delete)
+- **FAQs Page**: Comprehensive help with 5 categories and 20+ Q&As
+- **Responsive Design**: Mobile-first with desktop optimization
 
 ## Tech Stack
 
@@ -17,8 +72,8 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 - **Styling**: Tailwind CSS (Light Mode Enforced)
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **Backend/Auth**: Firebase
-- **AI Integration**: Google Gemini API (Mocked for demo)
+- **Backend/Auth**: Firebase (Auth, Firestore)
+- **AI Integration**: Google Gemini API
 
 ## Getting Started
 
@@ -53,15 +108,36 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 
 ## Project Structure
 
-- `src/app`: App Router pages (Home, Shop, Cart, Try-On, Login).
-- `src/app/api`: API routes (Virtual Try-On endpoint).
-- `src/components`: Reusable UI components (Navbar, Footer, Providers).
-- `src/context`: Global state (Auth, Cart).
-- `src/lib`: Firebase and Gemini API configuration.
+```
+src/
+├── app/                    # App Router pages
+│   ├── admin/             # Admin panel
+│   ├── api/try-on/        # Virtual try-on API
+│   ├── cart/              # Shopping cart
+│   ├── checkout/          # Checkout flow
+│   ├── contact/           # Contact form
+│   ├── faqs/              # FAQ page
+│   ├── login/             # Authentication
+│   ├── orders/            # Order history
+│   ├── shop/[id]/         # Product details
+│   └── wishlist/          # Saved items
+├── components/            # Reusable UI (Navbar, Footer)
+├── context/               # State management
+│   ├── AuthContext        # User authentication
+│   ├── CartContext        # Shopping cart
+│   ├── OrderContext       # Order management
+│   ├── ProductContext     # Product catalog
+│   ├── ReviewContext      # Product reviews
+│   ├── SizeRecommendationContext  # AI sizing
+│   ├── ToastContext       # Notifications
+│   └── WishlistContext    # Saved items
+└── lib/                   # Firebase & Gemini config
+```
 
 ## Design Philosophy
 
-Cipher follows a "streetwear minimalist" aesthetic:
-- **Typography**: Bold, uppercase headings with tight tracking.
-- **Color Palette**: Strict monochrome (Black/White/Gray) with minimal accents.
-- **Motion**: Smooth entry animations and micro-interactions.
+Cipher follows a "streetwear minimalist" aesthetic inspired by Aigle:
+- **Typography**: Bold, uppercase headings with tight tracking
+- **Color Palette**: Strict monochrome (Black/White/Gray) with minimal accents
+- **Motion**: Smooth entry animations and micro-interactions
+- **Layout**: Full-width hero sections, generous whitespace

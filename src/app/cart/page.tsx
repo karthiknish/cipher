@@ -1,5 +1,6 @@
 "use client";
 import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +8,7 @@ import { ArrowRight, Minus, Plus } from "lucide-react";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, subtotal, shipping, tax, total, clearCart } = useCart();
+  const toast = useToast();
 
   if (cart.length === 0) {
     return (
@@ -75,7 +77,10 @@ export default function Cart() {
                       <h3 className="font-medium mb-1">{item.name}</h3>
                       <p className="text-xs text-gray-500 mb-2">Size: {item.size}</p>
                       <button
-                        onClick={() => removeFromCart(item.id, item.size)}
+                        onClick={() => {
+                          removeFromCart(item.id, item.size);
+                          toast.info(`${item.name} removed from bag`);
+                        }}
                         className="text-xs text-gray-400 hover:text-black transition underline underline-offset-4 text-left"
                       >
                         Remove
@@ -123,7 +128,10 @@ export default function Cart() {
                 Continue Shopping
               </Link>
               <button
-                onClick={clearCart}
+                onClick={() => {
+                  clearCart();
+                  toast.info("Cart cleared");
+                }}
                 className="text-sm text-gray-400 hover:text-red-500 transition"
               >
                 Clear all
