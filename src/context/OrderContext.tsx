@@ -49,7 +49,7 @@ interface OrderContextType {
   createOrder: (orderData: Omit<Order, "id" | "createdAt" | "userId" | "userEmail">) => Promise<string | null>;
   updateOrderStatus: (orderId: string, status: Order["status"]) => Promise<boolean>;
   getOrder: (id: string) => Order | undefined;
-  loadAllOrders: () => void; // For admin
+  loadAllOrders: () => Promise<void>; // For admin
 }
 
 const OrderContext = createContext<OrderContextType>({
@@ -60,7 +60,7 @@ const OrderContext = createContext<OrderContextType>({
   createOrder: async () => null,
   updateOrderStatus: async () => false,
   getOrder: () => undefined,
-  loadAllOrders: () => {},
+  loadAllOrders: async () => {},
 });
 
 export const useOrders = () => useContext(OrderContext);
@@ -147,11 +147,20 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     checkFirebaseAndLoad();
   }, [user]);
 
-  const loadAllOrders = () => {
+  const loadAllOrders = async () => {
     if (!isFirebaseConfigured) {
       // Load all from localStorage
       setAllOrders(loadLocalOrders());
       return;
+    }
+
+    // Force token refresh to get latest custom claims (admin role)
+    if (user) {
+      try {
+        await user.getIdToken(true);
+      } catch {
+        console.warn("Failed to refresh token, continuing with cached token");
+      }
     }
 
     // Set up listener for all orders (admin)
@@ -169,6 +178,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       },
       (err) => {
         console.error("Error fetching all orders:", err);
+        // Fall back to localStorage if permissions fail
+        if (err.code === "permission-denied") {
+          console.warn("Permission denied for all orders, falling back to localStorage");
+          setAllOrders(loadLocalOrders());
+        }
       }
     );
   };

@@ -41,6 +41,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAdmin: isAdminByEmail,
     });
 
+    // Force refresh the token to get updated custom claims (like admin role)
+    try {
+      await currentUser.getIdToken(true);
+    } catch {
+      // Token refresh failed, continue with cached token
+    }
+
     // Then try to fetch from Firestore in background (non-blocking)
     try {
       const timeoutPromise = new Promise((_, reject) => 
@@ -70,6 +77,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUserRole = async () => {
     if (user) {
+      // Force refresh the token to get updated custom claims
+      try {
+        await user.getIdToken(true);
+      } catch {
+        // Token refresh failed
+      }
       await fetchUserRole(user);
     }
   };

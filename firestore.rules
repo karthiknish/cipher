@@ -14,17 +14,18 @@ service cloud.firestore {
     }
     
     // Helper function to check if user is admin
+    // Uses email check as primary method since custom claims can be delayed
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.role == 'admin' ||
-        request.auth.token.email == 'karthik.nishanth06@gmail.com'
+        request.auth.token.email == 'karthik.nishanth06@gmail.com' ||
+        request.auth.token.role == 'admin'
       );
     }
     
     // Users collection - for auth roles
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
+      allow create: if isAuthenticated();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
@@ -45,8 +46,10 @@ service cloud.firestore {
     
     // Orders collection
     match /orders/{orderId} {
+      // Allow list/get for admins without resource check
+      allow list: if isAdmin();
       // Users can read their own orders, admins can read all
-      allow read: if isAuthenticated() && (
+      allow get: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
       // Users can create orders for themselves
@@ -104,9 +107,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // Inventory collection - admin only write, authenticated read
+    // Inventory collection - public read, admin write
     match /inventory/{productId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Stock movements collection - admin only
+    match /stockMovements/{movementId} {
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
     
@@ -123,6 +132,67 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
+    // Live activities collection - public read, authenticated write
+    match /liveActivities/{activityId} {
+      allow read: if true;
+      allow create: if true;  // Allow anonymous activity tracking
+      allow update, delete: if isAdmin();
+    }
+    
+    // Product viewers collection - public read/write for real-time tracking
+    match /productViewers/{productId} {
+      allow read: if true;
+      allow write: if true;  // Allow anonymous view tracking
+    }
+    
+    // Dynamic pricing rules collection - public read, admin write
+    match /pricingRules/{ruleId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Design contests/voting collection - public read, admin write
+    match /designContests/{contestId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Design votes collection - authenticated users can vote
+    match /designVotes/{voteId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Abandoned carts collection - public read for tracking, admin manage
+    match /abandonedCarts/{cartId} {
+      allow read: if true;
+      allow create: if true;  // Allow cart tracking
+      allow update, delete: if isAdmin();
+    }
+    
+    // Influencers collection - public read, admin write
+    match /influencers/{influencerId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Influencer sales collection - admin only
+    match /influencerSales/{saleId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Influencer applications - authenticated create, admin manage
+    match /influencerApplications/{applicationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow list: if isAdmin();
+      allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
   }
