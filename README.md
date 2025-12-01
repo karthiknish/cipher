@@ -9,6 +9,7 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 - **Cart**: Fully functional shopping cart with persistent state management
 - **Checkout**: Complete checkout flow with shipping and order confirmation
 - **Orders**: Order history with status tracking
+- **Color Variants**: Product color swatches with color-specific images
 
 ### Virtual Try-On (AI-Powered)
 - Upload your photo and describe your look to see how the clothes fit
@@ -58,22 +59,69 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 - Floating comparison drawer
 - Easy add/remove products from comparison
 
+### Back in Stock Notifications
+- Subscribe to out-of-stock item notifications
+- Email alerts when items are restocked
+- Size-specific notification preferences
+- User account integration
+
+### AI Chatbot Assistant
+- Natural language shopping assistance
+- Product discovery and recommendations
+- Size and style guidance
+- Order tracking help
+- Powered by Google Gemini 2.0 Flash
+
+### User Profile System
+- Comprehensive profile management
+- Multiple saved addresses
+- Style preferences and settings
+- Style quiz for personalized recommendations
+
+### Promo Code System
+- Apply discount codes at checkout
+- Percentage and fixed discounts
+- Free shipping promotions
+- Minimum order requirements
+- Single-use and unlimited codes
+
+### Product Bundles
+- Curated outfit sets at discounted prices
+- Save up to 20% on complete looks
+- One-click bundle-to-cart functionality
+- Featured bundles and category filtering
+- Dedicated bundles page (/bundles)
+
+### AI-Powered Recommendations
+- "You May Also Like" personalized suggestions
+- Based on viewing history and preferences
+- Similar product recommendations
+- Category and trend-based suggestions
+- Quick add-to-cart from recommendations
+
+### Admin Panel Features
+- **Dashboard**: Sales metrics and analytics
+- **Product Management**: Add/Edit/Delete products
+- **Customer Segmentation**: VIP, Loyal, Regular, New, At-Risk, Dormant groups
+- **Abandoned Cart Recovery**: Track and send reminder campaigns
+- **Inventory Forecasting**: Stock predictions and reorder suggestions
+
 ### User Experience
-- **Authentication**: User login via Firebase (Email/Password)
+- **Authentication**: User login via Firebase (Email/Password + Google OAuth)
+- **Guest Checkout**: Shop without creating an account
 - **Toast Notifications**: Central notification system for all user actions
-- **Admin Panel**: Product management (Add/Edit/Delete)
 - **FAQs Page**: Comprehensive help with 5 categories and 20+ Q&As
 - **Responsive Design**: Mobile-first with desktop optimization
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router with Turbopack)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS (Light Mode Enforced)
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **Backend/Auth**: Firebase (Auth, Firestore)
-- **AI Integration**: Google Gemini API
+- **Backend/Auth**: Firebase (Auth with Google OAuth, Firestore)
+- **AI Integration**: Google Gemini API (Gemini 2.0 Flash for Chatbot, Gemini 3 Pro for Try-On)
 
 ## Getting Started
 
@@ -93,7 +141,7 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
     NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-    # Gemini API (Nano Banana Pro) for Virtual Try-On
+    # Gemini API for Virtual Try-On and Chatbot
     GEMINI_API_KEY=your_gemini_api_key
     ```
     
@@ -111,25 +159,41 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 ```
 src/
 ├── app/                    # App Router pages
-│   ├── admin/             # Admin panel
-│   ├── api/try-on/        # Virtual try-on API
+│   ├── admin/             # Admin panel with analytics
+│   ├── api/
+│   │   ├── chat/          # AI chatbot API
+│   │   └── try-on/        # Virtual try-on API
+│   ├── bundles/           # Product bundles page
 │   ├── cart/              # Shopping cart
 │   ├── checkout/          # Checkout flow
 │   ├── contact/           # Contact form
 │   ├── faqs/              # FAQ page
 │   ├── login/             # Authentication
 │   ├── orders/            # Order history
-│   ├── shop/[id]/         # Product details
+│   ├── profile/           # User profile management
+│   ├── shop/[id]/         # Product details with recommendations
 │   └── wishlist/          # Saved items
-├── components/            # Reusable UI (Navbar, Footer)
-├── context/               # State management
+├── components/            # Reusable UI
+│   ├── Chatbot.tsx        # AI chatbot widget
+│   ├── Footer.tsx         # Site footer
+│   ├── Navbar.tsx         # Navigation with bundles link
+│   └── Providers.tsx      # Context provider wrapper
+├── context/               # State management (16 providers)
 │   ├── AuthContext        # User authentication
+│   ├── BundleContext      # Product bundles
 │   ├── CartContext        # Shopping cart
+│   ├── CompareContext     # Product comparison
+│   ├── InventoryContext   # Stock management
 │   ├── OrderContext       # Order management
 │   ├── ProductContext     # Product catalog
+│   ├── PromoCodeContext   # Discount codes
+│   ├── RecentlyViewedContext  # Browsing history
+│   ├── RecommendationContext  # AI recommendations
 │   ├── ReviewContext      # Product reviews
 │   ├── SizeRecommendationContext  # AI sizing
+│   ├── StockNotificationContext  # Back in stock alerts
 │   ├── ToastContext       # Notifications
+│   ├── UserProfileContext # Profile & addresses
 │   └── WishlistContext    # Saved items
 └── lib/                   # Firebase & Gemini config
 ```

@@ -11,6 +11,8 @@ export interface CartItem {
   colorHex?: string;
   image: string;
   category?: string;
+  bundleId?: string;
+  bundleName?: string;
 }
 
 interface CartContextType {

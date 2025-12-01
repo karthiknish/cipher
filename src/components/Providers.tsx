@@ -14,6 +14,8 @@ import { InventoryProvider } from "@/context/InventoryContext";
 import { StockNotificationProvider } from "@/context/StockNotificationContext";
 import { UserProfileProvider } from "@/context/UserProfileContext";
 import { PromoCodeProvider } from "@/context/PromoCodeContext";
+import { BundleProvider } from "@/context/BundleContext";
+import { RecommendationProvider } from "@/context/RecommendationContext";
 import { ReactNode } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -32,7 +34,11 @@ export function Providers({ children }: { children: ReactNode }) {
                           <StockNotificationProvider>
                             <UserProfileProvider>
                               <PromoCodeProvider>
-                                {children}
+                                <BundleProvider>
+                                  <RecommendationProvider>
+                                    {children}
+                                  </RecommendationProvider>
+                                </BundleProvider>
                               </PromoCodeProvider>
                             </UserProfileProvider>
                           </StockNotificationProvider>
