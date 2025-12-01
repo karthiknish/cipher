@@ -7,20 +7,20 @@ const genAI = new GoogleGenAI({
 });
 
 // Nano Banana Pro model for advanced image generation
-const MODEL = "gemini-3-pro-image-preview";
+const MODEL = "gemini-2.0-flash-exp-image-generation";
 
 export async function POST(request: NextRequest) {
   try {
     // Validate API key
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { success: false, error: "Gemini API key not configured" },
+        { success: false, error: "Gemini API key not configured. Please add GEMINI_API_KEY to your .env.local file." },
         { status: 500 }
       );
     }
 
     const body = await request.json();
-    const { userImage, productImage, productName, productCategory } = body;
+    const { userImage, productImage, productName, productCategory, colorVariant } = body;
 
     // Validate required fields
     if (!userImage || !productImage || !productName) {
@@ -30,27 +30,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Construct the virtual try-on prompt
-    const prompt = `You are a professional fashion AI specializing in virtual try-on. Your task is to create a photorealistic image.
+    // Construct an enhanced virtual try-on prompt
+    const colorInfo = colorVariant ? ` in ${colorVariant} color` : "";
+    
+    const prompt = `You are a world-class fashion AI specializing in photorealistic virtual try-on technology. Your task is to create a stunning, professional-quality image.
 
-TASK: Digitally dress the person in the first image with the clothing item shown in the second image.
+TASK: Generate a photorealistic image showing the person from the first photo wearing the ${productName}${colorInfo} shown in the second photo.
 
-CLOTHING ITEM: ${productName} (Category: ${productCategory || "Apparel"})
+CLOTHING DETAILS:
+- Item: ${productName}
+- Category: ${productCategory || "Apparel"}
+${colorVariant ? `- Color: ${colorVariant}` : ""}
 
-STRICT REQUIREMENTS:
-1. PRESERVE the person's exact face, body shape, skin tone, hair, and pose from the first image
-2. APPLY the ${productName} onto the person naturally, as if they are actually wearing it
-3. MATCH the lighting conditions between the person and clothing for realism
-4. ENSURE the clothing fits the person's body proportions realistically
-5. MAINTAIN natural fabric draping and folds based on the pose
-6. KEEP the original background from the person's photo
-7. The final result must look like a real photograph, not a digital composite
+CRITICAL REQUIREMENTS FOR PHOTOREALISM:
+1. PRESERVE IDENTITY: Keep the person's exact face, facial features, expression, skin tone, hair style, and hair color unchanged
+2. MAINTAIN BODY: Preserve the person's exact body shape, proportions, and pose from the original photo
+3. NATURAL FIT: Apply the clothing so it fits naturally on the person's body with realistic draping, folds, and wrinkles
+4. LIGHTING MATCH: Ensure the lighting on the clothing matches the original photo's lighting conditions (direction, intensity, color temperature)
+5. SHADOW INTEGRATION: Add appropriate shadows where the clothing meets the body
+6. FABRIC PHYSICS: Simulate realistic fabric behavior based on the garment type and the person's pose
+7. BACKGROUND: Keep the original background from the person's photo intact
+8. SEAMLESS EDGES: Ensure no visible seams or artifacts where the clothing meets skin or other elements
+9. COLOR ACCURACY: Maintain the exact color of the clothing item as shown in the product image
+10. PROFESSIONAL QUALITY: The result should look like a professional fashion photograph, not a digital composite
 
-OUTPUT: A single, high-quality photorealistic image of the person wearing the ${productName}.`;
+OUTPUT: Generate a single, high-resolution photorealistic image of the person naturally wearing the ${productName}. The image should be indistinguishable from an actual photograph.`;
 
     // Extract base64 data from data URLs
     const userImageData = userImage.replace(/^data:image\/\w+;base64,/, "");
     const productImageData = productImage.replace(/^data:image\/\w+;base64,/, "");
+
+    // Determine image MIME type
+    const getUserMimeType = (dataUrl: string): string => {
+      const match = dataUrl.match(/^data:(image\/\w+);base64,/);
+      return match ? match[1] : "image/jpeg";
+    };
+
+    const userMimeType = getUserMimeType(userImage);
+    const productMimeType = getUserMimeType(productImage);
 
     // Call Gemini API with both images
     const response = await genAI.models.generateContent({
@@ -63,13 +80,13 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
             {
               inlineData: {
                 data: userImageData,
-                mimeType: "image/jpeg",
+                mimeType: userMimeType,
               },
             },
             {
               inlineData: {
                 data: productImageData,
-                mimeType: "image/jpeg",
+                mimeType: productMimeType,
               },
             },
           ],
@@ -77,10 +94,6 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
       ],
       config: {
         responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio: "3:4",
-          imageSize: "2K",
-        },
       },
     });
 
@@ -89,7 +102,7 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
     
     if (!result?.parts) {
       return NextResponse.json(
-        { success: false, error: "No response from AI model" },
+        { success: false, error: "No response from AI model. Please try again." },
         { status: 500 }
       );
     }
@@ -103,6 +116,12 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
           success: true,
           image: generatedImage,
           model: MODEL,
+          metadata: {
+            productName,
+            productCategory,
+            colorVariant,
+            timestamp: new Date().toISOString(),
+          },
         });
       }
     }
@@ -113,7 +132,7 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
     return NextResponse.json(
       { 
         success: false, 
-        error: textResponse || "No image generated. The model may have declined the request.",
+        error: textResponse || "No image was generated. The AI model may have declined the request. Please try with a different photo.",
       },
       { status: 500 }
     );
@@ -123,23 +142,44 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
     
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     
-    // Check for specific API errors
-    if (errorMessage.includes("SAFETY")) {
+    // Check for specific API errors and provide user-friendly messages
+    if (errorMessage.includes("SAFETY") || errorMessage.includes("safety")) {
       return NextResponse.json(
-        { success: false, error: "The image could not be generated due to safety guidelines. Please try a different photo." },
+        { success: false, error: "The image could not be generated due to content guidelines. Please try a different photo with appropriate attire." },
         { status: 400 }
       );
     }
     
-    if (errorMessage.includes("RATE_LIMIT")) {
+    if (errorMessage.includes("RATE_LIMIT") || errorMessage.includes("429")) {
       return NextResponse.json(
-        { success: false, error: "Too many requests. Please wait a moment and try again." },
+        { success: false, error: "Too many requests. Please wait 30 seconds and try again." },
         { status: 429 }
       );
     }
 
+    if (errorMessage.includes("INVALID_ARGUMENT") || errorMessage.includes("400")) {
+      return NextResponse.json(
+        { success: false, error: "Invalid image format. Please use a clear JPEG or PNG photo." },
+        { status: 400 }
+      );
+    }
+
+    if (errorMessage.includes("PERMISSION_DENIED") || errorMessage.includes("403")) {
+      return NextResponse.json(
+        { success: false, error: "API access denied. Please check your Gemini API key configuration." },
+        { status: 403 }
+      );
+    }
+
+    if (errorMessage.includes("NOT_FOUND") || errorMessage.includes("404")) {
+      return NextResponse.json(
+        { success: false, error: "AI model not available. Please try again later." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: `Generation failed: ${errorMessage}` },
       { status: 500 }
     );
   }

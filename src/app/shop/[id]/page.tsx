@@ -11,15 +11,16 @@ import { useInventory } from "@/context/InventoryContext";
 import { useStockNotification } from "@/context/StockNotificationContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRecommendations } from "@/context/RecommendationContext";
+import VirtualTryOn from "@/components/VirtualTryOn";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Truck, RotateCcw, ArrowLeft, Upload, X, Loader2, AlertCircle, Download, 
+  Truck, RotateCcw, ArrowLeft, X, Loader2, AlertCircle, 
   ArrowRight, Check, Heart, Star, Sparkles, ThumbsUp, CheckCircle, Camera,
-  Eye, Users, AlertTriangle, Scale, Clock, TrendingUp, ShoppingBag, Bell, Mail
+  Eye, AlertTriangle, Scale, Clock, ShoppingBag, Bell, Mail
 } from "lucide-react";
 
 // Star Rating Component
@@ -806,10 +807,6 @@ export default function ProductPage() {
   const [sizeRecommendation, setSizeRecommendation] = useState<ReturnType<typeof getRecommendation>>(null);
   
   const [isTryOnOpen, setIsTryOnOpen] = useState(false);
-  const [userImage, setUserImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [tryOnResult, setTryOnResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const product = getProduct(params.id as string);
   const inCompare = product ? isInCompare(product.id) : false;
@@ -908,51 +905,6 @@ export default function ProductPage() {
       toast.warning("You can only compare 3 products at a time");
     }
   };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { setError("Image too large."); return; }
-      const reader = new FileReader();
-      reader.onloadend = () => { setUserImage(reader.result as string); setTryOnResult(null); setError(null); };
-      reader.onerror = () => setError("Failed to read image.");
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const fetchProductImageAsBase64 = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const handleGenerateTryOn = async () => {
-    if (!userImage || !product) return;
-    setIsProcessing(true); setError(null);
-    try {
-      const productImageBase64 = await fetchProductImageAsBase64(product.image);
-      const response = await fetch("/api/try-on", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userImage, productImage: productImageBase64, productName: product.name, productCategory: product.category }) });
-      const data = await response.json();
-      if (data.success && data.image) { setTryOnResult(data.image); }
-      else { setError(data.error || "Failed to generate try-on image."); }
-    } catch (err) { console.error(err); setError("Network error."); }
-    finally { setIsProcessing(false); }
-  };
-
-  const handleDownloadResult = () => {
-    if (!tryOnResult) return;
-    const link = document.createElement("a");
-    link.href = tryOnResult;
-    link.download = `cipher-tryon-${product.name.toLowerCase().replace(/\s+/g, "-")}.png`;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  };
-
-  const resetTryOn = () => { setUserImage(null); setTryOnResult(null); setError(null); };
 
   return (
     <div className="min-h-screen pb-24">
@@ -1164,29 +1116,24 @@ export default function ProductPage() {
       {/* Modals */}
       <AnimatePresence>{isSizeModalOpen && <SizeRecommendationModal isOpen={isSizeModalOpen} onClose={() => setIsSizeModalOpen(false)} category={product.category} availableSizes={sizes} onSizeSelect={setSelectedSize} />}</AnimatePresence>
       <AnimatePresence>{isReviewModalOpen && <ReviewFormModal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} productId={product.id} onSubmit={refreshReviews} />}</AnimatePresence>
-      <AnimatePresence>
-        {isTryOnOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setIsTryOnOpen(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-              <div className="p-8 md:w-1/2 flex flex-col border-r border-gray-100 overflow-y-auto">
-                <div className="flex justify-between items-start mb-8"><div><h2 className="text-xl font-light tracking-tight mb-1">VIRTUAL TRY-ON</h2><p className="text-xs text-gray-400">Powered by AI</p></div><button onClick={() => setIsTryOnOpen(false)} className="p-2 hover:bg-gray-100 transition"><X className="w-5 h-5" /></button></div>
-                <div className="flex-1 flex flex-col gap-6">
-                  <div className={`flex-1 min-h-[200px] border border-dashed relative transition-colors ${userImage ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                    {!userImage ? (<label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"><input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" /><Upload className="w-8 h-8 text-gray-400 mb-4" /><p className="text-sm font-medium">Upload Your Photo</p><p className="text-xs text-gray-400 mt-2">Full body shot works best</p></label>) : (<div className="relative w-full h-full min-h-[200px]"><Image src={userImage} alt="User" fill className="object-contain p-4" /><button onClick={resetTryOn} className="absolute top-2 right-2 bg-white p-2 shadow hover:bg-gray-50 transition"><X className="w-4 h-4" /></button></div>)}
-                  </div>
-                  {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 flex items-start gap-3 text-sm"><AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><p>{error}</p></div>}
-                  <div className="bg-gray-50 p-4 flex items-center gap-4"><div className="w-12 h-16 bg-white relative overflow-hidden border border-gray-200 flex-shrink-0"><Image src={product.image} alt={product.name} fill className="object-cover" /></div><div><p className="text-sm font-medium">{product.name}</p><p className="text-xs text-gray-500">${product.price}</p></div></div>
-                  <button onClick={handleGenerateTryOn} disabled={!userImage || isProcessing} className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">{isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> GENERATING</> : <>GENERATE LOOK <ArrowRight className="w-4 h-4" /></>}</button>
-                  <p className="text-xs text-gray-400 text-center">Images are processed by AI and not stored</p>
-                </div>
-              </div>
-              <div className="bg-neutral-100 md:w-1/2 p-8 flex flex-col justify-center items-center relative min-h-[400px]">
-                {tryOnResult ? (<div className="relative w-full h-full flex flex-col"><div className="relative flex-1 overflow-hidden min-h-[300px]"><Image src={tryOnResult} alt="Result" fill className="object-contain bg-white" /></div><button onClick={handleDownloadResult} className="mt-4 w-full bg-black text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-900 transition flex items-center justify-center gap-2"><Download className="w-4 h-4" /> DOWNLOAD</button></div>) : (<div className="text-center text-gray-400">{isProcessing ? (<><Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin" /><p className="text-sm">Processing your image...</p><p className="text-xs mt-2">This may take 10-30 seconds</p></>) : (<><div className="w-16 h-16 border border-gray-300 mx-auto mb-4 flex items-center justify-center"><div className="w-2 h-2 bg-gray-300 rounded-full" /></div><p className="text-sm">Result will appear here</p></>)}</div>)}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
+      {/* Virtual Try-On Modal */}
+      <VirtualTryOn
+        isOpen={isTryOnOpen}
+        onClose={() => setIsTryOnOpen(false)}
+        product={{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          category: product.category,
+          colors: product.colors,
+        }}
+        selectedColor={selectedColor || undefined}
+        onAddToCart={handleAddToCart}
+        onAddToWishlist={handleToggleWishlist}
+      />
+
       <AnimatePresence>
         {isStockNotifyModalOpen && product && (
           <BackInStockModal 
