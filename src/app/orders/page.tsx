@@ -7,7 +7,7 @@ import { useOrders, Order } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
-import { Package, ChevronRight, Loader2 } from "lucide-react";
+import { Package, CaretRight, SpinnerGap } from "@phosphor-icons/react";
 
 const STATUS_COLORS: Record<Order["status"], string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -41,7 +41,7 @@ export default function OrdersPage() {
   if (authLoading || ordersLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -150,7 +150,7 @@ export default function OrdersPage() {
                     href={`/orders/${order.id}`}
                     className="flex-1 flex items-center justify-center gap-2 border border-black py-3 text-sm tracking-wider font-medium hover:bg-black hover:text-white transition"
                   >
-                    VIEW DETAILS <ChevronRight className="w-4 h-4" />
+                    VIEW DETAILS <CaretRight className="w-4 h-4" />
                   </Link>
                   {order.status === "delivered" && (
                     <button className="flex-1 bg-black text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-900 transition">

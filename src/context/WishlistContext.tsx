@@ -41,48 +41,37 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load wishlist from Firebase or localStorage
+  // Load wishlist from localStorage first, then try Firebase
   useEffect(() => {
     const loadWishlist = async () => {
-      setLoading(true);
-      
-      if (user) {
-        // Load from Firebase for logged-in users
-        try {
-          const wishlistDoc = await getDoc(doc(db, "wishlists", user.uid));
-          if (wishlistDoc.exists()) {
-            setWishlist(wishlistDoc.data().items || []);
-          } else {
-            // Check localStorage and migrate to Firebase
-            if (typeof window !== "undefined") {
-              const stored = localStorage.getItem(WISHLIST_STORAGE_KEY);
-              if (stored) {
-                const localItems = JSON.parse(stored);
-                setWishlist(localItems);
-                // Save to Firebase
-                await setDoc(doc(db, "wishlists", user.uid), { items: localItems });
-                localStorage.removeItem(WISHLIST_STORAGE_KEY);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error loading wishlist:", error);
-        }
-      } else {
-        // Load from localStorage for guests
-        if (typeof window !== "undefined") {
-          const stored = localStorage.getItem(WISHLIST_STORAGE_KEY);
-          if (stored) {
-            try {
-              setWishlist(JSON.parse(stored));
-            } catch {
-              console.error("Failed to parse wishlist from storage");
-            }
+      // Always load from localStorage first (instant)
+      if (typeof window !== "undefined") {
+        const storageKey = user ? `${WISHLIST_STORAGE_KEY}_${user.uid}` : WISHLIST_STORAGE_KEY;
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          try {
+            setWishlist(JSON.parse(stored));
+          } catch {
+            // Invalid data
           }
         }
       }
-      
       setLoading(false);
+      
+      // Then try to sync with Firebase in background (non-blocking)
+      if (user) {
+        try {
+          const wishlistDoc = await getDoc(doc(db, "wishlists", user.uid));
+          if (wishlistDoc.exists()) {
+            const firebaseItems = wishlistDoc.data().items || [];
+            setWishlist(firebaseItems);
+            // Update localStorage cache
+            localStorage.setItem(`${WISHLIST_STORAGE_KEY}_${user.uid}`, JSON.stringify(firebaseItems));
+          }
+        } catch {
+          // Silently fail - use localStorage data
+        }
+      }
     };
 
     loadWishlist();
@@ -92,19 +81,18 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return;
 
-    const saveWishlist = async () => {
-      if (user) {
-        try {
-          await setDoc(doc(db, "wishlists", user.uid), { items: wishlist });
-        } catch (error) {
-          console.error("Error saving wishlist:", error);
-        }
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlist));
-      }
-    };
+    // Save to localStorage immediately
+    if (typeof window !== "undefined") {
+      const storageKey = user ? `${WISHLIST_STORAGE_KEY}_${user.uid}` : WISHLIST_STORAGE_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(wishlist));
+    }
 
-    saveWishlist();
+    // Sync to Firebase in background (non-blocking)
+    if (user) {
+      setDoc(doc(db, "wishlists", user.uid), { items: wishlist }).catch(() => {
+        // Silently fail - localStorage is the source of truth
+      });
+    }
   }, [wishlist, user, loading]);
 
   const isInWishlist = useCallback((productId: string) => {

@@ -11,17 +11,19 @@ import { useInventory } from "@/context/InventoryContext";
 import { useStockNotification } from "@/context/StockNotificationContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRecommendations } from "@/context/RecommendationContext";
+import { useLiveActivity } from "@/context/LiveActivityContext";
+import { useDynamicPricing } from "@/context/DynamicPricingContext";
 import VirtualTryOn from "@/components/VirtualTryOn";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Truck, RotateCcw, ArrowLeft, X, Loader2, AlertCircle, 
-  ArrowRight, Check, Heart, Star, Sparkles, ThumbsUp, CheckCircle, Camera,
-  Eye, AlertTriangle, Scale, Clock, ShoppingBag, Bell, Mail
-} from "lucide-react";
+  Truck, ArrowsClockwise, ArrowLeft, X, SpinnerGap, WarningCircle, 
+  ArrowRight, Check, Heart, Star, Sparkle, ThumbsUp, CheckCircle, Camera,
+  Eye, Warning, Scales, Clock, ShoppingBag, Bell, Envelope, TrendUp
+} from "@phosphor-icons/react";
 
 // Star Rating Component
 function StarRating({ rating, size = "sm", interactive = false, onChange }: { 
@@ -44,31 +46,23 @@ function StarRating({ rating, size = "sm", interactive = false, onChange }: {
 
 // Live Inventory Alert Badge
 function InventoryAlert({ productId }: { productId: string }) {
-  const { getInventoryAlert, trackProductView } = useInventory();
+  const { getInventoryAlert } = useInventory();
+  const { getViewerCount } = useLiveActivity();
   const [alert, setAlert] = useState<ReturnType<typeof getInventoryAlert>>(null);
-  const [showPurchase, setShowPurchase] = useState(false);
 
+  // Update inventory alert periodically
   useEffect(() => {
-    trackProductView(productId);
     setAlert(getInventoryAlert(productId));
     
     const interval = setInterval(() => {
       setAlert(getInventoryAlert(productId));
     }, 5000);
 
-    // Randomly show "someone just purchased" notification
-    const purchaseInterval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        setShowPurchase(true);
-        setTimeout(() => setShowPurchase(false), 4000);
-      }
-    }, 15000);
+    return () => clearInterval(interval);
+  }, [productId, getInventoryAlert]);
 
-    return () => {
-      clearInterval(interval);
-      clearInterval(purchaseInterval);
-    };
-  }, [productId, getInventoryAlert, trackProductView]);
+  // Get live viewer count
+  const viewerCount = getViewerCount(productId);
 
   if (!alert) return null;
 
@@ -86,37 +80,27 @@ function InventoryAlert({ productId }: { productId: string }) {
             isVeryLowStock ? "bg-red-50 text-red-700 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200"
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
+          <Warning className="w-4 h-4" />
           <span className="font-medium">
             {isVeryLowStock ? `Only ${alert.stock} left!` : `Low stock - ${alert.stock} remaining`}
           </span>
         </motion.div>
       )}
 
-      {/* Viewers Alert */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex items-center gap-2 text-sm text-gray-600"
-      >
-        <Eye className="w-4 h-4" />
-        <span>{alert.viewerCount} people viewing this</span>
-      </motion.div>
-
-      {/* Recent Purchase Notification */}
-      <AnimatePresence>
-        {showPurchase && (
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 border border-green-200 text-sm"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Someone just purchased this item!</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Live Viewers Alert - Real-time from Firebase */}
+      {viewerCount > 0 && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center gap-2 text-sm text-gray-600"
+        >
+          <Eye className="w-4 h-4" />
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            {viewerCount} {viewerCount === 1 ? "person is" : "people are"} viewing this right now
+          </span>
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -269,7 +253,7 @@ function YouMayAlsoLike({ currentProductId }: { currentProductId: string }) {
   return (
     <div className="mt-16 border-t border-gray-200 pt-12">
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-5 h-5 text-amber-500" />
+        <Sparkle className="w-5 h-5 text-amber-500" />
         <h2 className="text-xl font-light tracking-tight">YOU MAY ALSO LIKE</h2>
       </div>
       <p className="text-sm text-gray-500 mb-8">AI-powered recommendations based on your style</p>
@@ -336,7 +320,7 @@ function CompareDrawer() {
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
       >
         <div className="flex items-center gap-3">
-          <Scale className="w-5 h-5" />
+          <Scales className="w-5 h-5" />
           <span className="font-medium">Compare ({compareItems.length}/3)</span>
         </div>
         <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
@@ -533,7 +517,7 @@ function SizeRecommendationModal({ isOpen, onClose, category, availableSizes, on
         <div className="p-6 border-b border-gray-100">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-xl font-light tracking-tight flex items-center gap-2"><Sparkles className="w-5 h-5" /> SIZE FINDER</h2>
+              <h2 className="text-xl font-light tracking-tight flex items-center gap-2"><Sparkle className="w-5 h-5" /> SIZE FINDER</h2>
               <p className="text-xs text-gray-400 mt-1">AI-powered size recommendation</p>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 transition"><X className="w-5 h-5" /></button>
@@ -617,7 +601,7 @@ function ReviewFormModal({ isOpen, onClose, productId, onSubmit }: { isOpen: boo
           <div><label className="block text-xs tracking-wider text-gray-500 mb-3">YOUR RATING</label><StarRating rating={rating} size="lg" interactive onChange={setRating} /></div>
           <div><label className="block text-xs tracking-wider text-gray-500 mb-2">REVIEW TITLE</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Sum it up" className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition" required /></div>
           <div><label className="block text-xs tracking-wider text-gray-500 mb-2">YOUR REVIEW</label><textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="What did you like?" rows={4} className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition resize-none" required /></div>
-          <button type="submit" disabled={loading} className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2">{loading ? <><Loader2 className="w-4 h-4 animate-spin" /> SUBMITTING</> : "SUBMIT REVIEW"}</button>
+          <button type="submit" disabled={loading} className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2">{loading ? <><SpinnerGap className="w-4 h-4 animate-spin" /> SUBMITTING</> : "SUBMIT REVIEW"}</button>
         </form>
       </motion.div>
     </motion.div>
@@ -714,7 +698,7 @@ function BackInStockModal({
                 <p className="text-sm text-gray-500">Size: {selectedSize}</p>
               )}
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Currently out of stock
+                <Warning className="w-3 h-3" /> Currently out of stock
               </p>
             </div>
           </div>
@@ -740,7 +724,7 @@ function BackInStockModal({
                   EMAIL ADDRESS
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="email"
                     value={email}
@@ -759,7 +743,7 @@ function BackInStockModal({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> SUBSCRIBING...
+                    <SpinnerGap className="w-4 h-4 animate-spin" /> SUBSCRIBING...
                   </>
                 ) : (
                   <>
@@ -791,6 +775,8 @@ export default function ProductPage() {
   const { addToCompare, isInCompare, removeFromCompare, canAddMore } = useCompare();
   const { isSubscribed: isStockSubscribed } = useStockNotification();
   const { getInventoryAlert } = useInventory();
+  const { trackProductView, untrackProductView, getViewerCount, logCartAdd, logLike } = useLiveActivity();
+  const { getDynamicPrice } = useDynamicPricing();
   const toast = useToast();
   
   const [selectedSize, setSelectedSize] = useState("M");
@@ -839,6 +825,17 @@ export default function ProductPage() {
     }
   }, [product, addToRecentlyViewed]);
 
+  // Track live viewers
+  useEffect(() => {
+    if (product) {
+      trackProductView(product.id);
+      return () => untrackProductView(product.id);
+    }
+  }, [product, trackProductView, untrackProductView]);
+
+  // Get live viewer count
+  const liveViewerCount = product ? getViewerCount(product.id) : 0;
+
   useEffect(() => {
     if (product) {
       const loadReviewData = async () => {
@@ -866,17 +863,30 @@ export default function ProductPage() {
     }
   };
 
-  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>;
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><SpinnerGap className="w-8 h-8 animate-spin text-gray-400" /></div>;
   if (!product) return <div className="min-h-[60vh] flex flex-col items-center justify-center"><h1 className="text-2xl font-light tracking-tight mb-4">Product not found</h1><Link href="/shop" className="text-sm tracking-wider underline underline-offset-4">Back to Shop</Link></div>;
 
   const sizes = product.sizes || ["S", "M", "L", "XL"];
   const inWishlist = isInWishlist(product.id);
 
+  // Get dynamic pricing
+  const stockLevel = inventoryAlert?.stock;
+  const dynamicPrice = getDynamicPrice(
+    product.id, 
+    product.price, 
+    product.category, 
+    1, 
+    stockLevel, 
+    liveViewerCount
+  );
+  const hasDiscount = dynamicPrice.currentPrice < dynamicPrice.originalPrice;
+  const hasSurge = dynamicPrice.currentPrice > dynamicPrice.originalPrice;
+
   const handleAddToCart = () => {
     addToCart({ 
       id: product.id, 
       name: product.name, 
-      price: product.price, 
+      price: dynamicPrice.currentPrice, // Use dynamic price
       image: getCurrentImage(), 
       category: product.category, 
       quantity: 1, 
@@ -884,14 +894,21 @@ export default function ProductPage() {
       color: selectedColor || undefined
     });
     const colorText = selectedColor ? ` in ${selectedColor}` : "";
-    toast.success(`${product.name} (${selectedSize})${colorText} added to bag`);
+    const priceText = hasDiscount ? ` (${dynamicPrice.discountPercent}% off!)` : "";
+    toast.success(`${product.name} (${selectedSize})${colorText}${priceText} added to bag`);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
+    // Log activity for social proof
+    logCartAdd(product.id, product.name, product.image);
   };
 
   const handleToggleWishlist = () => {
     toggleWishlist({ id: product.id, name: product.name, price: product.price, image: product.image, category: product.category });
     toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
+    // Log like activity for social proof (only when adding)
+    if (!inWishlist) {
+      logLike(product.id, product.name, product.image);
+    }
   };
 
   const handleToggleCompare = () => {
@@ -920,7 +937,7 @@ export default function ProductPage() {
               <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
             </button>
             <button onClick={handleToggleCompare} className={`absolute top-4 right-20 w-12 h-12 flex items-center justify-center transition shadow-lg ${inCompare ? "bg-black text-white" : "bg-white hover:bg-gray-50"}`}>
-              <Scale className="w-5 h-5" />
+              <Scales className="w-5 h-5" />
             </button>
             
             {/* Color Thumbnail Gallery */}
@@ -965,7 +982,36 @@ export default function ProductPage() {
               <div className="flex items-center gap-2 mb-4"><StarRating rating={avgRating.average} /><span className="text-sm text-gray-500">{avgRating.average} ({avgRating.count} review{avgRating.count !== 1 ? "s" : ""})</span></div>
             )}
             
-            <p className="text-xl mb-4">${product.price}</p>
+            {/* Dynamic Pricing Display */}
+            <div className="mb-4">
+              {hasDiscount ? (
+                <div className="flex items-center gap-3">
+                  <p className="text-xl font-medium text-red-600">${dynamicPrice.currentPrice.toFixed(2)}</p>
+                  <p className="text-lg text-gray-400 line-through">${dynamicPrice.originalPrice.toFixed(2)}</p>
+                  <span className="bg-red-100 text-red-700 px-2 py-1 text-xs font-medium">
+                    -{dynamicPrice.discountPercent}% OFF
+                  </span>
+                </div>
+              ) : hasSurge ? (
+                <div className="flex items-center gap-3">
+                  <p className="text-xl font-medium">${dynamicPrice.currentPrice.toFixed(2)}</p>
+                  <span className="bg-amber-100 text-amber-700 px-2 py-1 text-xs font-medium flex items-center gap-1">
+                    <TrendUp className="w-3 h-3" /> HIGH DEMAND
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xl">${product.price}</p>
+              )}
+              {dynamicPrice.reason && (hasDiscount || hasSurge) && (
+                <p className="text-xs text-gray-500 mt-1">{dynamicPrice.reason}</p>
+              )}
+              {dynamicPrice.expiresAt && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Ends {dynamicPrice.expiresAt.toLocaleString()}
+                </p>
+              )}
+            </div>
 
             {/* Live Inventory Alerts */}
             <div className="mb-6">
@@ -1025,13 +1071,13 @@ export default function ProductPage() {
               <div className="flex justify-between items-center mb-4">
                 <p className="text-xs tracking-wider text-gray-500">SELECT SIZE</p>
                 <div className="flex gap-4">
-                  <button onClick={() => setIsSizeModalOpen(true)} className="text-xs tracking-wider text-black flex items-center gap-1 hover:underline underline-offset-4"><Sparkles className="w-3 h-3" /> Find My Size</button>
+                  <button onClick={() => setIsSizeModalOpen(true)} className="text-xs tracking-wider text-black flex items-center gap-1 hover:underline underline-offset-4"><Sparkle className="w-3 h-3" /> Find My Size</button>
                   <Link href="/size-guide" className="text-xs tracking-wider underline underline-offset-4 hover:no-underline">Size Guide</Link>
                 </div>
               </div>
               
               {sizeRecommendation && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 flex items-center gap-3"><Sparkles className="w-4 h-4 text-green-600" /><p className="text-sm text-green-700">Based on your profile, we recommend size <strong>{sizeRecommendation.recommendedSize}</strong></p></div>
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 flex items-center gap-3"><Sparkle className="w-4 h-4 text-green-600" /><p className="text-sm text-green-700">Based on your profile, we recommend size <strong>{sizeRecommendation.recommendedSize}</strong></p></div>
               )}
               
               <div className="flex gap-3 flex-wrap">
@@ -1060,7 +1106,7 @@ export default function ProductPage() {
                   <Heart className={`w-4 h-4 ${inWishlist ? "fill-current" : ""}`} />
                 </button>
                 <button onClick={handleToggleCompare} className={`border py-4 text-sm tracking-wider font-medium transition flex items-center justify-center gap-2 ${inCompare ? "border-black bg-black text-white" : "border-black hover:bg-black hover:text-white"}`}>
-                  <Scale className="w-4 h-4" />
+                  <Scales className="w-4 h-4" />
                 </button>
                 <button onClick={() => setIsTryOnOpen(true)} className="border border-black py-4 text-sm tracking-wider font-medium hover:bg-black hover:text-white transition flex items-center justify-center gap-2">
                   <Camera className="w-4 h-4" />
@@ -1070,7 +1116,7 @@ export default function ProductPage() {
 
             <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
               <div className="flex items-center gap-3"><Truck className="w-4 h-4" /><span>Free shipping over $150</span></div>
-              <div className="flex items-center gap-3"><RotateCcw className="w-4 h-4" /><span>30-day returns</span></div>
+              <div className="flex items-center gap-3"><ArrowsClockwise className="w-4 h-4" /><span>30-day returns</span></div>
             </div>
           </motion.div>
         </div>

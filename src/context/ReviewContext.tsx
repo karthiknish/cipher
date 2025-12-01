@@ -61,8 +61,8 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
 
       // Sort by most recent
       return reviews.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
-      console.error("Error fetching reviews:", error);
+    } catch {
+      // Return empty array on error (Firestore permission issues, etc.)
       return [];
     } finally {
       setLoading(false);
@@ -86,7 +86,6 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
       const existing = await getDocs(q);
       
       if (!existing.empty) {
-        console.error("User already reviewed this product");
         return false;
       }
 
@@ -100,8 +99,7 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
       });
 
       return true;
-    } catch (error) {
-      console.error("Error adding review:", error);
+    } catch {
       return false;
     } finally {
       setLoading(false);
@@ -115,8 +113,7 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     try {
       await deleteDoc(doc(db, "reviews", reviewId));
       return true;
-    } catch (error) {
-      console.error("Error deleting review:", error);
+    } catch {
       return false;
     } finally {
       setLoading(false);
@@ -133,8 +130,7 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
         average: Math.round((sum / reviews.length) * 10) / 10,
         count: reviews.length 
       };
-    } catch (error) {
-      console.error("Error calculating average rating:", error);
+    } catch {
       return { average: 0, count: 0 };
     }
   }, [getProductReviews]);
@@ -153,8 +149,7 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
       const existing = await getDocs(q);
       
       return existing.empty;
-    } catch (error) {
-      console.error("Error checking review eligibility:", error);
+    } catch {
       return false;
     }
   }, [user]);

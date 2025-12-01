@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, SpinnerGap } from "@phosphor-icons/react";
 
 const CATEGORIES = ["All", "Hoodies", "Tees", "Pants", "Outerwear", "Accessories"];
 
@@ -24,7 +24,7 @@ export default function Shop() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }

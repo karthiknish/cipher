@@ -7,9 +7,9 @@ import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  Package, Tag, ShoppingBag, Check, ChevronRight, 
-  Sparkles, Gift, Percent, ArrowRight 
-} from "lucide-react";
+  Package, Tag, ShoppingBag, Check, CaretRight, 
+  Sparkle, Gift, Percent, ArrowRight 
+} from "@phosphor-icons/react";
 
 const BUNDLE_CATEGORIES = [
   { id: "all", label: "All Bundles" },
@@ -71,7 +71,7 @@ function BundleCard({ bundle }: { bundle: BundleWithProducts }) {
         {/* Featured Badge */}
         {bundle.featured && (
           <div className="absolute top-4 right-4 bg-amber-500 text-white px-3 py-1.5 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
+            <Sparkle className="w-4 h-4" />
             <span className="text-sm font-medium">FEATURED</span>
           </div>
         )}
@@ -145,7 +145,7 @@ function BundleCard({ bundle }: { bundle: BundleWithProducts }) {
             href={`/bundles/${bundle.id}`}
             className="px-4 py-3 border border-gray-200 hover:border-black transition flex items-center"
           >
-            <ChevronRight className="w-5 h-5" />
+            <CaretRight className="w-5 h-5" />
           </Link>
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function BundlesPage() {
                   className="object-cover"
                 />
                 <div className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1.5 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkle className="w-4 h-4" />
                   <span className="text-sm font-medium">EDITOR&apos;S PICK</span>
                 </div>
               </div>
@@ -312,7 +312,7 @@ export default function BundlesPage() {
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-white border border-gray-200 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8" />
+                <Sparkle className="w-8 h-8" />
               </div>
               <h3 className="font-medium mb-2">Expertly Curated</h3>
               <p className="text-sm text-gray-500">Each bundle is styled by our team to create cohesive looks</p>

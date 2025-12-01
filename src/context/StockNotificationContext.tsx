@@ -62,75 +62,57 @@ export const StockNotificationProvider = ({ children }: { children: ReactNode })
   const [alerts, setAlerts] = useState<BackInStockAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load subscriptions
+  // Load subscriptions - localStorage first
   useEffect(() => {
     const loadSubscriptions = async () => {
-      setLoading(true);
-
-      if (user) {
-        try {
-          // Load from Firebase for logged-in users
-          const userSubsDoc = await getDoc(doc(db, "stockNotifications", user.uid));
-          if (userSubsDoc.exists()) {
-            setSubscriptions(userSubsDoc.data().subscriptions || []);
-          } else {
-            // Migrate from localStorage if exists
-            if (typeof window !== "undefined") {
-              const stored = localStorage.getItem(STORAGE_KEY);
-              if (stored) {
-                const localSubs = JSON.parse(stored);
-                // Update with user info
-                const updatedSubs = localSubs.map((sub: StockNotification) => ({
-                  ...sub,
-                  userId: user.uid,
-                  email: user.email || sub.email,
-                }));
-                setSubscriptions(updatedSubs);
-                await setDoc(doc(db, "stockNotifications", user.uid), { subscriptions: updatedSubs });
-                localStorage.removeItem(STORAGE_KEY);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error loading stock notifications:", error);
-        }
-      } else {
-        // Load from localStorage for guests
-        if (typeof window !== "undefined") {
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored) {
-            try {
-              setSubscriptions(JSON.parse(stored));
-            } catch {
-              console.error("Failed to parse stock notifications");
-            }
+      // Load from localStorage first (instant)
+      if (typeof window !== "undefined") {
+        const storageKey = user ? `${STORAGE_KEY}_${user.uid}` : STORAGE_KEY;
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          try {
+            setSubscriptions(JSON.parse(stored));
+          } catch {
+            // Invalid data
           }
         }
       }
-
       setLoading(false);
+
+      // Try Firebase in background (non-blocking)
+      if (user) {
+        try {
+          const userSubsDoc = await getDoc(doc(db, "stockNotifications", user.uid));
+          if (userSubsDoc.exists()) {
+            const subs = userSubsDoc.data().subscriptions || [];
+            setSubscriptions(subs);
+            localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(subs));
+          }
+        } catch {
+          // Silently fail
+        }
+      }
     };
 
     loadSubscriptions();
   }, [user]);
 
-  // Save subscriptions
+  // Save subscriptions - localStorage first
   useEffect(() => {
     if (loading) return;
 
-    const saveSubscriptions = async () => {
-      if (user) {
-        try {
-          await setDoc(doc(db, "stockNotifications", user.uid), { subscriptions });
-        } catch (error) {
-          console.error("Error saving stock notifications:", error);
-        }
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions));
-      }
-    };
+    // Save to localStorage immediately
+    if (typeof window !== "undefined") {
+      const storageKey = user ? `${STORAGE_KEY}_${user.uid}` : STORAGE_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(subscriptions));
+    }
 
-    saveSubscriptions();
+    // Sync to Firebase in background
+    if (user) {
+      setDoc(doc(db, "stockNotifications", user.uid), { subscriptions }).catch(() => {
+        // Silently fail
+      });
+    }
   }, [subscriptions, user, loading]);
 
   // Simulate checking for back-in-stock products (in real app, this would be server-side)

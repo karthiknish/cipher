@@ -3,13 +3,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/context/ToastContext";
 import { 
-  Mail, 
+  Envelope, 
   Phone, 
   MapPin, 
   ArrowRight, 
-  Loader2, 
+  SpinnerGap, 
   Check
-} from "lucide-react";
+} from "@phosphor-icons/react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -150,7 +150,7 @@ export default function ContactPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> SENDING
+                      <SpinnerGap className="w-4 h-4 animate-spin" /> SENDING
                     </>
                   ) : (
                     <>
@@ -175,7 +175,7 @@ export default function ContactPage() {
               
               <div className="space-y-8">
                 <div className="flex items-start gap-4">
-                  <Mail className="w-5 h-5 mt-0.5" />
+                  <Envelope className="w-5 h-5 mt-0.5" />
                   <div>
                     <p className="font-medium mb-1">Email</p>
                     <a href="mailto:hello@cipher.com" className="text-gray-500 hover:text-black transition">

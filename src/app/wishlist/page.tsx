@@ -5,7 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ShoppingBag, Trash2, ArrowRight, Loader2 } from "lucide-react";
+import { Heart, ShoppingBag, Trash, ArrowRight, SpinnerGap } from "@phosphor-icons/react";
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, loading } = useWishlist();
@@ -33,7 +33,7 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default function WishlistPage() {
                         className="w-10 h-10 bg-white flex items-center justify-center shadow-md hover:bg-red-50 transition"
                         title="Remove from wishlist"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash className="w-4 h-4 text-red-500" />
                       </button>
                     </div>
 

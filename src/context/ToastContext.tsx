@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import { X, CheckCircle, WarningCircle, Info, Warning } from "@phosphor-icons/react";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -46,13 +46,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case "success":
-        return <CheckCircle className="w-5 h-5" />;
+        return <CheckCircle className="w-5 h-5" weight="fill" />;
       case "error":
-        return <AlertCircle className="w-5 h-5" />;
+        return <WarningCircle className="w-5 h-5" weight="fill" />;
       case "warning":
-        return <AlertTriangle className="w-5 h-5" />;
+        return <Warning className="w-5 h-5" weight="fill" />;
       default:
-        return <Info className="w-5 h-5" />;
+        return <Info className="w-5 h-5" weight="fill" />;
     }
   };
 

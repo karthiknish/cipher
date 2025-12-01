@@ -6,10 +6,10 @@ import { signOut } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  User, Mail, MapPin, Plus, Edit2, Trash2, X, 
-  Heart, Palette, Ruler, Save, Camera, LogOut,
-  ChevronRight, Package, Settings, Check
-} from "lucide-react";
+  User, Envelope, MapPin, Plus, PencilSimple, Trash, X, 
+  Heart, Palette, Ruler, FloppyDisk, Camera, SignOut,
+  CaretRight, Package, Gear, Check
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -555,7 +555,7 @@ export default function ProfilePage() {
             {[
               { id: "profile", label: "Profile", icon: User },
               { id: "addresses", label: "Addresses", icon: MapPin },
-              { id: "preferences", label: "Preferences", icon: Settings },
+              { id: "preferences", label: "Preferences", icon: Gear },
               { id: "style", label: "Style Quiz", icon: Palette },
             ].map((tab) => (
               <button
@@ -589,7 +589,7 @@ export default function ProfilePage() {
                 <h3 className="font-medium mb-4">Account Information</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <Mail className="w-5 h-5 text-gray-400" />
+                    <Envelope className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-xs text-gray-500">Email</p>
                       <p>{user.email}</p>
@@ -610,14 +610,14 @@ export default function ProfilePage() {
                   <Package className="w-6 h-6 mb-4 text-gray-400 group-hover:text-black transition" />
                   <h4 className="font-medium mb-1">Orders</h4>
                   <p className="text-sm text-gray-500">View order history</p>
-                  <ChevronRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
+                  <CaretRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
                 </Link>
 
                 <Link href="/wishlist" className="group p-6 border border-gray-200 hover:border-black transition">
                   <Heart className="w-6 h-6 mb-4 text-gray-400 group-hover:text-black transition" />
                   <h4 className="font-medium mb-1">Wishlist</h4>
                   <p className="text-sm text-gray-500">Saved items</p>
-                  <ChevronRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
+                  <CaretRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
                 </Link>
 
                 <button 
@@ -627,7 +627,7 @@ export default function ProfilePage() {
                   <MapPin className="w-6 h-6 mb-4 text-gray-400 group-hover:text-black transition" />
                   <h4 className="font-medium mb-1">Addresses</h4>
                   <p className="text-sm text-gray-500">{profile?.savedAddresses?.length || 0} saved</p>
-                  <ChevronRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
+                  <CaretRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
                 </button>
               </div>
 
@@ -636,7 +636,7 @@ export default function ProfilePage() {
                   onClick={handleSignOut}
                   className="flex items-center gap-2 text-red-600 hover:text-red-700 transition"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <SignOut className="w-5 h-5" />
                   <span className="text-sm tracking-wider">LOG OUT</span>
                 </button>
               </div>
@@ -684,13 +684,13 @@ export default function ProfilePage() {
                             onClick={() => handleEditAddress(address)}
                             className="p-2 hover:bg-gray-100 transition"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <PencilSimple className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => handleDeleteAddress(address.id)}
                             className="p-2 hover:bg-red-50 text-red-500 transition"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -790,7 +790,7 @@ export default function ProfilePage() {
                 disabled={isSaving}
                 className="bg-black text-white px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center gap-2"
               >
-                <Save className="w-4 h-4" />
+                <FloppyDisk className="w-4 h-4" />
                 {isSaving ? "SAVING..." : "SAVE PREFERENCES"}
               </button>
             </motion.div>

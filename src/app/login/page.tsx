@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn, signUp, resetPassword, signInWithGoogle } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Mail, Lock, User, ArrowLeft, CheckCircle } from "lucide-react";
+import { SpinnerGap, Envelope, Lock, User, ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 
 // Google Icon SVG
 function GoogleIcon({ className }: { className?: string }) {
@@ -31,7 +32,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const toast = useToast();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+    }
+  }, [user, authLoading, router]);
 
   const resetForm = () => {
     setError("");
@@ -46,12 +55,16 @@ export default function Login() {
     
     if (result.success) {
       toast.success("Welcome to CIPHER!");
-      router.push("/");
+      // Use replace instead of push and add a small delay
+      setTimeout(() => {
+        router.replace("/");
+      }, 100);
     } else if (result.error !== "Sign-in cancelled") {
       setError(result.error || "Google sign-in failed. Please try again.");
+      setGoogleLoading(false);
+    } else {
+      setGoogleLoading(false);
     }
-    
-    setGoogleLoading(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,12 +76,13 @@ export default function Login() {
     
     if (result.success) {
       toast.success("Welcome back!");
-      router.push("/");
+      setTimeout(() => {
+        router.replace("/");
+      }, 100);
     } else {
       setError(result.error || "Login failed. Please try again.");
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -86,12 +100,13 @@ export default function Login() {
     
     if (result.success) {
       toast.success("Account created successfully!");
-      router.push("/");
+      setTimeout(() => {
+        router.replace("/");
+      }, 100);
     } else {
       setError(result.error || "Registration failed. Please try again.");
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -114,6 +129,24 @@ export default function Login() {
     resetForm();
     setMode(newMode);
   };
+
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // Don't render if already logged in (will redirect)
+  if (user) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-[70vh] px-4">
@@ -151,7 +184,7 @@ export default function Login() {
                   <div>
                     <label className="block text-sm font-bold mb-2 text-gray-700">Email Address</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="email"
                         value={email}
@@ -192,7 +225,7 @@ export default function Login() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" /> Signing In...
+                        <SpinnerGap className="w-5 h-5 animate-spin" /> Signing In...
                       </>
                     ) : (
                       "Sign In"
@@ -218,7 +251,7 @@ export default function Login() {
                   className="w-full bg-white border border-gray-200 py-4 rounded-xl font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {googleLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <SpinnerGap className="w-5 h-5 animate-spin" />
                   ) : (
                     <GoogleIcon className="w-5 h-5" />
                   )}
@@ -277,7 +310,7 @@ export default function Login() {
                   <div>
                     <label className="block text-sm font-bold mb-2 text-gray-700">Email Address</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="email"
                         value={email}
@@ -310,7 +343,7 @@ export default function Login() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" /> Creating Account...
+                        <SpinnerGap className="w-5 h-5 animate-spin" /> Creating Account...
                       </>
                     ) : (
                       "Create Account"
@@ -336,7 +369,7 @@ export default function Login() {
                   className="w-full bg-white border border-gray-200 py-4 rounded-xl font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {googleLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <SpinnerGap className="w-5 h-5 animate-spin" />
                   ) : (
                     <GoogleIcon className="w-5 h-5" />
                   )}
@@ -400,7 +433,7 @@ export default function Login() {
                   <div>
                     <label className="block text-sm font-bold mb-2 text-gray-700">Email Address</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="email"
                         value={email}
@@ -418,7 +451,7 @@ export default function Login() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" /> Sending...
+                        <SpinnerGap className="w-5 h-5 animate-spin" /> Sending...
                       </>
                     ) : (
                       "Send Reset Link"

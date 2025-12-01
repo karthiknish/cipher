@@ -3,11 +3,11 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { 
-  X, Upload, Camera, Loader2, Download, Share2, RotateCcw, 
-  Sparkles, CheckCircle, AlertCircle, ImagePlus, Wand2,
-  ZoomIn, ZoomOut, Maximize2, Info, ChevronLeft, ChevronRight,
-  Smartphone, Monitor, Heart, ShoppingBag
-} from "lucide-react";
+  X, Upload, Camera, SpinnerGap, DownloadSimple, ShareNetwork, ArrowsClockwise, 
+  Sparkle, CheckCircle, WarningCircle, ImageSquare, MagicWand,
+  MagnifyingGlassPlus, MagnifyingGlassMinus, ArrowsOut, Info, CaretLeft, CaretRight,
+  DeviceMobile, Desktop, Heart, ShoppingBag
+} from "@phosphor-icons/react";
 
 interface TryOnProps {
   isOpen: boolean;
@@ -247,7 +247,7 @@ export default function VirtualTryOn({
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-black text-white flex items-center justify-center">
-                <Wand2 className="w-5 h-5" />
+                <MagicWand className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-lg font-medium tracking-tight flex items-center gap-2">
@@ -331,7 +331,7 @@ export default function VirtualTryOn({
                               onClick={() => fileInputRef.current?.click()}
                               className="flex flex-col items-center gap-2 p-4 border border-gray-200 rounded-lg hover:border-black hover:bg-gray-50 transition"
                             >
-                              <ImagePlus className="w-6 h-6" />
+                              <ImageSquare className="w-6 h-6" />
                               <span className="text-xs">Gallery</span>
                             </button>
                             <button
@@ -383,7 +383,7 @@ export default function VirtualTryOn({
                             onClick={() => fileInputRef.current?.click()}
                             className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg hover:bg-white transition text-xs font-medium flex items-center gap-1"
                           >
-                            <RotateCcw className="w-3 h-3" /> Change
+                            <ArrowsClockwise className="w-3 h-3" /> Change
                           </button>
                         </div>
                       )}
@@ -413,7 +413,7 @@ export default function VirtualTryOn({
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2"
                     >
-                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                      <WarningCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-red-700">{error}</p>
                     </motion.div>
                   )}
@@ -435,12 +435,12 @@ export default function VirtualTryOn({
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <SpinnerGap className="w-4 h-4 animate-spin" />
                       {PROCESSING_MESSAGES[processingStage].title}
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkle className="w-4 h-4" />
                       GENERATE TRY-ON
                     </>
                   )}
@@ -462,7 +462,7 @@ export default function VirtualTryOn({
                           disabled={historyIndex <= 0}
                           className="p-1.5 hover:bg-gray-100 rounded disabled:opacity-30 transition"
                         >
-                          <ChevronLeft className="w-4 h-4" />
+                          <CaretLeft className="w-4 h-4" />
                         </button>
                         <span className="text-xs text-gray-500">
                           {historyIndex + 1}/{history.length}
@@ -472,7 +472,7 @@ export default function VirtualTryOn({
                           disabled={historyIndex >= history.length - 1}
                           className="p-1.5 hover:bg-gray-100 rounded disabled:opacity-30 transition"
                         >
-                          <ChevronRight className="w-4 h-4" />
+                          <CaretRight className="w-4 h-4" />
                         </button>
                       </div>
                     )}
@@ -483,7 +483,7 @@ export default function VirtualTryOn({
                         onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
                         className="p-1.5 hover:bg-gray-100 rounded transition"
                       >
-                        <ZoomOut className="w-4 h-4" />
+                        <MagnifyingGlassMinus className="w-4 h-4" />
                       </button>
                       <span className="text-xs text-gray-500 w-12 text-center">
                         {Math.round(zoom * 100)}%
@@ -492,13 +492,13 @@ export default function VirtualTryOn({
                         onClick={() => setZoom(z => Math.min(2, z + 0.25))}
                         className="p-1.5 hover:bg-gray-100 rounded transition"
                       >
-                        <ZoomIn className="w-4 h-4" />
+                        <MagnifyingGlassPlus className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setZoom(1)}
                         className="p-1.5 hover:bg-gray-100 rounded transition"
                       >
-                        <Maximize2 className="w-4 h-4" />
+                        <ArrowsOut className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -524,14 +524,14 @@ export default function VirtualTryOn({
                       className="p-1.5 hover:bg-gray-100 rounded transition"
                       title="Share"
                     >
-                      <Share2 className="w-4 h-4" />
+                      <ShareNetwork className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleDownload}
                       className="p-1.5 hover:bg-gray-100 rounded transition"
                       title="Download"
                     >
-                      <Download className="w-4 h-4" />
+                      <DownloadSimple className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -571,8 +571,8 @@ export default function VirtualTryOn({
                           style={{ left: `${comparisonPosition}%` }}
                         >
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-                            <ChevronLeft className="w-3 h-3 -mr-1" />
-                            <ChevronRight className="w-3 h-3 -ml-1" />
+                            <CaretLeft className="w-3 h-3 -mr-1" />
+                            <CaretRight className="w-3 h-3 -ml-1" />
                           </div>
                         </div>
                         {/* Labels */}
@@ -676,7 +676,7 @@ export default function VirtualTryOn({
                     ) : (
                       <div className="space-y-4">
                         <div className="w-24 h-24 mx-auto border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center">
-                          <Sparkles className="w-10 h-10 text-gray-300" />
+                          <Sparkle className="w-10 h-10 text-gray-300" />
                         </div>
                         <div>
                           <p className="text-lg font-medium text-gray-600">
@@ -700,7 +700,7 @@ export default function VirtualTryOn({
                       onClick={resetTryOn}
                       className="px-6 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:border-black transition flex items-center gap-2"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      <ArrowsClockwise className="w-4 h-4" />
                       Try Another Photo
                     </button>
                     <button
@@ -708,7 +708,7 @@ export default function VirtualTryOn({
                       disabled={isProcessing}
                       className="px-6 py-2 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-900 transition flex items-center gap-2 disabled:opacity-50"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkle className="w-4 h-4" />
                       Regenerate
                     </button>
                   </div>

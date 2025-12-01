@@ -10,16 +10,32 @@ export interface ColorVariant {
   inStock: boolean;
 }
 
+export interface SizeStock {
+  size: string;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   price: number;
+  comparePrice?: number; // Original price for showing discounts
   category: string;
   description: string;
+  shortDescription?: string;
   image: string;
+  images?: string[]; // Additional gallery images
   sizes?: string[];
+  sizeStock?: SizeStock[]; // Stock per size
   colors?: ColorVariant[];
   inStock?: boolean;
+  sku?: string;
+  weight?: number; // in grams
+  material?: string;
+  careInstructions?: string;
+  tags?: string[];
+  featured?: boolean;
+  isNew?: boolean;
   createdAt?: Date;
 }
 

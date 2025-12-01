@@ -16,6 +16,12 @@ import { UserProfileProvider } from "@/context/UserProfileContext";
 import { PromoCodeProvider } from "@/context/PromoCodeContext";
 import { BundleProvider } from "@/context/BundleContext";
 import { RecommendationProvider } from "@/context/RecommendationContext";
+import { AbandonedCartProvider } from "@/context/AbandonedCartContext";
+import { DesignVotingProvider } from "@/context/DesignVotingContext";
+import { LiveActivityProvider } from "@/context/LiveActivityContext";
+import { DynamicPricingProvider } from "@/context/DynamicPricingContext";
+import { MoodStyleProvider } from "@/context/MoodStyleContext";
+import { InfluencerProvider } from "@/context/InfluencerContext";
 import { ReactNode } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -24,31 +30,43 @@ export function Providers({ children }: { children: ReactNode }) {
       <ToastProvider>
         <ProductProvider>
           <CartProvider>
-            <OrderProvider>
-              <WishlistProvider>
-                <ReviewProvider>
-                  <SizeRecommendationProvider>
-                    <RecentlyViewedProvider>
-                      <CompareProvider>
-                        <InventoryProvider>
-                          <StockNotificationProvider>
-                            <UserProfileProvider>
-                              <PromoCodeProvider>
-                                <BundleProvider>
-                                  <RecommendationProvider>
-                                    {children}
-                                  </RecommendationProvider>
-                                </BundleProvider>
-                              </PromoCodeProvider>
-                            </UserProfileProvider>
-                          </StockNotificationProvider>
-                        </InventoryProvider>
-                      </CompareProvider>
-                    </RecentlyViewedProvider>
-                  </SizeRecommendationProvider>
-                </ReviewProvider>
-              </WishlistProvider>
-            </OrderProvider>
+            <AbandonedCartProvider>
+              <OrderProvider>
+                <WishlistProvider>
+                  <ReviewProvider>
+                    <SizeRecommendationProvider>
+                      <RecentlyViewedProvider>
+                        <CompareProvider>
+                          <InventoryProvider>
+                            <StockNotificationProvider>
+                              <UserProfileProvider>
+                                <PromoCodeProvider>
+                                  <BundleProvider>
+                                    <RecommendationProvider>
+                                      <DesignVotingProvider>
+                                        <LiveActivityProvider>
+                                          <DynamicPricingProvider>
+                                            <MoodStyleProvider>
+                                              <InfluencerProvider>
+                                                {children}
+                                              </InfluencerProvider>
+                                            </MoodStyleProvider>
+                                          </DynamicPricingProvider>
+                                        </LiveActivityProvider>
+                                      </DesignVotingProvider>
+                                    </RecommendationProvider>
+                                  </BundleProvider>
+                                </PromoCodeProvider>
+                              </UserProfileProvider>
+                            </StockNotificationProvider>
+                          </InventoryProvider>
+                        </CompareProvider>
+                      </RecentlyViewedProvider>
+                    </SizeRecommendationProvider>
+                  </ReviewProvider>
+                </WishlistProvider>
+              </OrderProvider>
+            </AbandonedCartProvider>
           </CartProvider>
         </ProductProvider>
       </ToastProvider>

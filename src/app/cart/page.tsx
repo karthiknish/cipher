@@ -4,7 +4,7 @@ import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Minus, Plus } from "lucide-react";
+import { ArrowRight, Minus, Plus } from "@phosphor-icons/react";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, subtotal, shipping, tax, total, clearCart } = useCart();

@@ -100,32 +100,36 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
   const [measurements, setMeasurements] = useState<UserMeasurements | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load measurements on mount
+  // Load measurements on mount - localStorage first
   useEffect(() => {
     const loadMeasurements = async () => {
-      setLoading(true);
-      
-      if (user) {
-        try {
-          const measurementsDoc = await getDoc(doc(db, "userMeasurements", user.uid));
-          if (measurementsDoc.exists()) {
-            setMeasurements(measurementsDoc.data() as UserMeasurements);
-          }
-        } catch (error) {
-          console.error("Error loading measurements:", error);
-        }
-      } else if (typeof window !== "undefined") {
-        const stored = localStorage.getItem(MEASUREMENTS_STORAGE_KEY);
+      // Load from localStorage first (instant)
+      if (typeof window !== "undefined") {
+        const storageKey = user ? `${MEASUREMENTS_STORAGE_KEY}_${user.uid}` : MEASUREMENTS_STORAGE_KEY;
+        const stored = localStorage.getItem(storageKey);
         if (stored) {
           try {
             setMeasurements(JSON.parse(stored));
           } catch {
-            console.error("Failed to parse measurements from storage");
+            // Invalid data
           }
         }
       }
-      
       setLoading(false);
+      
+      // Try Firebase in background (non-blocking)
+      if (user) {
+        try {
+          const measurementsDoc = await getDoc(doc(db, "userMeasurements", user.uid));
+          if (measurementsDoc.exists()) {
+            const data = measurementsDoc.data() as UserMeasurements;
+            setMeasurements(data);
+            localStorage.setItem(`${MEASUREMENTS_STORAGE_KEY}_${user.uid}`, JSON.stringify(data));
+          }
+        } catch {
+          // Silently fail
+        }
+      }
     };
 
     loadMeasurements();
@@ -134,14 +138,17 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
   const saveMeasurements = useCallback(async (newMeasurements: UserMeasurements) => {
     setMeasurements(newMeasurements);
     
+    // Save to localStorage immediately
+    if (typeof window !== "undefined") {
+      const storageKey = user ? `${MEASUREMENTS_STORAGE_KEY}_${user.uid}` : MEASUREMENTS_STORAGE_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(newMeasurements));
+    }
+    
+    // Sync to Firebase in background
     if (user) {
-      try {
-        await setDoc(doc(db, "userMeasurements", user.uid), newMeasurements);
-      } catch (error) {
-        console.error("Error saving measurements:", error);
-      }
-    } else if (typeof window !== "undefined") {
-      localStorage.setItem(MEASUREMENTS_STORAGE_KEY, JSON.stringify(newMeasurements));
+      setDoc(doc(db, "userMeasurements", user.uid), newMeasurements).catch(() => {
+        // Silently fail
+      });
     }
   }, [user]);
 

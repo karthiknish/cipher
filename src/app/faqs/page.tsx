@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { CaretDown } from "@phosphor-icons/react";
 
 const FAQS = [
   {
@@ -125,7 +125,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-5 h-5 flex-shrink-0" />
+          <CaretDown className="w-5 h-5 flex-shrink-0" />
         </motion.div>
       </button>
       <AnimatePresence>

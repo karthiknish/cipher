@@ -118,13 +118,37 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
 
       if (user) {
+        // First, load from localStorage immediately (fast)
+        const cached = localStorage.getItem(`${STORAGE_KEY}_${user.uid}`);
+        if (cached) {
+          try {
+            setProfile(JSON.parse(cached));
+          } catch {
+            // Invalid cache, continue to fetch
+          }
+        } else {
+          // Set a default profile immediately while we fetch
+          setProfile({
+            ...DEFAULT_PROFILE,
+            displayName: user.displayName || "",
+            email: user.email || "",
+            avatar: user.photoURL || "",
+          });
+        }
+        setLoading(false); // Show UI immediately
+
+        // Then fetch from Firebase in background (non-blocking)
         try {
-          // Load from Firebase
-          const userDoc = await getDoc(doc(db, "userProfiles", user.uid));
-          if (userDoc.exists()) {
-            setProfile(userDoc.data() as UserProfile);
-          } else {
-            // Create default profile
+          const timeoutPromise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error("Firestore timeout")), 5000)
+          );
+          
+          const fetchPromise = (async () => {
+            const userDoc = await getDoc(doc(db, "userProfiles", user.uid));
+            if (userDoc.exists()) {
+              return userDoc.data() as UserProfile;
+            }
+            // Create default profile if doesn't exist
             const newProfile: UserProfile = {
               ...DEFAULT_PROFILE,
               displayName: user.displayName || "",
@@ -133,28 +157,35 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
               createdAt: Date.now(),
               updatedAt: Date.now(),
             };
-            await setDoc(doc(db, "userProfiles", user.uid), newProfile);
-            setProfile(newProfile);
+            // Don't await this - fire and forget
+            setDoc(doc(db, "userProfiles", user.uid), newProfile).catch(() => {});
+            return newProfile;
+          })();
+
+          const fetchedProfile = await Promise.race([fetchPromise, timeoutPromise]);
+          if (fetchedProfile) {
+            setProfile(fetchedProfile);
+            // Cache in localStorage for next time
+            localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(fetchedProfile));
           }
-        } catch (error) {
-          console.error("Error loading profile:", error);
-          // Fallback to localStorage
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored) {
-            setProfile(JSON.parse(stored));
-          }
+        } catch {
+          // Silently fail - we already have a profile from cache or default
+          console.log("Using cached/default profile");
         }
       } else {
         // Guest: use localStorage
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          setProfile(JSON.parse(stored));
+          try {
+            setProfile(JSON.parse(stored));
+          } catch {
+            setProfile(null);
+          }
         } else {
           setProfile(null);
         }
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     loadProfile();
@@ -165,13 +196,20 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     try {
       const updated = { ...newProfile, updatedAt: Date.now() };
       
+      // Update state immediately
+      setProfile(updated);
+      
       if (user) {
-        await setDoc(doc(db, "userProfiles", user.uid), updated);
+        // Cache to localStorage immediately
+        localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(updated));
+        // Save to Firebase in background (don't await)
+        setDoc(doc(db, "userProfiles", user.uid), updated).catch((err) => 
+          console.error("Error syncing profile to Firebase:", err)
+        );
       } else {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       }
       
-      setProfile(updated);
       return true;
     } catch (error) {
       console.error("Error saving profile:", error);

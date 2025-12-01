@@ -5,6 +5,7 @@ import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Chatbot from "@/components/Chatbot";
+import ActivityTicker from "@/components/ActivityTicker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <Chatbot />
+          <ActivityTicker />
         </Providers>
       </body>
     </html>

@@ -9,12 +9,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useUserProfile, SavedAddress } from "@/context/UserProfileContext";
 import { usePromoCode } from "@/context/PromoCodeContext";
+import { useInventory } from "@/context/InventoryContext";
+import { useLiveActivity } from "@/context/LiveActivityContext";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  ArrowLeft, Lock, Loader2, Check, CreditCard, ChevronDown, 
-  Tag, X, MapPin, User, Sparkles 
-} from "lucide-react";
+  ArrowLeft, Lock, SpinnerGap, Check, CreditCard, CaretDown, 
+  Tag, X, MapPin, User, Sparkle 
+} from "@phosphor-icons/react";
 
 const COUNTRIES = ["United States", "Canada", "United Kingdom", "Australia"];
 const US_STATES = ["California", "New York", "Texas", "Florida", "Washington", "Oregon", "Arizona", "Nevada"];
@@ -26,6 +28,8 @@ export default function CheckoutPage() {
   const { createOrder } = useOrders();
   const { profile, getDefaultAddress, addAddress } = useUserProfile();
   const { appliedCode, discount, applyCode, removeCode } = usePromoCode();
+  const { confirmSale } = useInventory();
+  const { logPurchase } = useLiveActivity();
   const toast = useToast();
   
   const [step, setStep] = useState<"shipping" | "payment" | "confirmation">("shipping");
@@ -186,7 +190,14 @@ export default function CheckoutPage() {
       });
       if (newOrderId) {
         setOrderId(newOrderId);
-        clearCart();
+        // Sync inventory - decrement stock for each purchased item
+        for (const item of orderItems) {
+          await confirmSale(item.productId, item.quantity, newOrderId);
+          // Log purchase for live activity ticker (social proof)
+          logPurchase(item.productId, item.name, item.image);
+        }
+        // Mark cart as recovered (completed purchase) before clearing
+        await clearCart(true);
         removeCode();
         toast.success("Order placed successfully!");
         setStep("confirmation");
@@ -298,7 +309,7 @@ export default function CheckoutPage() {
                   {user && profile && profile.savedAddresses.length > 0 && (
                     <div className="relative">
                       <button type="button" onClick={() => setShowSavedAddresses(!showSavedAddresses)} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition">
-                        <MapPin className="w-4 h-4" /> Saved Addresses <ChevronDown className={`w-4 h-4 transition ${showSavedAddresses ? "rotate-180" : ""}`} />
+                        <MapPin className="w-4 h-4" /> Saved Addresses <CaretDown className={`w-4 h-4 transition ${showSavedAddresses ? "rotate-180" : ""}`} />
                       </button>
                       <AnimatePresence>
                         {showSavedAddresses && (
@@ -363,7 +374,7 @@ export default function CheckoutPage() {
                         <option value="">Select</option>
                         {US_STATES.map(state => <option key={state} value={state}>{state}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                     {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
                   </div>
@@ -381,7 +392,7 @@ export default function CheckoutPage() {
                       <select value={shippingData.country} onChange={(e) => setShippingData(prev => ({ ...prev, country: e.target.value }))} className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition appearance-none bg-white">
                         {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
                 </div>
@@ -447,7 +458,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <button type="submit" disabled={isProcessing} className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> PROCESSING</> : <><Lock className="w-4 h-4" /> PAY ${finalTotal.toFixed(2)}</>}
+                  {isProcessing ? <><SpinnerGap className="w-4 h-4 animate-spin" /> PROCESSING</> : <><Lock className="w-4 h-4" /> PAY ${finalTotal.toFixed(2)}</>}
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-4 flex items-center justify-center gap-2"><Lock className="w-3 h-3" /> Secure checkout - Your data is encrypted</p>
               </motion.form>
@@ -477,7 +488,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-2 mb-3"><Tag className="w-4 h-4 text-gray-400" /><span className="text-sm tracking-wider">PROMO CODE</span></div>
                 {appliedCode ? (
                   <div className="flex items-center justify-between bg-green-50 border border-green-200 p-3">
-                    <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-green-600" /><span className="text-sm font-medium text-green-700">{appliedCode.code}</span></div>
+                    <div className="flex items-center gap-2"><Sparkle className="w-4 h-4 text-green-600" /><span className="text-sm font-medium text-green-700">{appliedCode.code}</span></div>
                     <button onClick={removeCode} className="text-green-600 hover:text-green-800 transition"><X className="w-4 h-4" /></button>
                   </div>
                 ) : (
