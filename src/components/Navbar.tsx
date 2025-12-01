@@ -110,6 +110,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/shop", label: "SHOP" },
     { href: "/bundles", label: "BUNDLES" },
+    { href: "/creators", label: "CREATORS" },
     { href: "/vote", label: "VOTE" },
     { href: "/contact", label: "CONTACT" },
   ];
