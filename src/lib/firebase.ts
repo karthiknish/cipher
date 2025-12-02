@@ -27,7 +27,10 @@ import {
   addDoc,
   serverTimestamp,
   DocumentData,
-  QueryConstraint
+  QueryConstraint,
+  increment,
+  limit,
+  orderBy,
 } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
@@ -419,4 +422,4 @@ export async function getUserOrders(userId: string): Promise<FirestoreResult<Ord
 // Exports
 // ============================================
 
-export { app, auth, db, storage, where, collection, doc, query, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp };
+export { app, auth, db, storage, where, collection, doc, query, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, increment, limit, orderBy };

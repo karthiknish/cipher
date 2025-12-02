@@ -1,408 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useUserProfile, SavedAddress, StyleQuizAnswers } from "@/context/UserProfileContext";
+import { useUserProfile, SavedAddress } from "@/context/UserProfileContext";
 import { signOut } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  User, Envelope, MapPin, Plus, PencilSimple, Trash, X, 
+  User, Envelope, MapPin, Plus, PencilSimple, Trash,
   Heart, Palette, Ruler, FloppyDisk, Camera, SignOut,
-  CaretRight, Package, Gear, Check
+  CaretRight, Package, Gear, Gift
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
 
-// Style Quiz Component
-function StyleQuizSection() {
-  const { profile, saveStyleQuiz } = useUserProfile();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  const [showQuiz, setShowQuiz] = useState(false);
-
-  const questions = [
-    {
-      id: "style",
-      question: "How would you describe your style?",
-      options: ["minimalist", "streetwear", "classic", "bold"],
-      multi: false
-    },
-    {
-      id: "colors",
-      question: "What colors do you gravitate towards?",
-      options: ["Black", "White", "Gray", "Navy", "Earth Tones", "Bold Colors"],
-      multi: true
-    },
-    {
-      id: "fit",
-      question: "What fit do you prefer?",
-      options: ["slim", "regular", "oversized"],
-      multi: false
-    },
-    {
-      id: "occasions",
-      question: "When do you mostly shop for?",
-      options: ["casual", "street", "work", "active"],
-      multi: true
-    },
-    {
-      id: "budget",
-      question: "What's your typical budget per piece?",
-      options: ["budget", "mid", "premium"],
-      multi: false
-    }
-  ];
-
-  useEffect(() => {
-    if (profile?.styleQuiz?.completed && profile.styleQuiz.answers) {
-      setAnswers(profile.styleQuiz.answers);
-    }
-  }, [profile?.styleQuiz]);
-
-  const handleAnswer = (questionId: string, answer: string, multi: boolean) => {
-    let newAnswers: Record<string, string | string[]>;
-    
-    if (multi) {
-      const current = (answers[questionId] as string[]) || [];
-      if (current.includes(answer)) {
-        newAnswers = { ...answers, [questionId]: current.filter(a => a !== answer) };
-      } else {
-        newAnswers = { ...answers, [questionId]: [...current, answer] };
-      }
-    } else {
-      newAnswers = { ...answers, [questionId]: answer };
-    }
-    
-    setAnswers(newAnswers);
-  };
-
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      // Save quiz
-      const quizAnswers: StyleQuizAnswers["answers"] = {
-        style: (answers.style as string) || "",
-        colors: (answers.colors as string[]) || [],
-        fit: (answers.fit as string) || "",
-        occasions: (answers.occasions as string[]) || [],
-        budget: (answers.budget as string) || ""
-      };
-      saveStyleQuiz(quizAnswers);
-      setShowQuiz(false);
-    }
-  };
-
-  const resetQuiz = () => {
-    setAnswers({});
-    setCurrentQuestion(0);
-    setShowQuiz(true);
-  };
-
-  if (!showQuiz && !profile?.styleQuiz?.completed) {
-    return (
-      <div className="text-center py-8">
-        <Palette className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-        <h3 className="font-medium mb-2">Complete Your Style Profile</h3>
-        <p className="text-sm text-gray-500 mb-6">
-          Take a quick quiz to get personalized recommendations
-        </p>
-        <button 
-          onClick={() => setShowQuiz(true)}
-          className="bg-black text-white px-8 py-3 text-sm tracking-wider hover:bg-gray-900 transition"
-        >
-          START QUIZ
-        </button>
-      </div>
-    );
-  }
-
-  if (profile?.styleQuiz?.completed && !showQuiz) {
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-medium">Your Style Profile</h3>
-          <button 
-            onClick={resetQuiz}
-            className="text-sm text-gray-500 hover:text-black transition"
-          >
-            Retake Quiz
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50">
-            <p className="text-xs text-gray-500 mb-1">Style</p>
-            <p className="font-medium capitalize">{profile.styleQuiz.answers.style || "Not set"}</p>
-          </div>
-          <div className="p-4 bg-gray-50">
-            <p className="text-xs text-gray-500 mb-1">Preferred Fit</p>
-            <p className="font-medium capitalize">{profile.styleQuiz.answers.fit || "Not set"}</p>
-          </div>
-          <div className="p-4 bg-gray-50">
-            <p className="text-xs text-gray-500 mb-1">Favorite Colors</p>
-            <p className="font-medium">{profile.styleQuiz.answers.colors?.join(", ") || "Not set"}</p>
-          </div>
-          <div className="p-4 bg-gray-50">
-            <p className="text-xs text-gray-500 mb-1">Budget</p>
-            <p className="font-medium capitalize">{profile.styleQuiz.answers.budget || "Not set"}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-1">
-          {questions.map((_, idx) => (
-            <div 
-              key={idx}
-              className={`h-1 w-8 transition-colors ${
-                idx <= currentQuestion ? "bg-black" : "bg-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-        <button onClick={() => setShowQuiz(false)} className="text-gray-400 hover:text-black">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentQuestion}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          className="space-y-6"
-        >
-          <h3 className="text-lg font-medium">{questions[currentQuestion].question}</h3>
-          <div className="space-y-3">
-            {questions[currentQuestion].options.map((option) => {
-              const isSelected = questions[currentQuestion].multi
-                ? ((answers[questions[currentQuestion].id] as string[]) || []).includes(option)
-                : answers[questions[currentQuestion].id] === option;
-              
-              return (
-                <button
-                  key={option}
-                  onClick={() => handleAnswer(
-                    questions[currentQuestion].id, 
-                    option, 
-                    questions[currentQuestion].multi
-                  )}
-                  className={`w-full p-4 text-left border transition-all capitalize flex items-center justify-between ${
-                    isSelected
-                      ? "border-black bg-black text-white"
-                      : "border-gray-200 hover:border-black"
-                  }`}
-                >
-                  {option}
-                  {isSelected && <Check className="w-5 h-5" />}
-                </button>
-              );
-            })}
-          </div>
-          <button
-            onClick={handleNext}
-            className="w-full bg-black text-white py-4 text-sm tracking-wider hover:bg-gray-900 transition"
-          >
-            {currentQuestion < questions.length - 1 ? "NEXT" : "FINISH"}
-          </button>
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// Address Form Modal
-function AddressFormModal({ 
-  isOpen, 
-  onClose, 
-  onSave,
-  initialAddress 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onSave: (address: Omit<SavedAddress, "id">) => void;
-  initialAddress?: SavedAddress;
-}) {
-  const [formData, setFormData] = useState({
-    label: initialAddress?.label || "",
-    firstName: initialAddress?.firstName || "",
-    lastName: initialAddress?.lastName || "",
-    street: initialAddress?.street || "",
-    city: initialAddress?.city || "",
-    state: initialAddress?.state || "",
-    zip: initialAddress?.zip || "",
-    country: initialAddress?.country || "United States",
-    phone: initialAddress?.phone || "",
-    isDefault: initialAddress?.isDefault || false
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0 }} 
-        animate={{ scale: 1, opacity: 1 }} 
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-light tracking-tight">
-              {initialAddress ? "EDIT ADDRESS" : "ADD NEW ADDRESS"}
-            </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">ADDRESS LABEL</label>
-            <input
-              type="text"
-              value={formData.label}
-              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-              placeholder="e.g., Home, Office"
-              className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">FIRST NAME</label>
-              <input
-                type="text"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">LAST NAME</label>
-              <input
-                type="text"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">STREET ADDRESS</label>
-            <input
-              type="text"
-              value={formData.street}
-              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">CITY</label>
-              <input
-                type="text"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">STATE</label>
-              <input
-                type="text"
-                value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">ZIP CODE</label>
-              <input
-                type="text"
-                value={formData.zip}
-                onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs tracking-wider text-gray-500 mb-2">COUNTRY</label>
-              <select
-                value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
-                required
-              >
-                <option>United States</option>
-                <option>Canada</option>
-                <option>United Kingdom</option>
-                <option>Australia</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">PHONE NUMBER</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-            />
-          </div>
-
-          <label className="flex items-center gap-3 cursor-pointer py-2">
-            <input
-              type="checkbox"
-              checked={formData.isDefault}
-              onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-              className="w-5 h-5 border-gray-300 rounded"
-            />
-            <span className="text-sm">Set as default address</span>
-          </label>
-
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition"
-          >
-            {initialAddress ? "UPDATE ADDRESS" : "SAVE ADDRESS"}
-          </button>
-        </form>
-      </motion.div>
-    </motion.div>
-  );
-}
+import { LoyaltySection, StyleQuizSection, AddressFormModal } from "./components";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -418,9 +29,9 @@ export default function ProfilePage() {
   } = useUserProfile();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<"profile" | "addresses" | "preferences" | "style">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "addresses" | "preferences" | "style" | "rewards">("profile");
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<SavedAddress | undefined>(undefined);
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form states for preferences
@@ -449,20 +60,9 @@ export default function ProfilePage() {
     setIsSaving(false);
   };
 
-  const handleAddAddress = (addressData: Omit<SavedAddress, "id">) => {
-    addAddress(addressData);
-  };
-
   const handleEditAddress = (address: SavedAddress) => {
     setEditingAddress(address);
     setIsAddressModalOpen(true);
-  };
-
-  const handleUpdateAddress = (addressData: Omit<SavedAddress, "id">) => {
-    if (editingAddress) {
-      updateAddress(editingAddress.id, addressData);
-    }
-    setEditingAddress(undefined);
   };
 
   const handleDeleteAddress = (addressId: string) => {
@@ -554,6 +154,7 @@ export default function ProfilePage() {
           <div className="flex gap-8 overflow-x-auto">
             {[
               { id: "profile", label: "Profile", icon: User },
+              { id: "rewards", label: "Rewards", icon: Gift },
               { id: "addresses", label: "Addresses", icon: MapPin },
               { id: "preferences", label: "Preferences", icon: Gear },
               { id: "style", label: "Style Quiz", icon: Palette },
@@ -621,12 +222,12 @@ export default function ProfilePage() {
                 </Link>
 
                 <button 
-                  onClick={() => setActiveTab("addresses")}
+                  onClick={() => setActiveTab("rewards")}
                   className="group p-6 border border-gray-200 hover:border-black transition text-left"
                 >
-                  <MapPin className="w-6 h-6 mb-4 text-gray-400 group-hover:text-black transition" />
-                  <h4 className="font-medium mb-1">Addresses</h4>
-                  <p className="text-sm text-gray-500">{profile?.savedAddresses?.length || 0} saved</p>
+                  <Gift className="w-6 h-6 mb-4 text-gray-400 group-hover:text-black transition" />
+                  <h4 className="font-medium mb-1">Rewards</h4>
+                  <p className="text-sm text-gray-500">Earn & redeem points</p>
                   <CaretRight className="w-5 h-5 mt-4 text-gray-300 group-hover:text-black transition" />
                 </button>
               </div>
@@ -643,6 +244,22 @@ export default function ProfilePage() {
             </motion.div>
           )}
 
+          {/* Rewards Tab */}
+          {activeTab === "rewards" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="mb-8">
+                <h2 className="text-lg font-light tracking-tight mb-2">CIPHER REWARDS</h2>
+                <p className="text-sm text-gray-500">
+                  Earn points on purchases, reviews, and referrals. Redeem for discounts and exclusive perks.
+                </p>
+              </div>
+              <LoyaltySection />
+            </motion.div>
+          )}
+
           {/* Addresses Tab */}
           {activeTab === "addresses" && (
             <motion.div
@@ -654,7 +271,7 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-light tracking-tight">SAVED ADDRESSES</h2>
                 <button 
                   onClick={() => {
-                    setEditingAddress(undefined);
+                    setEditingAddress(null);
                     setIsAddressModalOpen(true);
                   }}
                   className="flex items-center gap-2 text-sm tracking-wider hover:underline"
@@ -816,17 +433,14 @@ export default function ProfilePage() {
 
       {/* Address Modal */}
       <AnimatePresence>
-        {isAddressModalOpen && (
-          <AddressFormModal
-            isOpen={isAddressModalOpen}
-            onClose={() => {
-              setIsAddressModalOpen(false);
-              setEditingAddress(undefined);
-            }}
-            onSave={editingAddress ? handleUpdateAddress : handleAddAddress}
-            initialAddress={editingAddress}
-          />
-        )}
+        <AddressFormModal
+          isOpen={isAddressModalOpen}
+          onClose={() => {
+            setIsAddressModalOpen(false);
+            setEditingAddress(null);
+          }}
+          editAddress={editingAddress}
+        />
       </AnimatePresence>
     </div>
   );

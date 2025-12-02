@@ -66,11 +66,20 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      // Users can update their own reviews, admins can update any (for moderation, replies)
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
+    }
+    
+    // Review votes collection - tracks user votes on reviews
+    match /reviewVotes/{voteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
     }
     
     // Wishlists collection
@@ -102,9 +111,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // Analytics/metrics collection - admin only
+    // Analytics/metrics collection - authenticated write for tracking, admin read
     match /analytics/{docId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if true;  // Allow anonymous analytics tracking
+      
+      // Nested collections for analytics events
+      match /{collection}/{eventId} {
+        allow read: if isAdmin();
+        allow write: if true;  // Allow anonymous event tracking
+      }
     }
     
     // Inventory collection - public read, admin write
@@ -194,6 +210,23 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
+    }
+    
+    // Loyalty profiles collection - user owns their profile, admin can read all
+    match /loyalty/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+      allow list: if isAdmin();
+    }
+    
+    // Rewards collection - for tracking redeemed reward codes
+    match /rewards/{rewardCode} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
     }
   }
 }

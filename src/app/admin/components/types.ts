@@ -1,6 +1,6 @@
 import { Order } from "@/context/OrderContext";
 
-export type Tab = "dashboard" | "products" | "orders" | "customers" | "abandoned" | "inventory" | "pricing" | "influencers";
+export type Tab = "dashboard" | "products" | "orders" | "customers" | "abandoned" | "inventory" | "pricing" | "influencers" | "analytics" | "reviews" | "loyalty";
 
 export type DateRange = "7d" | "30d" | "90d" | "all";
 

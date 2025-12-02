@@ -24,6 +24,13 @@ service firebase.storage {
              request.resource.size < 5 * 1024 * 1024; // 5MB max
     }
     
+    function isValidReviewMedia() {
+      return (
+        request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType.matches('video/.*')
+      ) && request.resource.size < 10 * 1024 * 1024; // 10MB max for reviews
+    }
+    
     // User avatars
     match /avatars/{userId}/{fileName} {
       allow read: if true;
@@ -36,10 +43,10 @@ service firebase.storage {
       allow write: if isAdmin() && isValidImage();
     }
     
-    // Review images
-    match /reviews/{reviewId}/{fileName} {
+    // Review images and videos
+    match /reviews/{fileName} {
       allow read: if true;
-      allow write: if isAuthenticated() && isValidImage();
+      allow write: if isAuthenticated() && isValidReviewMedia();
     }
     
     // Bundle images

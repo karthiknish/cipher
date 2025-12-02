@@ -25,6 +25,9 @@ import {
   CurrencyDollar,
   Percent,
   UserCirclePlus,
+  ChartLineUp,
+  Star,
+  Gift,
 } from "@phosphor-icons/react";
 import {
   Tab,
@@ -42,6 +45,9 @@ import { AbandonedTab } from "./components/AbandonedTab";
 import { InventoryTab } from "./components/InventoryTab";
 import { PricingTab } from "./components/PricingTab";
 import { InfluencersTab } from "./components/InfluencersTab";
+import { AnalyticsTab } from "./components/AnalyticsTab";
+import { ReviewsTab } from "./components/ReviewsTab";
+import { LoyaltyTab } from "./components/LoyaltyTab";
 
 const STATUS_OPTIONS: Order["status"][] = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
 
@@ -678,6 +684,39 @@ function AdminPageContent() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
+              activeTab === "analytics" 
+                ? "border-b-2 border-black text-black" 
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <ChartLineUp className="w-4 h-4" />
+            ANALYTICS
+          </button>
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
+              activeTab === "reviews" 
+                ? "border-b-2 border-black text-black" 
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <Star className="w-4 h-4" />
+            REVIEWS
+          </button>
+          <button
+            onClick={() => setActiveTab("loyalty")}
+            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
+              activeTab === "loyalty" 
+                ? "border-b-2 border-black text-black" 
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <Gift className="w-4 h-4" />
+            LOYALTY
+          </button>
         </div>
 
         {/* Dashboard Tab */}
@@ -787,6 +826,21 @@ function AdminPageContent() {
             onUpdateTier={updateInfluencerTier}
             onUpdateCommissionRate={updateCommissionRate}
           />
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && (
+          <AnalyticsTab />
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === "reviews" && (
+          <ReviewsTab />
+        )}
+
+        {/* Loyalty Tab */}
+        {activeTab === "loyalty" && (
+          <LoyaltyTab />
         )}
       </div>
     </div>

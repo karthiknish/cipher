@@ -11,6 +11,7 @@ import { useUserProfile, SavedAddress } from "@/context/UserProfileContext";
 import { usePromoCode } from "@/context/PromoCodeContext";
 import { useInventory } from "@/context/InventoryContext";
 import { useLiveActivity } from "@/context/LiveActivityContext";
+import { useCheckoutAnalytics } from "@/hooks/useAnalytics";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -32,6 +33,17 @@ export default function CheckoutPage() {
   const { logPurchase } = useLiveActivity();
   const toast = useToast();
   
+  // Analytics
+  const { 
+    trackBeginCheckout, 
+    trackAddShippingInfo, 
+    trackAddPaymentInfo, 
+    trackApplyPromoCode, 
+    trackPurchase,
+    trackCheckoutStep,
+    trackCheckoutError 
+  } = useCheckoutAnalytics();
+  
   const [step, setStep] = useState<"shipping" | "payment" | "confirmation">("shipping");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -41,6 +53,23 @@ export default function CheckoutPage() {
   const [showSavedAddresses, setShowSavedAddresses] = useState(false);
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState("Home");
+  
+  // Track checkout start
+  useEffect(() => {
+    if (cart.length > 0) {
+      trackBeginCheckout(
+        cart.map(item => ({
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          category: item.category,
+        })),
+        baseTotal
+      );
+      trackCheckoutStep(1, "shipping");
+    }
+  }, []); // Run once on mount
   
   const [shippingData, setShippingData] = useState<ShippingAddress>({
     firstName: "",
@@ -167,17 +196,28 @@ export default function CheckoutPage() {
         });
         toast.success("Address saved to your profile");
       }
+      // Track shipping step completion
+      trackAddShippingInfo("standard", promoShipping);
+      trackCheckoutStep(2, "payment");
       setStep("payment");
     }
   };
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validatePayment()) return;
-    if (!user && !isGuestCheckout) {
-      setErrors({ general: "Please log in or continue as guest" });
+    if (!validatePayment()) {
+      trackCheckoutError("payment", "Validation failed");
       return;
     }
+    if (!user && !isGuestCheckout) {
+      setErrors({ general: "Please log in or continue as guest" });
+      trackCheckoutError("payment", "User not logged in");
+      return;
+    }
+    
+    // Track payment info added
+    trackAddPaymentInfo("credit_card");
+    
     setIsProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -196,19 +236,39 @@ export default function CheckoutPage() {
           // Log purchase for live activity ticker (social proof)
           logPurchase(item.productId, item.name, item.image);
         }
+        
+        // Track purchase analytics
+        trackPurchase({
+          orderId: newOrderId,
+          total: finalTotal,
+          items: orderItems.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shipping: promoShipping,
+          tax,
+          discount: finalDiscount,
+          promoCode: appliedCode?.code,
+        });
+        
         // Mark cart as recovered (completed purchase) before clearing
         await clearCart(true);
         removeCode();
         toast.success("Order placed successfully!");
+        trackCheckoutStep(3, "confirmation");
         setStep("confirmation");
       } else {
         toast.error("Failed to create order.");
         setErrors({ general: "Failed to create order." });
+        trackCheckoutError("order_creation", "Failed to create order");
       }
     } catch (err) {
       console.error("Checkout error:", err);
       toast.error("Payment failed.");
       setErrors({ general: "Payment failed." });
+      trackCheckoutError("payment_processing", "Payment failed");
     } finally {
       setIsProcessing(false);
     }
@@ -218,8 +278,15 @@ export default function CheckoutPage() {
     setPromoError("");
     const categories = cart.map(item => item.category).filter(Boolean) as string[];
     const result = applyCode(promoInput, subtotal, categories);
-    if (result.success) { toast.success(result.message); setPromoInput(""); }
-    else { setPromoError(result.message); }
+    if (result.success) { 
+      toast.success(result.message); 
+      setPromoInput(""); 
+      trackApplyPromoCode(promoInput, true, discount);
+    }
+    else { 
+      setPromoError(result.message); 
+      trackApplyPromoCode(promoInput, false);
+    }
   };
 
   const formatCardNumber = (value: string) => {

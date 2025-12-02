@@ -8,3 +8,6 @@ export * from "./AbandonedTab";
 export * from "./InventoryTab";
 export * from "./PricingTab";
 export * from "./InfluencersTab";
+export * from "./AnalyticsTab";
+export * from "./ReviewsTab";
+export * from "./LoyaltyTab";

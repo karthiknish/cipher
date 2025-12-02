@@ -1,0 +1,11 @@
+export { default as StarRating } from "./StarRating";
+export { default as InventoryAlert } from "./InventoryAlert";
+export { default as CompleteTheLook } from "./CompleteTheLook";
+export { default as RecentlyViewedSection } from "./RecentlyViewedSection";
+export { default as YouMayAlsoLike } from "./YouMayAlsoLike";
+export { default as CompareDrawer } from "./CompareDrawer";
+export { default as ReviewCard } from "./ReviewCard";
+export { default as ReviewFormModal } from "./ReviewFormModal";
+export { default as ReviewsSection } from "./ReviewsSection";
+export { default as SizeRecommendationModal } from "./SizeRecommendationModal";
+export { default as BackInStockModal } from "./BackInStockModal";

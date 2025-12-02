@@ -22,53 +22,61 @@ import { LiveActivityProvider } from "@/context/LiveActivityContext";
 import { DynamicPricingProvider } from "@/context/DynamicPricingContext";
 import { MoodStyleProvider } from "@/context/MoodStyleContext";
 import { InfluencerProvider } from "@/context/InfluencerContext";
-import { ReactNode } from "react";
+import { AnalyticsProvider } from "@/context/AnalyticsContext";
+import { LoyaltyProvider } from "@/context/LoyaltyContext";
+import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <ToastProvider>
-        <ProductProvider>
-          <CartProvider>
-            <AbandonedCartProvider>
-              <OrderProvider>
-                <WishlistProvider>
-                  <ReviewProvider>
-                    <SizeRecommendationProvider>
-                      <RecentlyViewedProvider>
-                        <CompareProvider>
-                          <InventoryProvider>
-                            <StockNotificationProvider>
-                              <UserProfileProvider>
-                                <PromoCodeProvider>
-                                  <BundleProvider>
-                                    <RecommendationProvider>
-                                      <DesignVotingProvider>
-                                        <LiveActivityProvider>
-                                          <DynamicPricingProvider>
-                                            <MoodStyleProvider>
-                                              <InfluencerProvider>
-                                                {children}
-                                              </InfluencerProvider>
-                                            </MoodStyleProvider>
-                                          </DynamicPricingProvider>
-                                        </LiveActivityProvider>
-                                      </DesignVotingProvider>
-                                    </RecommendationProvider>
-                                  </BundleProvider>
-                                </PromoCodeProvider>
-                              </UserProfileProvider>
-                            </StockNotificationProvider>
-                          </InventoryProvider>
-                        </CompareProvider>
-                      </RecentlyViewedProvider>
-                    </SizeRecommendationProvider>
-                  </ReviewProvider>
-                </WishlistProvider>
-              </OrderProvider>
-            </AbandonedCartProvider>
-          </CartProvider>
-        </ProductProvider>
+        <Suspense fallback={null}>
+          <AnalyticsProvider>
+            <ProductProvider>
+              <CartProvider>
+                <AbandonedCartProvider>
+                  <OrderProvider>
+                    <WishlistProvider>
+                      <ReviewProvider>
+                        <SizeRecommendationProvider>
+                          <RecentlyViewedProvider>
+                            <CompareProvider>
+                              <InventoryProvider>
+                                <StockNotificationProvider>
+                                  <UserProfileProvider>
+                                    <PromoCodeProvider>
+                                      <BundleProvider>
+                                        <RecommendationProvider>
+                                          <DesignVotingProvider>
+                                            <LiveActivityProvider>
+                                              <DynamicPricingProvider>
+                                                <MoodStyleProvider>
+                                                  <InfluencerProvider>
+                                                    <LoyaltyProvider>
+                                                      {children}
+                                                    </LoyaltyProvider>
+                                                  </InfluencerProvider>
+                                                </MoodStyleProvider>
+                                              </DynamicPricingProvider>
+                                            </LiveActivityProvider>
+                                          </DesignVotingProvider>
+                                        </RecommendationProvider>
+                                      </BundleProvider>
+                                    </PromoCodeProvider>
+                                  </UserProfileProvider>
+                                </StockNotificationProvider>
+                              </InventoryProvider>
+                            </CompareProvider>
+                          </RecentlyViewedProvider>
+                        </SizeRecommendationProvider>
+                      </ReviewProvider>
+                    </WishlistProvider>
+                  </OrderProvider>
+                </AbandonedCartProvider>
+              </CartProvider>
+            </ProductProvider>
+          </AnalyticsProvider>
+        </Suspense>
       </ToastProvider>
     </AuthProvider>
   );
