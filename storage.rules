@@ -38,7 +38,7 @@ service firebase.storage {
     }
     
     // Product images - admin only upload, public read
-    match /products/{productId}/{fileName} {
+    match /products/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin() && isValidImage();
     }

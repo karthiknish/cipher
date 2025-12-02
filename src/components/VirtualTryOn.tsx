@@ -103,11 +103,37 @@ export default function VirtualTryOn({
   };
 
   const fetchProductImageAsBase64 = async (url: string): Promise<string> => {
+    // Check if it's a placeholder URL
+    if (url.includes("placehold.co") || url.includes("placeholder") || url.includes("via.placeholder")) {
+      throw new Error("This product uses a placeholder image. Virtual try-on requires a real product photo.");
+    }
+    
     const response = await fetch(url);
+    const contentType = response.headers.get("content-type") || "";
+    
+    // Check if response is SVG
+    if (contentType.includes("svg")) {
+      throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+    }
+    
     const blob = await response.blob();
+    
+    // Additional check on blob type
+    if (blob.type.includes("svg")) {
+      throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+    }
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // Final check on the data URL
+        if (result.startsWith("data:image/svg")) {
+          reject(new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG)."));
+        } else {
+          resolve(result);
+        }
+      };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
@@ -166,7 +192,12 @@ export default function VirtualTryOn({
     } catch (err) {
       console.error(err);
       setProcessingStage("error");
-      setError("Network error. Please check your connection and try again.");
+      // Show specific error message if available
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Network error. Please check your connection and try again.");
+      }
     }
   };
 
@@ -252,7 +283,7 @@ export default function VirtualTryOn({
               <div>
                 <h2 className="text-lg font-medium tracking-tight flex items-center gap-2">
                   VIRTUAL TRY-ON
-                  <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-gradient-to-r from-sky-500 to-blue-500 text-white text-[10px] font-medium rounded-full">
                     AI POWERED
                   </span>
                 </h2>
@@ -429,7 +460,7 @@ export default function VirtualTryOn({
                     isProcessing
                       ? "bg-gray-100 text-gray-500"
                       : userImage
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg"
+                      ? "bg-gradient-to-r from-sky-600 to-blue-600 text-white hover:from-sky-700 hover:to-blue-700 shadow-lg"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
                 >
@@ -636,7 +667,7 @@ export default function VirtualTryOn({
                         {/* Animated Processing Indicator */}
                         <div className="relative w-32 h-32 mx-auto">
                           <motion.div
-                            className="absolute inset-0 rounded-full border-4 border-purple-200"
+                            className="absolute inset-0 rounded-full border-4 border-sky-200"
                             style={{
                               background: `conic-gradient(from 0deg, rgb(147, 51, 234) ${progress}%, transparent ${progress}%)`,
                             }}
@@ -644,7 +675,7 @@ export default function VirtualTryOn({
                             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                           />
                           <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-                            <span className="text-2xl font-bold text-purple-600">
+                            <span className="text-2xl font-bold text-sky-600">
                               {progress}%
                             </span>
                           </div>
@@ -666,7 +697,7 @@ export default function VirtualTryOn({
                               key={stage}
                               className={`w-2 h-2 rounded-full transition-colors ${
                                 ["analyzing", "generating", "finalizing"].indexOf(processingStage) >= i
-                                  ? "bg-purple-600"
+                                  ? "bg-sky-600"
                                   : "bg-gray-300"
                               }`}
                             />

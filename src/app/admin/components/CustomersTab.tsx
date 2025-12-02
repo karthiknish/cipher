@@ -468,16 +468,16 @@ function CLVDetailsModal({
           </div>
 
           {/* AI Recommendations */}
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg border border-purple-100">
+          <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-100">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkle className="w-5 h-5 text-purple-600" />
-              <h4 className="font-medium text-purple-900">AI Retention Recommendations</h4>
+              <Sparkle className="w-5 h-5 text-sky-600" />
+              <h4 className="font-medium text-sky-900">AI Retention Recommendations</h4>
             </div>
             <div className="space-y-2">
               {recommendations.map((rec, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <ChartLineUp className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-purple-800">{rec}</span>
+                  <ChartLineUp className="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-sky-800">{rec}</span>
                 </div>
               ))}
             </div>

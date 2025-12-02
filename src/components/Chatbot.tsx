@@ -276,7 +276,7 @@ export default function Chatbot() {
                       }`}
                     >
                       {message.moodDetected && (
-                        <span className="inline-block px-2 py-0.5 mb-2 bg-purple-100 text-purple-700 text-xs rounded-full capitalize">
+                        <span className="inline-block px-2 py-0.5 mb-2 bg-sky-100 text-sky-700 text-xs rounded-full capitalize">
                           {message.moodDetected} mood
                         </span>
                       )}

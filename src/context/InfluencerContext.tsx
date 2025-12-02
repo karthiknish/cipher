@@ -188,6 +188,10 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
           const userInfluencer = data.find(i => i.userId === user.uid);
           setCurrentInfluencer(userInfluencer || null);
         }
+      },
+      (error) => {
+        console.error("Error fetching influencers:", error);
+        setLoading(false);
       }
     );
     return () => unsubscribe();
@@ -217,13 +221,24 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
         } as InfluencerSale);
       });
       setSales(data.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+    }, (error) => {
+      // Permission denied is expected for non-admin users
+      if (error.code !== "permission-denied") {
+        console.error("Error fetching influencer sales:", error);
+      }
+      setSales([]);
     });
 
     return () => unsubscribe();
   }, [currentInfluencer]);
 
-  // Subscribe to applications (for admin)
+  // Subscribe to applications (for admin) - only set up if user is authenticated
   useEffect(() => {
+    if (!user) {
+      setApplications([]);
+      return;
+    }
+
     const unsubscribe = onSnapshot(
       collection(db, "influencerApplications"),
       (snapshot) => {
@@ -238,10 +253,17 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
           } as InfluencerApplication);
         });
         setApplications(data.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()));
+      },
+      (error) => {
+        // Permission denied is expected for non-admin users
+        if (error.code !== "permission-denied") {
+          console.error("Error fetching applications:", error);
+        }
+        setApplications([]);
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const getInfluencerByUsername = useCallback((username: string): Influencer | null => {
     return influencers.find(i => i.username.toLowerCase() === username.toLowerCase()) || null;

@@ -162,6 +162,12 @@ service cloud.firestore {
     match /productViewers/{productId} {
       allow read: if true;
       allow write: if true;  // Allow anonymous view tracking
+      
+      // Nested viewers subcollection
+      match /viewers/{viewerId} {
+        allow read: if true;
+        allow write: if true;  // Allow anonymous view tracking
+      }
     }
     
     // Dynamic pricing rules collection - public read, admin write

@@ -66,6 +66,7 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
+let firebaseConfigured = false;
 
 try {
   const isConfigValid = validateConfig();
@@ -75,6 +76,7 @@ try {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    firebaseConfigured = true;
   } else {
     // Create mock instances for development without Firebase
     console.warn("Firebase running in mock mode - configure environment variables for full functionality");
@@ -422,4 +424,4 @@ export async function getUserOrders(userId: string): Promise<FirestoreResult<Ord
 // Exports
 // ============================================
 
-export { app, auth, db, storage, where, collection, doc, query, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, increment, limit, orderBy };
+export { app, auth, db, storage, firebaseConfigured, where, collection, doc, query, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp, increment, limit, orderBy };

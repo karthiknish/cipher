@@ -30,6 +30,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate image formats - Gemini only supports JPEG, PNG, WebP, GIF (not SVG)
+    const isValidImageFormat = (dataUrl: string): boolean => {
+      if (!dataUrl.startsWith("data:image/")) return false;
+      // SVG images are not supported by Gemini
+      if (dataUrl.startsWith("data:image/svg")) return false;
+      // Check for supported formats
+      const supportedFormats = ["data:image/jpeg", "data:image/png", "data:image/webp", "data:image/gif"];
+      return supportedFormats.some(format => dataUrl.startsWith(format));
+    };
+
+    const isPlaceholderImage = (dataUrl: string): boolean => {
+      // Check for common placeholder patterns
+      if (dataUrl.includes("placehold")) return true;
+      if (dataUrl.startsWith("data:image/svg")) return true;
+      if (dataUrl.includes("placeholder")) return true;
+      return false;
+    };
+
+    if (!isValidImageFormat(userImage)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid user photo format. Please upload a JPEG or PNG image." },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidImageFormat(productImage) || isPlaceholderImage(productImage)) {
+      return NextResponse.json(
+        { success: false, error: "This product doesn't have a valid image for virtual try-on. Please choose a product with a real photo (not a placeholder)." },
+        { status: 400 }
+      );
+    }
+
     // Construct an enhanced virtual try-on prompt
     const colorInfo = colorVariant ? ` in ${colorVariant} color` : "";
     

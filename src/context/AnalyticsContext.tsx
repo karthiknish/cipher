@@ -182,6 +182,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<AnalyticsSession | null>(null);
   const timingsRef = useRef<Map<string, number>>(new Map());
   const lastPageRef = useRef<{ path: string; time: number } | null>(null);
+  const lastLoggedPageRef = useRef<{ path: string; time: number } | null>(null);
   const userPropertiesRef = useRef<UserProperties>({});
 
   // Initialize or restore session
@@ -229,16 +230,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     // Store new session
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionRef.current));
     
-    // Log session start to Firestore
-    logToFirestore("sessions", {
+    // Log session start to Firestore (filter out undefined values)
+    const sessionData: Record<string, unknown> = {
       sessionId: sessionRef.current.id,
-      ...utmParams,
       device: sessionRef.current.device,
       browser: sessionRef.current.browser,
       os: sessionRef.current.os,
-      userId: user?.uid,
       startTime: serverTimestamp(),
-    });
+    };
+    
+    // Only add defined UTM params
+    if (utmParams.source) sessionData.source = utmParams.source;
+    if (utmParams.medium) sessionData.medium = utmParams.medium;
+    if (utmParams.campaign) sessionData.campaign = utmParams.campaign;
+    if (user?.uid) sessionData.userId = user.uid;
+    
+    logToFirestore("sessions", sessionData);
   }, [user?.uid]);
 
   // Update session activity
@@ -263,14 +270,27 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     }
   }, [initSession]);
 
-  // Log to Firestore
+  // Log to Firestore (filters out undefined values)
   const logToFirestore = async (collectionName: string, data: Record<string, unknown>) => {
     try {
+      // Filter out undefined values - Firestore doesn't accept them
+      const cleanedData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (value !== undefined) {
+          cleanedData[key] = value;
+        }
+      }
+      
       await addDoc(collection(db, "analytics", "events", collectionName), {
-        ...data,
+        ...cleanedData,
         timestamp: serverTimestamp(),
       });
     } catch (error) {
+      // Silently ignore "Document already exists" errors - these can happen 
+      // due to Firestore offline persistence replaying writes
+      if (error instanceof Error && error.message.includes("already exists")) {
+        return;
+      }
       console.error("Analytics log error:", error);
     }
   };
@@ -281,20 +301,12 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       const today = new Date().toISOString().split("T")[0];
       const metricRef = doc(db, "analytics", "metrics", metricType, today);
       
-      const snapshot = await getDoc(metricRef);
-      if (snapshot.exists()) {
-        await updateDoc(metricRef, {
-          count: increment(incrementBy),
-          lastUpdated: serverTimestamp(),
-        });
-      } else {
-        await setDoc(metricRef, {
-          count: incrementBy,
-          date: today,
-          createdAt: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
-        });
-      }
+      // Use setDoc with merge to handle race conditions atomically
+      await setDoc(metricRef, {
+        count: increment(incrementBy),
+        date: today,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
     } catch (error) {
       console.error("Metrics update error:", error);
     }
@@ -304,15 +316,27 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const trackPageView = useCallback((path?: string, title?: string) => {
     const currentPath = path || pathname;
     const pageTitle = title || (typeof document !== "undefined" ? document.title : "");
+    const now = Date.now();
+    
+    // Prevent duplicate page view logs within 500ms for the same path
+    if (lastLoggedPageRef.current) {
+      const { path: lastPath, time: lastTime } = lastLoggedPageRef.current;
+      if (lastPath === currentPath && now - lastTime < 500) {
+        return; // Skip duplicate log
+      }
+    }
+    
+    // Update last logged page reference
+    lastLoggedPageRef.current = { path: currentPath, time: now };
     
     // Calculate time on previous page
     let duration: number | undefined;
     if (lastPageRef.current) {
-      duration = Date.now() - lastPageRef.current.time;
+      duration = now - lastPageRef.current.time;
     }
     
     // Update last page reference
-    lastPageRef.current = { path: currentPath, time: Date.now() };
+    lastPageRef.current = { path: currentPath, time: now };
     
     // Update session
     if (sessionRef.current) {

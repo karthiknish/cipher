@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { db, auth } from "@/lib/firebase";
 import { collection, doc, onSnapshot, addDoc, deleteDoc, query, orderBy, limit, where, serverTimestamp, setDoc, Timestamp, getDocs, writeBatch } from "firebase/firestore";
 
@@ -47,6 +47,13 @@ export function LiveActivityProvider({ children }: { children: ReactNode }) {
   const [recentActivities, setRecentActivities] = useState<LiveActivity[]>([]);
   const [viewerCounts, setViewerCounts] = useState<Record<string, number>>({});
   const [trackedProducts, setTrackedProducts] = useState<Set<string>>(new Set());
+  const trackedProductsRef = useRef(trackedProducts);
+  useEffect(() => {
+    trackedProductsRef.current = trackedProducts;
+  }, [trackedProducts]);
+
+  const heartbeatIntervalsRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+  const viewerListenersRef = useRef<Record<string, () => void>>({});
 
   // Generate a unique session ID for this browser session
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -84,22 +91,47 @@ export function LiveActivityProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to viewer counts
-  useEffect(() => {
-    const q = query(collection(db, "productViewers"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const counts: Record<string, number> = {};
-      snapshot.forEach((doc) => {
-        counts[doc.id] = doc.data().count || 0;
-      });
-      setViewerCounts(counts);
-    }, (error) => {
-      console.error("Error fetching viewer counts:", error);
+  const cleanupViewer = useCallback((productId: string) => {
+    const heartbeat = heartbeatIntervalsRef.current[productId];
+    if (heartbeat) {
+      clearInterval(heartbeat);
+      delete heartbeatIntervalsRef.current[productId];
+    }
+
+    const unsubscribe = viewerListenersRef.current[productId];
+    if (unsubscribe) {
+      unsubscribe();
+      delete viewerListenersRef.current[productId];
+    }
+
+    const viewerRef = doc(db, "productViewers", productId, "viewers", sessionId);
+    deleteDoc(viewerRef).catch(() => {});
+
+    setViewerCounts(prev => {
+      if (!prev[productId]) return prev;
+      const next = { ...prev };
+      delete next[productId];
+      return next;
     });
 
-    return () => unsubscribe();
-  }, []);
+    setTrackedProducts(prev => {
+      if (!prev.has(productId)) return prev;
+      const next = new Set(prev);
+      next.delete(productId);
+      return next;
+    });
+  }, [sessionId]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      trackedProductsRef.current.forEach(productId => {
+        cleanupViewer(productId);
+      });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [cleanupViewer]);
 
   // Cleanup old activities periodically (server-side would be better, but this works for demo)
   useEffect(() => {
@@ -171,7 +203,6 @@ export function LiveActivityProvider({ children }: { children: ReactNode }) {
     
     setTrackedProducts(prev => new Set(prev).add(productId));
     
-    // Add viewer to the product
     const viewerRef = doc(db, "productViewers", productId, "viewers", sessionId);
     setDoc(viewerRef, {
       sessionId,
@@ -179,71 +210,38 @@ export function LiveActivityProvider({ children }: { children: ReactNode }) {
       lastActive: serverTimestamp(),
     }).catch(console.error);
 
-    // Update viewer count
-    const countRef = doc(db, "productViewers", productId);
-    setDoc(countRef, {
-      count: (viewerCounts[productId] || 0) + 1,
-      lastUpdated: serverTimestamp(),
-    }, { merge: true }).catch(console.error);
+    const viewerCollectionRef = collection(db, "productViewers", productId, "viewers");
+    const unsubscribeViewers = onSnapshot(viewerCollectionRef, (snapshot) => {
+      setViewerCounts(prev => ({
+        ...prev,
+        [productId]: snapshot.size,
+      }));
+    }, (error) => {
+      console.error("Error tracking viewer count:", error);
+    });
+    viewerListenersRef.current[productId] = unsubscribeViewers;
 
-    // Setup heartbeat to keep session alive
     const heartbeatInterval = setInterval(async () => {
       try {
         await setDoc(viewerRef, {
           lastActive: serverTimestamp(),
         }, { merge: true });
       } catch (error) {
-        // Session may have expired
         clearInterval(heartbeatInterval);
       }
-    }, 30000); // Every 30 seconds
+    }, 30000);
 
-    // Store cleanup function
-    const cleanup = () => {
-      clearInterval(heartbeatInterval);
-      deleteDoc(viewerRef).catch(() => {});
-      // Decrement count
-      const currentCount = viewerCounts[productId] || 1;
-      if (currentCount > 0) {
-        setDoc(countRef, {
-          count: Math.max(0, currentCount - 1),
-          lastUpdated: serverTimestamp(),
-        }, { merge: true }).catch(() => {});
-      }
-    };
-
-    // Cleanup on page unload
-    window.addEventListener("beforeunload", cleanup);
+    heartbeatIntervalsRef.current[productId] = heartbeatInterval;
 
     return () => {
-      cleanup();
-      window.removeEventListener("beforeunload", cleanup);
+      cleanupViewer(productId);
     };
-  }, [trackedProducts, sessionId, viewerCounts]);
+  }, [trackedProducts, sessionId, cleanupViewer]);
 
   const untrackProductView = useCallback((productId: string) => {
     if (!trackedProducts.has(productId)) return;
-    
-    setTrackedProducts(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(productId);
-      return newSet;
-    });
-
-    // Remove viewer
-    const viewerRef = doc(db, "productViewers", productId, "viewers", sessionId);
-    deleteDoc(viewerRef).catch(() => {});
-
-    // Decrement count
-    const countRef = doc(db, "productViewers", productId);
-    const currentCount = viewerCounts[productId] || 1;
-    if (currentCount > 0) {
-      setDoc(countRef, {
-        count: Math.max(0, currentCount - 1),
-        lastUpdated: serverTimestamp(),
-      }, { merge: true }).catch(() => {});
-    }
-  }, [trackedProducts, sessionId, viewerCounts]);
+    cleanupViewer(productId);
+  }, [trackedProducts, cleanupViewer]);
 
   const getViewerCount = useCallback((productId: string): number => {
     return viewerCounts[productId] || 0;

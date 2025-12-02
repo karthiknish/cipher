@@ -106,21 +106,14 @@ export default function Shop() {
         </AnimatePresence>
 
         {/* Product Grid */}
-        <motion.div 
-          layout
+        <div 
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-10 md:gap-y-16"
         >
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                key={product.id}
-                className="group"
-              >
+          {filteredProducts.map((product) => (
+            <div
+              key={product.id}
+              className="group"
+            >
                 <Link href={`/shop/${product.id}`} className="block">
                   <div className="relative aspect-[3/4] mb-4 overflow-hidden bg-gray-100">
                     <Image
@@ -157,10 +150,9 @@ export default function Shop() {
                   <h3 className="text-sm font-medium mb-1 group-hover:underline underline-offset-4">{product.name}</h3>
                   <p className="text-sm text-gray-500">${product.price}</p>
                 </Link>
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
-        </motion.div>
+        </div>
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-20">
