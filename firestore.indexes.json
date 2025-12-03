@@ -57,6 +57,14 @@
       ]
     },
     {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "productId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "stockNotifications",
       "queryScope": "COLLECTION",
       "fields": [
@@ -78,6 +86,22 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "abandonedCarts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recovered", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "influencerSales",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "influencerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],

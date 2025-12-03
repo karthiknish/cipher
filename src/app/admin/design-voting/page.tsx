@@ -1,14 +1,14 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useDesignVoting } from "@/context/DesignVotingContext";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash, Eye, Calendar, Trophy, SpinnerGap, Sparkle, X } from "@phosphor-icons/react";
+import { ArrowLeft, Image as ImageIcon, Trash, Eye, Calendar, Trophy, SpinnerGap, Sparkle, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { uploadImage, generateImagePath } from "@/lib/uploadImage";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function AdminDesignVotingPage() {
   const { user, userRole } = useAuth();
@@ -32,11 +32,7 @@ export default function AdminDesignVotingPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewTab, setPreviewTab] = useState<"A" | "B">("A");
-  const [uploadingA, setUploadingA] = useState(false);
-  const [uploadingB, setUploadingB] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
-  const fileInputARef = useRef<HTMLInputElement>(null);
-  const fileInputBRef = useRef<HTMLInputElement>(null);
 
   if (!user || !userRole?.isAdmin) {
     return (
@@ -152,33 +148,6 @@ export default function AdminDesignVotingPage() {
     }
   };
 
-  const handleImageUpload = async (file: File, design: "A" | "B") => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    const setUploading = design === "A" ? setUploadingA : setUploadingB;
-    setUploading(true);
-
-    try {
-      const path = generateImagePath("design-contests", file.name);
-      const url = await uploadImage(file, path);
-      
-      if (design === "A") {
-        setFormData(prev => ({ ...prev, designAImage: url }));
-      } else {
-        setFormData(prev => ({ ...prev, designBImage: url }));
-      }
-      toast.success(`Design ${design} image uploaded`);
-    } catch (error) {
-      toast.error("Failed to upload image");
-      console.error(error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleAIFill = async () => {
     if (!formData.designAImage && !formData.designBImage) {
       toast.error("Please upload at least one design image first");
@@ -217,14 +186,6 @@ export default function AdminDesignVotingPage() {
       console.error(error);
     } finally {
       setGeneratingAI(false);
-    }
-  };
-
-  const removeImage = (design: "A" | "B") => {
-    if (design === "A") {
-      setFormData(prev => ({ ...prev, designAImage: "" }));
-    } else {
-      setFormData(prev => ({ ...prev, designBImage: "" }));
     }
   };
 
@@ -522,50 +483,13 @@ export default function AdminDesignVotingPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
-                      <input
-                        ref={fileInputARef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file, "A");
-                        }}
-                        className="hidden"
+                      <ImageUploader
+                        value={formData.designAImage}
+                        onChange={(url) => setFormData({ ...formData, designAImage: url })}
+                        folder="design-contests"
+                        aspectRatio="1/1"
+                        label="Upload Design A"
                       />
-                      {formData.designAImage ? (
-                        <div className="aspect-square relative bg-white border border-gray-200 group">
-                          <Image
-                            src={formData.designAImage}
-                            alt="Design A Preview"
-                            fill
-                            className="object-cover"
-                          />
-                          <button
-                            onClick={() => removeImage("A")}
-                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => fileInputARef.current?.click()}
-                          disabled={uploadingA}
-                          className="w-full aspect-square border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors disabled:opacity-50"
-                        >
-                          {uploadingA ? (
-                            <>
-                              <SpinnerGap className="w-8 h-8 text-gray-400 animate-spin" />
-                              <span className="text-xs text-gray-500">Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-8 h-8 text-gray-400" />
-                              <span className="text-xs text-gray-500">Click to upload</span>
-                            </>
-                          )}
-                        </button>
-                      )}
                     </div>
                   </div>
 
@@ -593,50 +517,13 @@ export default function AdminDesignVotingPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
-                      <input
-                        ref={fileInputBRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file, "B");
-                        }}
-                        className="hidden"
+                      <ImageUploader
+                        value={formData.designBImage}
+                        onChange={(url) => setFormData({ ...formData, designBImage: url })}
+                        folder="design-contests"
+                        aspectRatio="1/1"
+                        label="Upload Design B"
                       />
-                      {formData.designBImage ? (
-                        <div className="aspect-square relative bg-white border border-gray-200 group">
-                          <Image
-                            src={formData.designBImage}
-                            alt="Design B Preview"
-                            fill
-                            className="object-cover"
-                          />
-                          <button
-                            onClick={() => removeImage("B")}
-                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => fileInputBRef.current?.click()}
-                          disabled={uploadingB}
-                          className="w-full aspect-square border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors disabled:opacity-50"
-                        >
-                          {uploadingB ? (
-                            <>
-                              <SpinnerGap className="w-8 h-8 text-gray-400 animate-spin" />
-                              <span className="text-xs text-gray-500">Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-8 h-8 text-gray-400" />
-                              <span className="text-xs text-gray-500">Click to upload</span>
-                            </>
-                          )}
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

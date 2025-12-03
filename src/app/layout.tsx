@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -18,9 +18,90 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cipher.store";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
+
 export const metadata: Metadata = {
-  title: "Cipher | Streetwear",
-  description: "Premium Streetwear & Virtual Try-On",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "CIPHER | Premium Streetwear & Urban Fashion",
+    template: "%s | CIPHER",
+  },
+  description: "Discover premium streetwear with AI-powered virtual try-on. Shop hoodies, tees, outerwear & accessories. Free shipping on orders over $100.",
+  keywords: [
+    "streetwear",
+    "urban fashion",
+    "hoodies",
+    "tees",
+    "outerwear",
+    "virtual try-on",
+    "premium clothing",
+    "street style",
+    "fashion",
+    "cipher",
+  ],
+  authors: [{ name: "CIPHER", url: siteUrl }],
+  creator: "CIPHER",
+  publisher: "CIPHER",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    siteName: "CIPHER",
+    title: "CIPHER | Premium Streetwear & Urban Fashion",
+    description: "Discover premium streetwear with AI-powered virtual try-on. Shop hoodies, tees, outerwear & accessories.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "CIPHER - Premium Streetwear",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CIPHER | Premium Streetwear & Urban Fashion",
+    description: "Discover premium streetwear with AI-powered virtual try-on.",
+    images: ["/og-image.png"],
+    creator: "@cipher",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180" },
+    ],
+  },
+  manifest: "/manifest.json",
+  category: "fashion",
 };
 
 export default function RootLayout({

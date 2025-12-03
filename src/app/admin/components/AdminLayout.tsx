@@ -30,7 +30,7 @@ export type AdminTab =
   | "inventory" 
   | "pricing" 
   | "influencers" 
-  | "analytics" 
+  | "analytics"
   | "reviews" 
   | "loyalty"
   | "challenges"
