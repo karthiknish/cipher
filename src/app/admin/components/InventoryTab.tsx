@@ -42,12 +42,12 @@ export function InventoryTab({
     <div className="space-y-8">
       {/* Alert Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-red-50 border border-red-200 p-6">
-          <Warning className="w-5 h-5 text-red-500 mb-2" />
-          <p className="text-2xl font-medium text-red-700">
+        <div className="bg-rose-50 border border-rose-200 p-6">
+          <Warning className="w-5 h-5 text-rose-500 mb-2" />
+          <p className="text-2xl font-medium text-rose-700">
             {inventoryForecast.filter(i => i.daysUntilStockout < 7).length}
           </p>
-          <p className="text-xs text-red-600 tracking-wider">CRITICAL (&lt;7 DAYS)</p>
+          <p className="text-xs text-rose-600 tracking-wider">CRITICAL (&lt;7 DAYS)</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 p-6">
           <Clock className="w-5 h-5 text-amber-500 mb-2" />
@@ -56,19 +56,19 @@ export function InventoryTab({
           </p>
           <p className="text-xs text-amber-600 tracking-wider">LOW STOCK (7-14 DAYS)</p>
         </div>
-        <div className="bg-green-50 border border-green-200 p-6">
-          <CheckCircle className="w-5 h-5 text-green-500 mb-2" />
-          <p className="text-2xl font-medium text-green-700">
+        <div className="bg-emerald-50 border border-emerald-200 p-6">
+          <CheckCircle className="w-5 h-5 text-emerald-500 mb-2" />
+          <p className="text-2xl font-medium text-emerald-700">
             {inventoryForecast.filter(i => i.daysUntilStockout >= 14).length}
           </p>
-          <p className="text-xs text-green-600 tracking-wider">HEALTHY STOCK</p>
+          <p className="text-xs text-emerald-600 tracking-wider">HEALTHY STOCK</p>
         </div>
-        <div className="bg-blue-50 border border-blue-200 p-6">
-          <TrendUp className="w-5 h-5 text-blue-500 mb-2" />
-          <p className="text-2xl font-medium text-blue-700">
+        <div className="bg-sky-50 border border-sky-200 p-6">
+          <TrendUp className="w-5 h-5 text-sky-500 mb-2" />
+          <p className="text-2xl font-medium text-sky-700">
             {inventoryForecast.filter(i => i.trend === "up").length}
           </p>
-          <p className="text-xs text-blue-600 tracking-wider">TRENDING UP</p>
+          <p className="text-xs text-sky-600 tracking-wider">TRENDING UP</p>
         </div>
       </div>
 
@@ -119,11 +119,11 @@ export function InventoryTab({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {inventoryForecast.map((item) => {
-                let statusColor = "bg-green-100 text-green-800";
+                let statusColor = "bg-emerald-100 text-emerald-800";
                 let statusText = "HEALTHY";
                 
                 if (item.daysUntilStockout < 7) {
-                  statusColor = "bg-red-100 text-red-800";
+                  statusColor = "bg-rose-100 text-rose-800";
                   statusText = "CRITICAL";
                 } else if (item.daysUntilStockout < 14) {
                   statusColor = "bg-amber-100 text-amber-800";
@@ -181,7 +181,7 @@ export function InventoryTab({
                     <td className="py-4 px-6">{item.avgDailySales.toFixed(1)}</td>
                     <td className="py-4 px-6">
                       <span className={`font-medium ${
-                        item.daysUntilStockout < 7 ? "text-red-600" : 
+                        item.daysUntilStockout < 7 ? "text-rose-600" : 
                         item.daysUntilStockout < 14 ? "text-amber-600" : ""
                       }`}>
                         {item.daysUntilStockout > 100 ? "100+" : item.daysUntilStockout}d
@@ -191,20 +191,20 @@ export function InventoryTab({
                       <div className="flex items-center gap-1">
                         {item.trend === "up" && (
                           <>
-                            <TrendUp className="w-4 h-4 text-green-500" />
-                            <span className="text-xs text-green-600">Up</span>
+                            <TrendUp className="w-4 h-4 text-emerald-500" />
+                            <span className="text-xs text-emerald-600">Up</span>
                           </>
                         )}
                         {item.trend === "down" && (
                           <>
-                            <TrendDown className="w-4 h-4 text-red-500" />
-                            <span className="text-xs text-red-600">Down</span>
+                            <TrendDown className="w-4 h-4 text-rose-500" />
+                            <span className="text-xs text-rose-600">Down</span>
                           </>
                         )}
                         {item.trend === "stable" && (
                           <>
-                            <Pulse className="w-4 h-4 text-gray-400" />
-                            <span className="text-xs text-gray-500">Stable</span>
+                            <Pulse className="w-4 h-4 text-slate-400" />
+                            <span className="text-xs text-slate-500">Stable</span>
                           </>
                         )}
                       </div>
@@ -228,7 +228,7 @@ export function InventoryTab({
                           <button
                             onClick={() => onRestock(item.product.id)}
                             disabled={updatingStock || !restockInput}
-                            className="text-xs bg-green-600 text-white px-2 py-1 hover:bg-green-700 disabled:opacity-50"
+                            className="text-xs bg-emerald-600 text-white px-2 py-1 hover:bg-emerald-700 disabled:opacity-50"
                           >
                             ADD
                           </button>
@@ -271,10 +271,10 @@ export function InventoryTab({
               ? Math.min(100, categoryItems.reduce((sum, i) => sum + i.daysUntilStockout, 0) / categoryItems.length)
               : 100;
             
-            let barColor = "bg-green-500";
-            if (avgDaysLeft < 7) barColor = "bg-red-500";
+            let barColor = "bg-emerald-500";
+            if (avgDaysLeft < 7) barColor = "bg-rose-500";
             else if (avgDaysLeft < 14) barColor = "bg-amber-500";
-            else if (avgDaysLeft < 30) barColor = "bg-blue-500";
+            else if (avgDaysLeft < 30) barColor = "bg-sky-500";
 
             return (
               <div key={category}>

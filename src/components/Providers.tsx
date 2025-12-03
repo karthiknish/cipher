@@ -24,6 +24,10 @@ import { MoodStyleProvider } from "@/context/MoodStyleContext";
 import { InfluencerProvider } from "@/context/InfluencerContext";
 import { AnalyticsProvider } from "@/context/AnalyticsContext";
 import { LoyaltyProvider } from "@/context/LoyaltyContext";
+import { StyleChallengeProvider } from "@/context/StyleChallengeContext";
+import { AchievementProvider } from "@/context/AchievementContext";
+import { BlogProvider } from "@/context/BlogContext";
+import { SpinWheelProvider } from "@/context/SpinWheelContext";
 import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -53,7 +57,15 @@ export function Providers({ children }: { children: ReactNode }) {
                                                 <MoodStyleProvider>
                                                   <InfluencerProvider>
                                                     <LoyaltyProvider>
-                                                      {children}
+                                                      <StyleChallengeProvider>
+                                                        <AchievementProvider>
+                                                          <BlogProvider>
+                                                            <SpinWheelProvider>
+                                                              {children}
+                                                            </SpinWheelProvider>
+                                                          </BlogProvider>
+                                                        </AchievementProvider>
+                                                      </StyleChallengeProvider>
                                                     </LoyaltyProvider>
                                                   </InfluencerProvider>
                                                 </MoodStyleProvider>

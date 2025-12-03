@@ -1,13 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useDesignVoting } from "@/context/DesignVotingContext";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Upload, Image as ImageIcon, Trash, Eye, Calendar, Trophy } from "@phosphor-icons/react";
+import { ArrowLeft, Upload, Image as ImageIcon, Trash, Eye, Calendar, Trophy, SpinnerGap, Sparkle, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { uploadImage, generateImagePath } from "@/lib/uploadImage";
 
 export default function AdminDesignVotingPage() {
   const { user, userRole } = useAuth();
@@ -31,6 +32,11 @@ export default function AdminDesignVotingPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewTab, setPreviewTab] = useState<"A" | "B">("A");
+  const [uploadingA, setUploadingA] = useState(false);
+  const [uploadingB, setUploadingB] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const fileInputARef = useRef<HTMLInputElement>(null);
+  const fileInputBRef = useRef<HTMLInputElement>(null);
 
   if (!user || !userRole?.isAdmin) {
     return (
@@ -143,6 +149,82 @@ export default function AdminDesignVotingPage() {
       case "active": return "bg-green-100 text-green-800";
       case "closed": return "bg-gray-100 text-gray-800";
       default: return "bg-yellow-100 text-yellow-800";
+    }
+  };
+
+  const handleImageUpload = async (file: File, design: "A" | "B") => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    const setUploading = design === "A" ? setUploadingA : setUploadingB;
+    setUploading(true);
+
+    try {
+      const path = generateImagePath("design-contests", file.name);
+      const url = await uploadImage(file, path);
+      
+      if (design === "A") {
+        setFormData(prev => ({ ...prev, designAImage: url }));
+      } else {
+        setFormData(prev => ({ ...prev, designBImage: url }));
+      }
+      toast.success(`Design ${design} image uploaded`);
+    } catch (error) {
+      toast.error("Failed to upload image");
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAIFill = async () => {
+    if (!formData.designAImage && !formData.designBImage) {
+      toast.error("Please upload at least one design image first");
+      return;
+    }
+
+    setGeneratingAI(true);
+    try {
+      const response = await fetch("/api/generate-design-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hasDesignA: !!formData.designAImage,
+          hasDesignB: !!formData.designBImage,
+          existingTitle: formData.title,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate details");
+
+      const data = await response.json();
+      
+      setFormData(prev => ({
+        ...prev,
+        title: data.contestTitle || prev.title,
+        description: data.contestDescription || prev.description,
+        designATitle: data.designATitle || prev.designATitle,
+        designADescription: data.designADescription || prev.designADescription,
+        designBTitle: data.designBTitle || prev.designBTitle,
+        designBDescription: data.designBDescription || prev.designBDescription,
+      }));
+
+      toast.success("AI filled design details!");
+    } catch (error) {
+      toast.error("Failed to generate AI details");
+      console.error(error);
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  const removeImage = (design: "A" | "B") => {
+    if (design === "A") {
+      setFormData(prev => ({ ...prev, designAImage: "" }));
+    } else {
+      setFormData(prev => ({ ...prev, designBImage: "" }));
     }
   };
 
@@ -439,28 +521,52 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Image URL *</label>
+                      <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
                       <input
-                        type="url"
-                        value={formData.designAImage}
-                        onChange={(e) => setFormData({ ...formData, designAImage: e.target.value })}
-                        className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black bg-white"
-                        placeholder="https://..."
+                        ref={fileInputARef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, "A");
+                        }}
+                        className="hidden"
                       />
+                      {formData.designAImage ? (
+                        <div className="aspect-square relative bg-white border border-gray-200 group">
+                          <Image
+                            src={formData.designAImage}
+                            alt="Design A Preview"
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            onClick={() => removeImage("A")}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => fileInputARef.current?.click()}
+                          disabled={uploadingA}
+                          className="w-full aspect-square border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors disabled:opacity-50"
+                        >
+                          {uploadingA ? (
+                            <>
+                              <SpinnerGap className="w-8 h-8 text-gray-400 animate-spin" />
+                              <span className="text-xs text-gray-500">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-8 h-8 text-gray-400" />
+                              <span className="text-xs text-gray-500">Click to upload</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
-                    {formData.designAImage && (
-                      <div className="aspect-square relative bg-white border border-gray-200">
-                        <Image
-                          src={formData.designAImage}
-                          alt="Design A Preview"
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
 
                   {/* Design B */}
@@ -486,50 +592,93 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Image URL *</label>
+                      <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
                       <input
-                        type="url"
-                        value={formData.designBImage}
-                        onChange={(e) => setFormData({ ...formData, designBImage: e.target.value })}
-                        className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black bg-white"
-                        placeholder="https://..."
+                        ref={fileInputBRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, "B");
+                        }}
+                        className="hidden"
                       />
+                      {formData.designBImage ? (
+                        <div className="aspect-square relative bg-white border border-gray-200 group">
+                          <Image
+                            src={formData.designBImage}
+                            alt="Design B Preview"
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            onClick={() => removeImage("B")}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => fileInputBRef.current?.click()}
+                          disabled={uploadingB}
+                          className="w-full aspect-square border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors disabled:opacity-50"
+                        >
+                          {uploadingB ? (
+                            <>
+                              <SpinnerGap className="w-8 h-8 text-gray-400 animate-spin" />
+                              <span className="text-xs text-gray-500">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-8 h-8 text-gray-400" />
+                              <span className="text-xs text-gray-500">Click to upload</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
-                    {formData.designBImage && (
-                      <div className="aspect-square relative bg-white border border-gray-200">
-                        <Image
-                          src={formData.designBImage}
-                          alt="Design B Preview"
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-gray-100 flex justify-end gap-4 sticky bottom-0 bg-white">
+              <div className="p-6 border-t border-gray-100 flex justify-between items-center sticky bottom-0 bg-white">
                 <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                  className="px-6 py-2.5 text-xs tracking-wider border border-gray-200 hover:border-gray-400 transition-colors"
+                  onClick={handleAIFill}
+                  disabled={generatingAI || (!formData.designAImage && !formData.designBImage)}
+                  className="px-4 py-2.5 text-xs tracking-wider border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  CANCEL
+                  {generatingAI ? (
+                    <>
+                      <SpinnerGap className="w-4 h-4 animate-spin" />
+                      GENERATING...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkle className="w-4 h-4" weight="fill" />
+                      AI FILL DETAILS
+                    </>
+                  )}
                 </button>
-                <button
-                  onClick={handleCreateContest}
-                  disabled={isSubmitting}
-                  className="px-6 py-2.5 text-xs tracking-wider bg-black text-white hover:bg-gray-900 transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? "CREATING..." : "CREATE CONTEST"}
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      resetForm();
+                    }}
+                    className="px-6 py-2.5 text-xs tracking-wider border border-gray-200 hover:border-gray-400 transition-colors"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={handleCreateContest}
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 text-xs tracking-wider bg-black text-white hover:bg-gray-900 transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? "CREATING..." : "CREATE CONTEST"}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

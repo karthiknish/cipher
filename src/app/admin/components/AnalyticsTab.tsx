@@ -283,25 +283,25 @@ export function AnalyticsTab() {
       label: "Page Views",
       value: data.pageViews.toLocaleString(),
       icon: Eye,
-      color: "bg-blue-100 text-blue-700",
+      color: "bg-sky-100 text-sky-700",
     },
     {
       label: "Unique Visitors",
       value: data.uniqueVisitors.toLocaleString(),
       icon: Users,
-      color: "bg-green-100 text-green-700",
+      color: "bg-violet-100 text-violet-700",
     },
     {
       label: "Sessions",
       value: data.sessions.toLocaleString(),
       icon: Globe,
-      color: "bg-purple-100 text-purple-700",
+      color: "bg-slate-100 text-slate-700",
     },
     {
       label: "Bounce Rate",
       value: `${data.bounceRate}%`,
       icon: data.bounceRate > 50 ? TrendDown : TrendUp,
-      color: data.bounceRate > 50 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
+      color: data.bounceRate > 50 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700",
     },
     {
       label: "Avg. Session",
@@ -395,7 +395,7 @@ export function AnalyticsTab() {
                     initial={{ width: 0 }}
                     animate={{ width: `${step.rate}%` }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-end pr-2"
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-sky-500 to-violet-500 flex items-center justify-end pr-2"
                   >
                     {step.rate > 10 && (
                       <span className="text-xs text-white font-medium">{step.rate}%</span>
@@ -496,7 +496,7 @@ export function AnalyticsTab() {
                   <div className="flex-1 min-w-0 flex items-center gap-2">
                     <p className="text-sm truncate">{search.query}</p>
                     {!search.hasResults && (
-                      <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-xs rounded">
+                      <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 text-xs rounded">
                         No results
                       </span>
                     )}
@@ -513,21 +513,21 @@ export function AnalyticsTab() {
       {data?.recentErrors && data.recentErrors.length > 0 && (
         <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Warning className="w-5 h-5 text-red-500" />
+            <Warning className="w-5 h-5 text-rose-500" />
             <h3 className="font-medium">Recent Errors</h3>
-            <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
+            <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-xs rounded-full">
               {data.recentErrors.reduce((sum, e) => sum + e.count, 0)} total
             </span>
           </div>
           <div className="space-y-3">
             {data.recentErrors.map((error, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded">
-                <Warning className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <div key={i} className="flex items-start gap-3 p-3 bg-rose-50 border border-rose-100 rounded">
+                <Warning className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-red-700 truncate">{error.error}</p>
-                  <p className="text-xs text-red-500">{error.path}</p>
+                  <p className="text-sm font-medium text-rose-700 truncate">{error.error}</p>
+                  <p className="text-xs text-rose-500">{error.path}</p>
                 </div>
-                <span className="text-sm font-medium text-red-600">{error.count}x</span>
+                <span className="text-sm font-medium text-rose-600">{error.count}x</span>
               </div>
             ))}
           </div>

@@ -110,9 +110,9 @@ export default function Navbar() {
   const navLinks = [
     { href: "/shop", label: "SHOP" },
     { href: "/bundles", label: "BUNDLES" },
+    { href: "/challenges", label: "CHALLENGES" },
     { href: "/creators", label: "CREATORS" },
     { href: "/vote", label: "VOTE" },
-    { href: "/contact", label: "CONTACT" },
   ];
 
   const handleSignOut = async () => {

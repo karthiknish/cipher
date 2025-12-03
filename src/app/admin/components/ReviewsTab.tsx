@@ -86,19 +86,19 @@ function ReviewDetailModal({
               <div className="flex items-center gap-3 mb-2">
                 <StarRating rating={review.rating} />
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  review.status === "approved" ? "bg-green-100 text-green-700" :
-                  review.status === "rejected" ? "bg-red-100 text-red-700" :
-                  "bg-yellow-100 text-yellow-700"
+                  review.status === "approved" ? "bg-emerald-100 text-emerald-700" :
+                  review.status === "rejected" ? "bg-rose-100 text-rose-700" :
+                  "bg-amber-100 text-amber-700"
                 }`}>
                   {review.status || "approved"}
                 </span>
                 {review.verifiedPurchase && (
-                  <span className="flex items-center gap-1 text-xs text-green-600">
+                  <span className="flex items-center gap-1 text-xs text-emerald-600">
                     <CheckCircle weight="fill" className="w-3 h-3" /> Verified
                   </span>
                 )}
                 {review.featured && (
-                  <span className="flex items-center gap-1 text-xs text-purple-600">
+                  <span className="flex items-center gap-1 text-xs text-violet-600">
                     <Star weight="fill" className="w-3 h-3" /> Featured
                   </span>
                 )}
@@ -151,8 +151,8 @@ function ReviewDetailModal({
 
           {/* Stats */}
           <div className="flex gap-4 text-sm">
-            <span className="text-green-600">👍 {review.helpful} helpful</span>
-            <span className="text-red-500">👎 {review.notHelpful || 0} not helpful</span>
+            <span className="text-emerald-600">👍 {review.helpful} helpful</span>
+            <span className="text-rose-500">👎 {review.notHelpful || 0} not helpful</span>
           </div>
 
           {/* Admin Reply */}
@@ -169,7 +169,7 @@ function ReviewDetailModal({
                     setIsSubmitting(false);
                   }}
                   disabled={isSubmitting}
-                  className="text-red-500 hover:text-red-700 text-xs"
+                  className="text-rose-500 hover:text-rose-700 text-xs"
                 >
                   Delete Reply
                 </button>
@@ -229,7 +229,7 @@ function ReviewDetailModal({
                 setIsSubmitting(false);
               }}
               disabled={isSubmitting}
-              className="px-4 py-2 bg-green-600 text-white text-sm hover:bg-green-700 flex items-center gap-2"
+              className="px-4 py-2 bg-emerald-600 text-white text-sm hover:bg-emerald-700 flex items-center gap-2"
             >
               <CheckCircle className="w-4 h-4" /> Approve
             </button>
@@ -242,7 +242,7 @@ function ReviewDetailModal({
                 setIsSubmitting(false);
               }}
               disabled={isSubmitting}
-              className="px-4 py-2 bg-red-600 text-white text-sm hover:bg-red-700 flex items-center gap-2"
+              className="px-4 py-2 bg-rose-600 text-white text-sm hover:bg-rose-700 flex items-center gap-2"
             >
               <XCircle className="w-4 h-4" /> Reject
             </button>
@@ -256,7 +256,7 @@ function ReviewDetailModal({
             disabled={isSubmitting}
             className={`px-4 py-2 text-sm flex items-center gap-2 ${
               review.featured 
-                ? "bg-purple-100 text-purple-700 hover:bg-purple-200" 
+                ? "bg-violet-100 text-violet-700 hover:bg-violet-200" 
                 : "border border-gray-200 hover:border-gray-400"
             }`}
           >
@@ -273,7 +273,7 @@ function ReviewDetailModal({
               }
             }}
             disabled={isSubmitting}
-            className="px-4 py-2 text-red-600 border border-red-200 text-sm hover:bg-red-50 flex items-center gap-2"
+            className="px-4 py-2 text-rose-600 border border-rose-200 text-sm hover:bg-rose-50 flex items-center gap-2"
           >
             <Trash className="w-4 h-4" /> Delete
           </button>
@@ -433,19 +433,19 @@ export function ReviewsTab() {
           <p className="text-xs text-gray-500 tracking-wider">TOTAL REVIEWS</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-200">
-          <p className="text-3xl font-light text-yellow-600">{stats.pending}</p>
+          <p className="text-3xl font-light text-amber-600">{stats.pending}</p>
           <p className="text-xs text-gray-500 tracking-wider">PENDING</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-200">
-          <p className="text-3xl font-light text-green-600">{stats.approved}</p>
+          <p className="text-3xl font-light text-emerald-600">{stats.approved}</p>
           <p className="text-xs text-gray-500 tracking-wider">APPROVED</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-200">
-          <p className="text-3xl font-light text-red-600">{stats.rejected}</p>
+          <p className="text-3xl font-light text-rose-600">{stats.rejected}</p>
           <p className="text-xs text-gray-500 tracking-wider">REJECTED</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-200">
-          <p className="text-3xl font-light text-purple-600">{stats.featured}</p>
+          <p className="text-3xl font-light text-violet-600">{stats.featured}</p>
           <p className="text-xs text-gray-500 tracking-wider">FEATURED</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-gray-200">
@@ -544,17 +544,17 @@ export function ReviewsTab() {
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium truncate">{review.title}</h4>
                       <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
-                        (review.status || "approved") === "approved" ? "bg-green-100 text-green-700" :
-                        review.status === "rejected" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
+                        (review.status || "approved") === "approved" ? "bg-emerald-100 text-emerald-700" :
+                        review.status === "rejected" ? "bg-rose-100 text-rose-700" :
+                        "bg-amber-100 text-amber-700"
                       }`}>
                         {review.status || "approved"}
                       </span>
                       {review.verifiedPurchase && (
-                        <CheckCircle weight="fill" className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       )}
                       {review.featured && (
-                        <Star weight="fill" className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                        <Star weight="fill" className="w-4 h-4 text-violet-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">{review.comment}</p>

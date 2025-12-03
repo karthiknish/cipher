@@ -104,7 +104,7 @@ function AdjustPointsModal({
               <h2 className="text-xl font-light tracking-tight">Adjust Points</h2>
               <p className="text-sm text-gray-500 mt-1">User ID: {profile.userId.slice(0, 8)}...</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -113,21 +113,21 @@ function AdjustPointsModal({
         <div className="p-6 space-y-6">
           {success ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" weight="fill" />
+              <div className="w-16 h-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-black" weight="fill" />
               </div>
               <h3 className="text-lg font-medium">Points Adjusted!</h3>
             </div>
           ) : (
             <>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 p-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Current Balance</span>
                   <span className="font-medium">{profile.availablePoints.toLocaleString()} pts</span>
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-sm text-gray-500">After Adjustment</span>
-                  <span className={`font-medium ${points > 0 ? "text-green-600" : points < 0 ? "text-red-600" : ""}`}>
+                  <span className={`font-medium ${points > 0 ? "text-black" : points < 0 ? "text-gray-500" : ""}`}>
                     {Math.max(0, profile.availablePoints + points).toLocaleString()} pts
                   </span>
                 </div>
@@ -229,18 +229,15 @@ function MemberDetailsModal({
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: `${tierConfig.color}20` }}
-              >
-                <TierIcon className="w-6 h-6" style={{ color: tierConfig.color }} />
+              <div className="w-12 h-12 bg-gray-100 flex items-center justify-center">
+                <TierIcon className="w-6 h-6 text-gray-800" />
               </div>
               <div>
                 <h2 className="text-xl font-light tracking-tight">Member Profile</h2>
                 <p className="text-sm text-gray-500">{profile.userId.slice(0, 16)}...</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -249,39 +246,36 @@ function MemberDetailsModal({
         <div className="p-6 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4">
               <p className="text-xs text-gray-500 mb-1">CURRENT TIER</p>
               <p className="font-medium capitalize flex items-center gap-2">
                 {tierConfig.icon} {tierConfig.name}
               </p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4">
               <p className="text-xs text-gray-500 mb-1">AVAILABLE POINTS</p>
-              <p className="font-medium text-green-600">{profile.availablePoints.toLocaleString()}</p>
+              <p className="font-medium text-black">{profile.availablePoints.toLocaleString()}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4">
               <p className="text-xs text-gray-500 mb-1">LIFETIME POINTS</p>
               <p className="font-medium">{profile.lifetimePoints.toLocaleString()}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4">
               <p className="text-xs text-gray-500 mb-1">REFERRALS</p>
               <p className="font-medium">{profile.referralCount}</p>
             </div>
           </div>
 
           {/* Tier Progress */}
-          <div className="border border-gray-200 p-4 rounded-lg">
+          <div className="border border-gray-200 p-4">
             <div className="flex justify-between items-center mb-3">
               <h4 className="font-medium">Tier Progress</h4>
               <span className="text-sm text-gray-500">{profile.tierProgress}%</span>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-200 overflow-hidden">
               <div 
-                className="h-full rounded-full transition-all"
-                style={{ 
-                  width: `${profile.tierProgress}%`,
-                  backgroundColor: tierConfig.color 
-                }}
+                className="h-full bg-black transition-all"
+                style={{ width: `${profile.tierProgress}%` }}
               />
             </div>
             {profile.pointsToNextTier > 0 && (
@@ -292,7 +286,7 @@ function MemberDetailsModal({
           </div>
 
           {/* Recent Transactions */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 overflow-hidden">
             <div className="p-4 border-b border-gray-100 bg-gray-50">
               <h4 className="font-medium">Recent Transactions</h4>
             </div>
@@ -389,36 +383,36 @@ export function LoyaltyTab() {
   return (
     <div className="space-y-8">
       {/* Program Overview */}
-      <div className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 text-white p-6 rounded-xl">
+      <div className="bg-black text-white p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-medium flex items-center gap-2">
               <Crown className="w-5 h-5" />
               CIPHER Rewards Program
             </h3>
-            <p className="text-white/70 text-sm mt-1">Loyalty program overview and management</p>
+            <p className="text-white/60 text-sm mt-1">Loyalty program overview and management</p>
           </div>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white/10 backdrop-blur p-4 rounded-lg">
-            <p className="text-white/70 text-xs mb-1">TOTAL MEMBERS</p>
+          <div className="bg-white/10 p-4">
+            <p className="text-white/60 text-xs mb-1">TOTAL MEMBERS</p>
             <p className="text-3xl font-light">{stats.totalMembers}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur p-4 rounded-lg">
-            <p className="text-white/70 text-xs mb-1">POINTS ISSUED</p>
+          <div className="bg-white/10 p-4">
+            <p className="text-white/60 text-xs mb-1">POINTS ISSUED</p>
             <p className="text-3xl font-light">{stats.totalPointsIssued.toLocaleString()}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur p-4 rounded-lg">
-            <p className="text-white/70 text-xs mb-1">POINTS REDEEMED</p>
+          <div className="bg-white/10 p-4">
+            <p className="text-white/60 text-xs mb-1">POINTS REDEEMED</p>
             <p className="text-3xl font-light">{stats.totalPointsRedeemed.toLocaleString()}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur p-4 rounded-lg">
-            <p className="text-white/70 text-xs mb-1">REFERRALS</p>
+          <div className="bg-white/10 p-4">
+            <p className="text-white/60 text-xs mb-1">REFERRALS</p>
             <p className="text-3xl font-light">{stats.totalReferrals}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur p-4 rounded-lg">
-            <p className="text-white/70 text-xs mb-1">REDEMPTION RATE</p>
+          <div className="bg-white/10 p-4">
+            <p className="text-white/60 text-xs mb-1">REDEMPTION RATE</p>
             <p className="text-3xl font-light">
               {stats.totalPointsIssued > 0 
                 ? Math.round((stats.totalPointsRedeemed / stats.totalPointsIssued) * 100)
@@ -442,14 +436,11 @@ export function LoyaltyTab() {
               key={tier}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white border border-gray-200 p-4"
+              className="bg-white border border-gray-200 p-4 hover:border-black transition"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div 
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${config.color}20` }}
-                >
-                  <TierIcon className="w-5 h-5" style={{ color: config.color }} />
+                <div className="w-10 h-10 bg-gray-100 flex items-center justify-center">
+                  <TierIcon className="w-5 h-5 text-gray-800" />
                 </div>
                 <div>
                   <p className="font-medium capitalize">{config.name}</p>
@@ -460,10 +451,10 @@ export function LoyaltyTab() {
                 <p className="text-3xl font-light">{count}</p>
                 <p className="text-sm text-gray-500">{percentage}%</p>
               </div>
-              <div className="h-1 bg-gray-100 rounded-full mt-3 overflow-hidden">
+              <div className="h-1 bg-gray-200 mt-3 overflow-hidden">
                 <div 
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${percentage}%`, backgroundColor: config.color }}
+                  className="h-full bg-black transition-all"
+                  style={{ width: `${percentage}%` }}
                 />
               </div>
             </motion.div>
@@ -475,10 +466,12 @@ export function LoyaltyTab() {
       <div className="bg-white border border-gray-200">
         <button
           onClick={() => setExpandedSection(expandedSection === "benefits" ? null : "benefits")}
-          className="w-full p-6 border-b border-gray-100 flex items-center justify-between"
+          className="w-full p-6 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
         >
           <div className="flex items-center gap-3">
-            <Gift className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 bg-black flex items-center justify-center">
+              <Gift className="w-5 h-5 text-white" />
+            </div>
             <div className="text-left">
               <h3 className="font-medium">Tier Benefits</h3>
               <p className="text-xs text-gray-500 mt-1">What each tier offers</p>
@@ -501,7 +494,7 @@ export function LoyaltyTab() {
                     <tr>
                       <th className="text-left py-3 text-xs tracking-wider text-gray-500 font-medium">BENEFIT</th>
                       {(Object.keys(tierConfig) as LoyaltyTier[]).map(tier => (
-                        <th key={tier} className="text-center py-3 text-xs tracking-wider font-medium capitalize" style={{ color: tierConfig[tier].color }}>
+                        <th key={tier} className="text-center py-3 text-xs tracking-wider font-medium capitalize text-black">
                           {tierConfig[tier].icon} {tier}
                         </th>
                       ))}
@@ -632,12 +625,12 @@ export function LoyaltyTab() {
                     </td>
                     <td className="py-3 px-6">
                       <div className="flex items-center gap-2">
-                        <TierIcon className="w-4 h-4" style={{ color: config.color }} />
+                        <TierIcon className="w-4 h-4 text-gray-800" />
                         <span className="text-sm capitalize">{profile.currentTier}</span>
                       </div>
                     </td>
                     <td className="py-3 px-6">
-                      <span className="text-sm font-medium text-green-600">
+                      <span className="text-sm font-medium">
                         {profile.availablePoints.toLocaleString()}
                       </span>
                     </td>
@@ -657,7 +650,7 @@ export function LoyaltyTab() {
                             setSelectedProfile(profile);
                             setShowDetailsModal(true);
                           }}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black"
+                          className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                           title="View Details"
                         >
                           <ChartLineUp className="w-4 h-4" />
@@ -667,7 +660,7 @@ export function LoyaltyTab() {
                             setSelectedProfile(profile);
                             setShowAdjustModal(true);
                           }}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black"
+                          className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                           title="Adjust Points"
                         >
                           <PencilSimple className="w-4 h-4" />

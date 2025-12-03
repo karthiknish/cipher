@@ -50,27 +50,27 @@ export function AbandonedTab({
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 p-6">
-          <ShoppingCart className="w-5 h-5 text-red-500 mb-2" />
+        <div className="bg-white border border-gray-200 p-6 rounded-lg">
+          <ShoppingCart className="w-5 h-5 text-rose-500 mb-2" />
           <p className="text-2xl font-medium">{abandonedCartMetrics.total}</p>
           <p className="text-xs text-gray-500 tracking-wider">ABANDONED CARTS</p>
         </div>
-        <div className="bg-white border border-gray-200 p-6">
-          <CurrencyDollar className="w-5 h-5 text-red-500 mb-2" />
+        <div className="bg-white border border-gray-200 p-6 rounded-lg">
+          <CurrencyDollar className="w-5 h-5 text-amber-500 mb-2" />
           <p className="text-2xl font-medium">
             ${abandonedCartMetrics.potentialRevenue.toFixed(0)}
           </p>
           <p className="text-xs text-gray-500 tracking-wider">POTENTIAL REVENUE</p>
         </div>
-        <div className="bg-white border border-gray-200 p-6">
-          <Envelope className="w-5 h-5 text-blue-500 mb-2" />
+        <div className="bg-white border border-gray-200 p-6 rounded-lg">
+          <Envelope className="w-5 h-5 text-sky-500 mb-2" />
           <p className="text-2xl font-medium">
             {abandonedCartMetrics.remindersSent}
           </p>
           <p className="text-xs text-gray-500 tracking-wider">REMINDERS SENT</p>
         </div>
-        <div className="bg-white border border-gray-200 p-6">
-          <ArrowsClockwise className="w-5 h-5 text-green-500 mb-2" />
+        <div className="bg-white border border-gray-200 p-6 rounded-lg">
+          <ArrowsClockwise className="w-5 h-5 text-emerald-500 mb-2" />
           <p className="text-2xl font-medium">
             {abandonedCartMetrics.recovered}
           </p>
@@ -80,7 +80,7 @@ export function AbandonedTab({
 
       {/* Recovery Actions */}
       {abandonedCartMetrics.noReminders > 0 && (
-        <div className="bg-amber-50 border border-amber-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="bg-amber-50 border border-amber-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-lg">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-amber-100 flex items-center justify-center">
               <Target className="w-6 h-6 text-amber-600" />
@@ -109,9 +109,9 @@ export function AbandonedTab({
 
       {/* Hot Leads Banner */}
       {abandonedCartMetrics.hotLeads > 0 && (
-        <div className="bg-red-50 border border-red-200 p-4 flex items-center gap-3">
-          <Lightning className="w-5 h-5 text-red-500" />
-          <p className="text-sm text-red-700">
+        <div className="bg-rose-50 border border-rose-200 p-4 flex items-center gap-3 rounded-lg">
+          <Lightning className="w-5 h-5 text-rose-500" />
+          <p className="text-sm text-rose-700">
             <strong>{abandonedCartMetrics.hotLeads}</strong> hot leads abandoned their cart in the last 24 hours!
           </p>
         </div>
@@ -135,7 +135,7 @@ export function AbandonedTab({
                 key={cart.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-gray-200 p-6"
+                className="bg-white border border-gray-200 p-6 rounded-lg"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <div>
@@ -145,7 +145,7 @@ export function AbandonedTab({
                         {cart.email || <span className="text-gray-400 italic">No email</span>}
                       </p>
                       {isHotLead && (
-                        <span className="bg-red-100 text-red-700 text-xs px-2 py-0.5">HOT LEAD</span>
+                        <span className="bg-rose-100 text-rose-700 text-xs px-2 py-0.5">HOT LEAD</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
@@ -186,8 +186,8 @@ export function AbandonedTab({
 
                 <div className="flex flex-wrap gap-2">
                   {cart.items.map((item, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2">
-                      <div className="w-10 h-12 bg-gray-200 relative overflow-hidden">
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                      <div className="w-10 h-12 bg-gray-200 relative overflow-hidden rounded">
                         <Image src={item.image || "https://placehold.co/100x120/1a1a1a/ffffff?text=Item"} alt={item.name} fill className="object-cover" />
                       </div>
                       <div>
@@ -215,7 +215,7 @@ export function AbandonedTab({
             );
           })
         ) : (
-          <div className="text-center py-12 text-gray-500 border border-gray-200 bg-white">
+          <div className="text-center py-12 text-gray-500 border border-gray-200 bg-white rounded-lg">
             <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-30" />
             <p className="mb-2">No abandoned carts</p>
             <p className="text-xs text-gray-400">

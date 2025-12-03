@@ -227,29 +227,8 @@ export default function CreatorsLandingPage() {
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <p className="text-3xl md:text-4xl font-bold mb-1">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-24 px-6">
+      {/* Why Become a Creator - Bento Grid */}
+      <section className="py-24 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -265,117 +244,365 @@ export default function CreatorsLandingPage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Storefront,
-                title: "Personal Storefront",
-                description: "Get your own customizable shop at cipher.com/shop/creator/you with hand-picked products.",
-                gradient: "from-blue-500 to-cyan-400",
-              },
-              {
-                icon: Percent,
-                title: "High Commissions",
-                description: "Earn 10-18% on every sale through your storefront. Top creators earn thousands monthly.",
-                gradient: "from-green-500 to-emerald-400",
-              },
-              {
-                icon: ChartLineUp,
-                title: "Real-Time Analytics",
-                description: "Track clicks, conversions, and earnings with our comprehensive dashboard.",
-                gradient: "from-purple-500 to-violet-400",
-              },
-              {
-                icon: Lightning,
-                title: "Exclusive Access",
-                description: "Get early access to new drops, exclusive colorways, and limited edition pieces.",
-                gradient: "from-orange-500 to-amber-400",
-              },
-              {
-                icon: Broadcast,
-                title: "Live Shopping",
-                description: "Go live and showcase products to your audience in real-time with instant checkout.",
-                gradient: "from-pink-500 to-rose-400",
-              },
-              {
-                icon: Heart,
-                title: "Community",
-                description: "Join a community of like-minded creators, share tips, and grow together.",
-                gradient: "from-red-500 to-pink-400",
-              },
-              {
-                icon: Crown,
-                title: "VIP Treatment",
-                description: "Top creators get invited to exclusive events, photoshoots, and brand partnerships.",
-                gradient: "from-yellow-500 to-amber-400",
-              },
-              {
-                icon: Star,
-                title: "Recognition",
-                description: "Get featured on our homepage, social media, and marketing campaigns.",
-                gradient: "from-indigo-500 to-purple-400",
-              },
-            ].map((benefit, i) => (
-              <motion.div
-                key={benefit.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="group p-6 bg-gray-50 hover:bg-white hover:shadow-xl transition-all duration-300 border border-transparent hover:border-gray-200"
-              >
-                <div className={`w-12 h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <benefit.icon className="w-6 h-6 text-white" weight="bold" />
+          {/* Bento Grid Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4 auto-rows-[160px]">
+            
+            {/* Personal Storefront - Large Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="md:col-span-6 lg:col-span-8 row-span-2 bg-black text-white p-8 relative overflow-hidden group"
+            >
+              <div className="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <div className="w-14 h-14 bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Storefront className="w-7 h-7 text-white" weight="bold" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Personal Storefront</h3>
+                  <p className="text-white/60 text-sm max-w-md">Get your own customizable shop at cipher.com/shop/creator/you with hand-picked products that match your style.</p>
                 </div>
-                <h3 className="text-lg font-medium mb-2">{benefit.title}</h3>
-                <p className="text-sm text-gray-500">{benefit.description}</p>
-              </motion.div>
-            ))}
+                {/* Mini Storefront Preview */}
+                <div className="bg-white/10 backdrop-blur-sm p-4 mt-4 max-w-sm">
+                  <div className="flex items-center gap-3 mb-3 border-b border-white/10 pb-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-full" />
+                    <div className="h-2 w-24 bg-white/20 rounded" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="aspect-square bg-white/10" />
+                    <div className="aspect-square bg-white/10" />
+                    <div className="aspect-square bg-white/10" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* High Commissions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="md:col-span-3 lg:col-span-4 row-span-1 bg-gray-100 p-6 relative overflow-hidden group hover:bg-gray-200 transition-colors"
+            >
+              <div className="flex items-center justify-between h-full">
+                <div>
+                  <h3 className="text-lg font-bold mb-1">High Commissions</h3>
+                  <p className="text-gray-500 text-sm">Top creators earn thousands monthly</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-4xl font-bold">18%</p>
+                  <p className="text-xs text-gray-500">per sale</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Real-Time Analytics */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              className="md:col-span-3 lg:col-span-4 row-span-1 bg-gray-100 p-6 relative overflow-hidden group hover:bg-gray-200 transition-colors"
+            >
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ChartLineUp className="w-5 h-5 text-white" weight="bold" />
+                </div>
+                <h3 className="font-bold">Real-Time Analytics</h3>
+              </div>
+              <div className="flex items-end gap-1 h-10">
+                {[40, 65, 45, 80, 55, 90, 70, 85].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-black rounded-t"
+                    style={{ height: `${h}%`, opacity: 0.3 + (i * 0.08) }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Exclusive Access - Tall */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="md:col-span-3 lg:col-span-4 row-span-2 bg-black text-white p-8 relative overflow-hidden group"
+            >
+              <div className="h-full flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Lightning className="w-6 h-6 text-white" weight="bold" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Exclusive Access</h3>
+                  <p className="text-white/60 text-sm">Get early access to new drops, exclusive colorways, and limited edition pieces before anyone else.</p>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <span className="px-3 py-1 bg-white/10 text-xs">Early Drops</span>
+                  <span className="px-3 py-1 bg-white/10 text-xs">Limited Editions</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Live Shopping */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.25 }}
+              className="md:col-span-3 lg:col-span-4 row-span-1 bg-gray-100 p-6 relative overflow-hidden group hover:bg-gray-200 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-black flex items-center justify-center group-hover:scale-110 transition-transform relative">
+                  <Broadcast className="w-5 h-5 text-white" weight="bold" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-bold">Live Shopping</h3>
+                  <p className="text-gray-500 text-sm">Stream & sell in real-time with instant checkout</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Community */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="md:col-span-3 lg:col-span-4 row-span-1 bg-gray-100 p-6 relative overflow-hidden group hover:bg-gray-200 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Heart className="w-5 h-5 text-white" weight="bold" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">Creator Community</h3>
+                    <p className="text-gray-500 text-sm">Connect & grow together</p>
+                  </div>
+                </div>
+                <div className="flex -space-x-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-gray-100 flex items-center justify-center text-xs font-medium">
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* VIP Treatment - Wide */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.35 }}
+              className="md:col-span-6 lg:col-span-8 row-span-1 bg-black text-white p-6 relative overflow-hidden group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Crown className="w-6 h-6 text-white" weight="bold" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">VIP Treatment</h3>
+                    <p className="text-white/60 text-sm">Top creators get invited to exclusive events, photoshoots, and brand partnerships</p>
+                  </div>
+                </div>
+                <div className="hidden md:flex gap-3">
+                  <span className="px-3 py-1 bg-white/10 text-xs">Events</span>
+                  <span className="px-3 py-1 bg-white/10 text-xs">Photoshoots</span>
+                  <span className="px-3 py-1 bg-white/10 text-xs">Partnerships</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Recognition */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="md:col-span-3 lg:col-span-4 row-span-1 bg-gray-100 p-6 relative overflow-hidden group hover:bg-gray-200 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Star className="w-5 h-5 text-white" weight="bold" />
+                </div>
+                <div>
+                  <h3 className="font-bold">Get Featured</h3>
+                  <p className="text-gray-500 text-sm">Homepage, social media & marketing campaigns</p>
+                </div>
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 px-6 bg-black text-white">
-        <div className="max-w-7xl mx-auto">
+      {/* How It Works - Timeline Style */}
+      <section id="how-it-works" className="py-24 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
             <h2 className="text-4xl md:text-5xl font-light mb-4">
               How It <span className="font-bold">Works</span>
             </h2>
-            <p className="text-white/60 max-w-2xl mx-auto">
-              Get started in minutes. Start earning in days.
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              From application to earnings in just 4 simple steps
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-4 gap-8">
-            {STEPS.map((step, i) => (
+          {/* Timeline */}
+          <div className="relative">
+            {/* Vertical Line */}
+            <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-px bg-gray-300 md:-translate-x-px" />
+
+            {/* Steps */}
+            <div className="space-y-16">
+              {/* Step 1 */}
               <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative"
+                className="relative flex items-start gap-8 md:gap-16"
               >
-                {i < STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-10 left-1/2 w-full h-px bg-gradient-to-r from-white/30 to-transparent" />
-                )}
-                <div className="relative z-10 text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center">
-                    <step.icon className="w-8 h-8" />
+                <div className="hidden md:block md:w-1/2 text-right pr-16">
+                  <h3 className="text-2xl font-bold mb-2">Apply in Minutes</h3>
+                  <p className="text-gray-500">Share your social profiles and style preferences. No complex forms or lengthy requirements.</p>
+                </div>
+                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 w-16 h-16 bg-black text-white flex items-center justify-center text-xl font-bold z-10">
+                  1
+                </div>
+                <div className="pl-24 md:pl-0 md:w-1/2 md:text-left">
+                  <div className="md:hidden mb-4">
+                    <h3 className="text-2xl font-bold mb-2">Apply in Minutes</h3>
+                    <p className="text-gray-500">Share your social profiles and style preferences. No complex forms or lengthy requirements.</p>
                   </div>
-                  <div className="text-sm text-white/40 mb-2">Step {i + 1}</div>
-                  <h3 className="text-xl font-medium mb-3">{step.title}</h3>
-                  <p className="text-white/60 text-sm">{step.description}</p>
+                  <div className="bg-white p-4 border border-gray-200 inline-flex items-center gap-3">
+                    <Users className="w-6 h-6" weight="bold" />
+                    <span className="text-sm text-gray-500">Quick application form</span>
+                  </div>
                 </div>
               </motion.div>
-            ))}
+
+              {/* Step 2 */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative flex items-start gap-8 md:gap-16"
+              >
+                <div className="hidden md:block md:w-1/2 text-right pr-16">
+                  <div className="bg-white p-4 border border-gray-200 inline-flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6" weight="bold" />
+                    <span className="text-sm text-gray-500">2-3 business days</span>
+                  </div>
+                </div>
+                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 w-16 h-16 bg-black text-white flex items-center justify-center text-xl font-bold z-10">
+                  2
+                </div>
+                <div className="pl-24 md:pl-16 md:w-1/2">
+                  <h3 className="text-2xl font-bold mb-2">Get Approved</h3>
+                  <p className="text-gray-500">Our team reviews applications within 2-3 business days. You&apos;ll receive an email notification.</p>
+                  <div className="md:hidden mt-4 bg-white p-4 border border-gray-200 inline-flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6" weight="bold" />
+                    <span className="text-sm text-gray-500">2-3 business days</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 3 */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative flex items-start gap-8 md:gap-16"
+              >
+                <div className="hidden md:block md:w-1/2 text-right pr-16">
+                  <h3 className="text-2xl font-bold mb-2">Set Up Your Shop</h3>
+                  <p className="text-gray-500">Create your personalized storefront by curating your favorite CIPHER pieces.</p>
+                </div>
+                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 w-16 h-16 bg-black text-white flex items-center justify-center text-xl font-bold z-10">
+                  3
+                </div>
+                <div className="pl-24 md:pl-0 md:w-1/2 md:text-left">
+                  <div className="md:hidden mb-4">
+                    <h3 className="text-2xl font-bold mb-2">Set Up Your Shop</h3>
+                    <p className="text-gray-500">Create your personalized storefront by curating your favorite CIPHER pieces.</p>
+                  </div>
+                  <div className="bg-white p-4 border border-gray-200 max-w-xs">
+                    <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-2">
+                      <div className="w-6 h-6 bg-gray-200 rounded-full" />
+                      <div className="h-2 w-16 bg-gray-200 rounded" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="aspect-square bg-gray-100" />
+                      <div className="aspect-square bg-gray-100" />
+                      <div className="aspect-square bg-gray-100" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 4 */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative flex items-start gap-8 md:gap-16"
+              >
+                <div className="hidden md:block md:w-1/2 text-right pr-16">
+                  <div className="bg-black text-white p-4 inline-block">
+                    <p className="text-3xl font-bold">$5K-$15K</p>
+                    <p className="text-white/60 text-sm">monthly for top creators</p>
+                  </div>
+                </div>
+                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 w-16 h-16 bg-black text-white flex items-center justify-center text-xl font-bold z-10">
+                  4
+                </div>
+                <div className="pl-24 md:pl-16 md:w-1/2">
+                  <h3 className="text-2xl font-bold mb-2">Start Earning</h3>
+                  <p className="text-gray-500">Share your unique link, track sales in real-time, and earn commission on every purchase.</p>
+                  <div className="md:hidden mt-4 bg-black text-white p-4 inline-block">
+                    <p className="text-2xl font-bold">$5K-$15K</p>
+                    <p className="text-white/60 text-sm">monthly for top creators</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
+
+          {/* Stats Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-8 bg-white p-8 border border-gray-200"
+          >
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold">500+</p>
+              <p className="text-sm text-gray-500 mt-1">Active Creators</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold">$2M+</p>
+              <p className="text-sm text-gray-500 mt-1">Paid to Creators</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold">15%</p>
+              <p className="text-sm text-gray-500 mt-1">Avg. Commission</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold">50K+</p>
+              <p className="text-sm text-gray-500 mt-1">Products Sold</p>
+            </div>
+          </motion.div>
         </div>
       </section>
 

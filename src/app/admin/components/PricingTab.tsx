@@ -52,12 +52,12 @@ export function PricingTab({
   };
   
   const typeColors: Record<string, string> = {
-    flash_sale: "bg-red-100 text-red-700",
-    demand_surge: "bg-purple-100 text-purple-700",
+    flash_sale: "bg-rose-100 text-rose-700",
+    demand_surge: "bg-violet-100 text-violet-700",
     low_stock: "bg-amber-100 text-amber-700",
-    time_based: "bg-blue-100 text-blue-700",
-    bulk_discount: "bg-green-100 text-green-700",
-    happy_hour: "bg-pink-100 text-pink-700"
+    time_based: "bg-sky-100 text-sky-700",
+    bulk_discount: "bg-emerald-100 text-emerald-700",
+    happy_hour: "bg-violet-100 text-violet-700"
   };
 
   const handleCreateRule = async () => {
@@ -188,11 +188,11 @@ export function PricingTab({
                     </td>
                     <td className="p-4 text-sm">
                       {rule.discountPercent ? (
-                        <span className="text-green-600">-{rule.discountPercent}%</span>
+                        <span className="text-emerald-600">-{rule.discountPercent}%</span>
                       ) : rule.discountAmount ? (
-                        <span className="text-green-600">-${rule.discountAmount}</span>
+                        <span className="text-emerald-600">-${rule.discountAmount}</span>
                       ) : rule.multiplier ? (
-                        <span className={rule.multiplier > 1 ? "text-red-600" : "text-green-600"}>
+                        <span className={rule.multiplier > 1 ? "text-rose-600" : "text-emerald-600"}>
                           {rule.multiplier > 1 ? "+" : ""}{((rule.multiplier - 1) * 100).toFixed(0)}%
                         </span>
                       ) : "-"}
@@ -213,7 +213,7 @@ export function PricingTab({
                       <span className="text-gray-600">{rule.priority}</span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 text-xs rounded ${rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`px-2 py-1 text-xs rounded ${rule.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                         {rule.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -221,14 +221,14 @@ export function PricingTab({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onToggleRule(rule.id)}
-                          className={`p-1.5 rounded ${rule.isActive ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-green-50 text-green-600'}`}
+                          className={`p-1.5 rounded ${rule.isActive ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
                           title={rule.isActive ? "Deactivate" : "Activate"}
                         >
                           {rule.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </button>
                         <button
                           onClick={() => onDeleteRule(rule.id)}
-                          className="p-1.5 rounded hover:bg-red-50 text-red-600"
+                          className="p-1.5 rounded hover:bg-rose-50 text-rose-600"
                           title="Delete Rule"
                         >
                           <Trash className="w-4 h-4" />

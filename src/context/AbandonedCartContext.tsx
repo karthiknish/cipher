@@ -98,11 +98,18 @@ export const AbandonedCartProvider = ({ children }: { children: ReactNode }) => 
         
         // Check if user is admin
         const token = await user.getIdTokenResult();
-        setIsAdmin(token.claims.admin === true);
+        const adminStatus = token.claims.admin === true;
+        setIsAdmin(adminStatus);
+        
+        // If not admin, stop loading since we won't fetch carts
+        if (!adminStatus) {
+          setLoading(false);
+        }
       } else {
         setCurrentUserId(null);
         setCurrentEmail(null);
         setIsAdmin(false);
+        setLoading(false);
       }
     });
 

@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { db, collection, doc, setDoc, updateDoc, serverTimestamp, addDoc } from "@/lib/firebase";
 import { onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -75,6 +75,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
+  const allOrdersLoadedRef = useRef(false);
+  const tokenRefreshAttemptedRef = useRef(false);
 
   // Load orders from localStorage for non-Firebase mode
   const loadLocalOrders = (): Order[] => {
@@ -147,21 +149,33 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     checkFirebaseAndLoad();
   }, [user]);
 
-  const loadAllOrders = async () => {
+  const loadAllOrders = useCallback(async () => {
+    // Prevent multiple calls
+    if (allOrdersLoadedRef.current) {
+      return;
+    }
+    
     if (!isFirebaseConfigured) {
       // Load all from localStorage
       setAllOrders(loadLocalOrders());
+      allOrdersLoadedRef.current = true;
       return;
     }
 
-    // Force token refresh to get latest custom claims (admin role)
-    if (user) {
+    // Only attempt token refresh once per session to avoid infinite loop
+    if (user && !tokenRefreshAttemptedRef.current) {
+      tokenRefreshAttemptedRef.current = true;
       try {
         await user.getIdToken(true);
-      } catch {
-        console.warn("Failed to refresh token, continuing with cached token");
+      } catch (err) {
+        // Token refresh failed - likely expired refresh token
+        // Continue with cached token, user may need to re-login
+        console.warn("Token refresh failed. User may need to re-login.");
       }
     }
+
+    // Mark as loaded to prevent re-subscription
+    allOrdersLoadedRef.current = true;
 
     // Set up listener for all orders (admin)
     const ordersRef = collection(db, "orders");
@@ -185,7 +199,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     );
-  };
+  }, [isFirebaseConfigured, user]);
 
   const createOrder = async (orderData: Omit<Order, "id" | "createdAt" | "userId" | "userEmail">): Promise<string | null> => {
     if (!user) {

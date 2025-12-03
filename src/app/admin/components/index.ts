@@ -3,7 +3,7 @@ export * from "./Charts";
 export * from "./DashboardTab";
 export * from "./ProductsTab";
 export * from "./OrdersTab";
-export * from "./CustomersTab";
+export { CustomersTab } from "./customers";
 export * from "./AbandonedTab";
 export * from "./InventoryTab";
 export * from "./PricingTab";

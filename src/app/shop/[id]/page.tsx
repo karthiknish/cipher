@@ -22,7 +22,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Truck, ArrowsClockwise, ArrowLeft, SpinnerGap,
-  Check, Heart, Sparkle, Scales, Clock, Bell, Camera, TrendUp
+  Check, Heart, Sparkle, Scales, Clock, Bell, Camera, TrendUp, MagicWand,
+  ShareNetwork, XLogo, FacebookLogo, PinterestLogo, Link as LinkIcon, WhatsappLogo
 } from "@phosphor-icons/react";
 
 // Import modular components
@@ -80,6 +81,7 @@ export default function ProductPage() {
   const [sizeRecommendation, setSizeRecommendation] = useState<ReturnType<typeof getRecommendation>>(null);
   
   const [isTryOnOpen, setIsTryOnOpen] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   const product = getProduct(params.id as string);
   const inCompare = product ? isInCompare(product.id) : false;
@@ -301,6 +303,16 @@ export default function ProductPage() {
               <Scales className="w-5 h-5" />
             </button>
             
+            {/* Virtual Try-On Floating Button */}
+            <button
+              onClick={() => setIsTryOnOpen(true)}
+              className="absolute bottom-4 right-4 bg-black text-white px-4 py-3 flex items-center gap-2 shadow-xl hover:shadow-2xl hover:bg-gray-800 transition-all rounded-full group"
+            >
+              <MagicWand className="w-5 h-5" />
+              <span className="text-sm font-medium">Try On</span>
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            </button>
+            
             {/* Color Thumbnail Gallery */}
             {product.colors && product.colors.length > 1 && (
               <div className="absolute bottom-4 left-4 flex gap-2">
@@ -506,7 +518,19 @@ export default function ProductPage() {
                 </button>
               )}
               
-              <div className="grid grid-cols-3 gap-3">
+              {/* Virtual Try-On CTA - Prominent */}
+              <button 
+                onClick={() => setIsTryOnOpen(true)} 
+                className="w-full py-4 text-sm tracking-wider font-medium transition flex items-center justify-center gap-3 bg-gray-900 text-white hover:bg-black hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] relative overflow-hidden group"
+              >
+                <MagicWand className="w-5 h-5" />
+                <span>TRY IT ON WITH AI</span>
+                <span className="px-2 py-0.5 bg-white/20 text-[10px] font-bold">
+                  NEW
+                </span>
+              </button>
+              
+              <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={handleToggleWishlist} 
                   className={`border py-4 text-sm tracking-wider font-medium transition flex items-center justify-center gap-2 ${
@@ -516,6 +540,7 @@ export default function ProductPage() {
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${inWishlist ? "fill-current" : ""}`} />
+                  {inWishlist ? "SAVED" : "WISHLIST"}
                 </button>
                 <button 
                   onClick={handleToggleCompare} 
@@ -526,12 +551,7 @@ export default function ProductPage() {
                   }`}
                 >
                   <Scales className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={() => setIsTryOnOpen(true)} 
-                  className="border border-black py-4 text-sm tracking-wider font-medium hover:bg-black hover:text-white transition flex items-center justify-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
+                  COMPARE
                 </button>
               </div>
             </div>
@@ -545,6 +565,75 @@ export default function ProductPage() {
               <div className="flex items-center gap-3">
                 <ArrowsClockwise className="w-4 h-4" />
                 <span>30-day returns</span>
+              </div>
+            </div>
+
+            {/* Social Share */}
+            <div className="mt-8 pt-8 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <p className="text-xs tracking-wider text-gray-500">SHARE THIS PRODUCT</p>
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        const text = `Check out ${product.name} from CIPHER!`;
+                        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, "_blank", "width=550,height=420");
+                      }}
+                      className="w-10 h-10 flex items-center justify-center border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+                      title="Share on X"
+                    >
+                      <XLogo className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "width=550,height=420");
+                      }}
+                      className="w-10 h-10 flex items-center justify-center border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+                      title="Share on Facebook"
+                    >
+                      <FacebookLogo className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        const imageUrl = getCurrentImage();
+                        window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(product.name)}`, "_blank", "width=750,height=550");
+                      }}
+                      className="w-10 h-10 flex items-center justify-center border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+                      title="Pin on Pinterest"
+                    >
+                      <PinterestLogo className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        const text = `Check out ${product.name} from CIPHER! ${url}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                      }}
+                      className="w-10 h-10 flex items-center justify-center border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+                      title="Share on WhatsApp"
+                    >
+                      <WhatsappLogo className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const url = typeof window !== "undefined" ? window.location.href : "";
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          toast.success("Link copied to clipboard!");
+                        } catch {
+                          toast.error("Failed to copy link");
+                        }
+                      }}
+                      className="w-10 h-10 flex items-center justify-center border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+                      title="Copy Link"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>

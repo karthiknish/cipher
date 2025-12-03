@@ -27,10 +27,21 @@ export default function Footer() {
           </div>
           
           <div>
+            <h4 className="text-xs tracking-[0.2em] text-white/50 mb-6">COMMUNITY</h4>
+            <ul className="space-y-3 text-sm">
+              <li><Link href="/blog" className="text-white/70 hover:text-white transition">Blog</Link></li>
+              <li><Link href="/challenges" className="text-white/70 hover:text-white transition">Challenges</Link></li>
+              <li><Link href="/creators" className="text-white/70 hover:text-white transition">Creators</Link></li>
+              <li><Link href="/vote" className="text-white/70 hover:text-white transition">Vote</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <h4 className="text-xs tracking-[0.2em] text-white/50 mb-6">HELP</h4>
             <ul className="space-y-3 text-sm">
               <li><Link href="/contact" className="text-white/70 hover:text-white transition">Contact Us</Link></li>
               <li><Link href="/size-guide" className="text-white/70 hover:text-white transition">Size Guide</Link></li>
+              <li><Link href="/faqs" className="text-white/70 hover:text-white transition">FAQs</Link></li>
             </ul>
           </div>
           

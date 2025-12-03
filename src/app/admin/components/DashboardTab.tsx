@@ -54,10 +54,10 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-green-100 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-emerald-100 flex items-center justify-center">
+              <CurrencyDollar className="w-5 h-5 text-emerald-600" />
             </div>
-            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.revenueChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.revenueChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
               {metrics.revenueChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(metrics.revenueChange).toFixed(1)}%
             </span>
@@ -73,10 +73,10 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-blue-100 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 bg-sky-100 flex items-center justify-center">
+              <ShoppingBag className="w-5 h-5 text-sky-600" />
             </div>
-            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.ordersChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.ordersChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
               {metrics.ordersChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(metrics.ordersChange).toFixed(1)}%
             </span>
@@ -92,10 +92,10 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-purple-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 bg-violet-100 flex items-center justify-center">
+              <Users className="w-5 h-5 text-violet-600" />
             </div>
-            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.customersChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.customersChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
               {metrics.customersChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(metrics.customersChange).toFixed(1)}%
             </span>
@@ -114,7 +114,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
             <div className="w-10 h-10 bg-amber-100 flex items-center justify-center">
               <TrendUp className="w-5 h-5 text-amber-600" />
             </div>
-            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.avgChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span className={`flex items-center gap-1 text-xs font-medium ${metrics.avgChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
               {metrics.avgChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(metrics.avgChange).toFixed(1)}%
             </span>
@@ -154,11 +154,11 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           <DonutChart 
             data={[
               { label: "Pending", value: metrics.ordersByStatus.pending, color: "#fef3c7" },
-              { label: "Confirmed", value: metrics.ordersByStatus.confirmed, color: "#dbeafe" },
-              { label: "Processing", value: metrics.ordersByStatus.processing, color: "#e9d5ff" },
-              { label: "Shipped", value: metrics.ordersByStatus.shipped, color: "#c7d2fe" },
-              { label: "Delivered", value: metrics.ordersByStatus.delivered, color: "#bbf7d0" },
-              { label: "Cancelled", value: metrics.ordersByStatus.cancelled, color: "#fecaca" },
+              { label: "Confirmed", value: metrics.ordersByStatus.confirmed, color: "#e0f2fe" },
+              { label: "Processing", value: metrics.ordersByStatus.processing, color: "#ede9fe" },
+              { label: "Shipped", value: metrics.ordersByStatus.shipped, color: "#f1f5f9" },
+              { label: "Delivered", value: metrics.ordersByStatus.delivered, color: "#d1fae5" },
+              { label: "Cancelled", value: metrics.ordersByStatus.cancelled, color: "#ffe4e6" },
             ]}
           />
           <div className="grid grid-cols-3 gap-2 mt-4">
@@ -270,28 +270,28 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <CheckCircle className="w-8 h-8 text-green-500" />
+          <CheckCircle className="w-8 h-8 text-emerald-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.delivered}</p>
             <p className="text-xs text-gray-500">Delivered</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <Truck className="w-8 h-8 text-indigo-500" />
+          <Truck className="w-8 h-8 text-slate-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.shipped}</p>
             <p className="text-xs text-gray-500">In Transit</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <Clock className="w-8 h-8 text-yellow-500" />
+          <Clock className="w-8 h-8 text-amber-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.pending + metrics.ordersByStatus.confirmed}</p>
             <p className="text-xs text-gray-500">Pending</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <XCircle className="w-8 h-8 text-red-500" />
+          <XCircle className="w-8 h-8 text-rose-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.cancelled}</p>
             <p className="text-xs text-gray-500">Cancelled</p>

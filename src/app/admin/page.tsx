@@ -1,416 +1,55 @@
 "use client";
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useEffect, useMemo, Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useProducts, Product } from "@/context/ProductContext";
+import { useProducts } from "@/context/ProductContext";
 import { useOrders, Order } from "@/context/OrderContext";
-import { useToast } from "@/context/ToastContext";
 import { useAbandonedCart } from "@/context/AbandonedCartContext";
 import { useInventory } from "@/context/InventoryContext";
-import { useDynamicPricing, PricingRule } from "@/context/DynamicPricingContext";
-import { useInfluencer, Influencer } from "@/context/InfluencerContext";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useDynamicPricing } from "@/context/DynamicPricingContext";
+import { useInfluencer } from "@/context/InfluencerContext";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
-  Plus, 
-  Package, 
-  MagnifyingGlass,
   SpinnerGap,
   ShieldWarning,
   SquaresFour,
+  Package, 
   ShoppingBag,
   Users,
   ShoppingCart,
   Crown,
-  Tag,
-  CurrencyDollar,
   Percent,
   UserCirclePlus,
   ChartLineUp,
   Star,
   Gift,
+  CurrencyDollar,
+  Tag,
+  ArrowRight,
+  TrendUp,
+  Warning,
 } from "@phosphor-icons/react";
-import {
-  Tab,
-  DateRange,
-  CATEGORIES,
-  Metrics,
-  CustomerData,
-  InventoryForecastItem,
-} from "./components";
-import { DashboardTab } from "./components/DashboardTab";
-import { ProductsTab } from "./components/ProductsTab";
-import { OrdersTab } from "./components/OrdersTab";
-import { CustomersTab } from "./components/CustomersTab";
-import { AbandonedTab } from "./components/AbandonedTab";
-import { InventoryTab } from "./components/InventoryTab";
-import { PricingTab } from "./components/PricingTab";
-import { InfluencersTab } from "./components/InfluencersTab";
-import { AnalyticsTab } from "./components/AnalyticsTab";
-import { ReviewsTab } from "./components/ReviewsTab";
-import { LoyaltyTab } from "./components/LoyaltyTab";
-
-const STATUS_OPTIONS: Order["status"][] = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+import { CATEGORIES } from "./components";
 
 function AdminPageContent() {
   const { user, loading: authLoading, userRole } = useAuth();
-  const { products, loading: productsLoading, deleteProduct } = useProducts();
-  const { allOrders, loadAllOrders, updateOrderStatus } = useOrders();
-  const { 
-    abandonedCarts, 
-    loading: abandonedCartsLoading, 
-    sendReminder, 
-    sendBulkReminders, 
-    deleteAbandonedCart,
-    refreshCarts 
-  } = useAbandonedCart();
-  const {
-    inventory,
-    loading: inventoryLoading,
-    getProductStock,
-    updateStock,
-    restockProduct,
-    initializeInventory,
-  } = useInventory();
-  const {
-    pricingRules,
-    createRule,
-    deleteRule,
-    toggleRule,
-    getActiveFlashSales,
-  } = useDynamicPricing();
-  const {
-    influencers,
-    applications,
-    approveApplication,
-    rejectApplication,
-    updateInfluencerTier,
-    updateCommissionRate,
-  } = useInfluencer();
-  const toast = useToast();
+  const { products, loading: productsLoading } = useProducts();
+  const { allOrders, loadAllOrders } = useOrders();
+  const { abandonedCarts } = useAbandonedCart();
+  const { inventory, getProductStock, initializeInventory, loading: inventoryLoading } = useInventory();
+  const { getActiveFlashSales } = useDynamicPricing();
+  const { applications } = useInfluencer();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  // State for reminder sending
-  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
-  const [sendingBulk, setSendingBulk] = useState(false);
-  
-  // State for inventory editing
-  const [editingStock, setEditingStock] = useState<string | null>(null);
-  const [stockInput, setStockInput] = useState("");
-  const [restockInput, setRestockInput] = useState("");
-  const [updatingStock, setUpdatingStock] = useState(false);
-  
-  // Initialize activeTab from URL query param or default to "dashboard"
-  const tabFromUrl = searchParams.get("tab") as Tab | null;
-  const [activeTab, setActiveTab] = useState<Tab>(tabFromUrl || "dashboard");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange>("30d");
 
-  // Check if user is admin (from AuthContext which checks Firestore role)
   const isAdmin = userRole?.isAdmin ?? false;
 
-  // Load all orders when admin
   useEffect(() => {
     if (isAdmin) {
       loadAllOrders();
     }
-  }, [isAdmin, loadAllOrders]);
-  
-  // Handle sending a single reminder
-  const handleSendReminder = async (cartId: string) => {
-    setSendingReminder(cartId);
-    try {
-      const result = await sendReminder(cartId);
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-    } catch {
-      toast.error("Failed to send reminder");
-    } finally {
-      setSendingReminder(null);
-    }
-  };
-  
-  // Handle bulk reminder sending
-  const handleBulkReminders = async () => {
-    setSendingBulk(true);
-    try {
-      const result = await sendBulkReminders();
-      toast.success(`Sent ${result.sent} reminders${result.failed > 0 ? `, ${result.failed} failed` : ""}`);
-    } catch {
-      toast.error("Failed to send bulk reminders");
-    } finally {
-      setSendingBulk(false);
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
 
-  // Calculate metrics
-  const metrics: Metrics = useMemo(() => {
-    const now = Date.now();
-    const dayInMs = 24 * 60 * 60 * 1000;
-    
-    // Filter orders by date range
-    const rangeMs = {
-      "7d": 7 * dayInMs,
-      "30d": 30 * dayInMs,
-      "90d": 90 * dayInMs,
-      "all": Infinity,
-    }[dateRange];
-    
-    const getOrderTime = (order: Order) => order.createdAt instanceof Date ? order.createdAt.getTime() : new Date(order.createdAt).getTime();
-    
-    const filteredOrders = allOrders.filter(o => now - getOrderTime(o) < rangeMs);
-    const previousOrders = allOrders.filter(o => {
-      const age = now - getOrderTime(o);
-      return age >= rangeMs && age < rangeMs * 2;
-    });
-
-    // Total Revenue
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.total, 0);
-    const previousRevenue = previousOrders.reduce((sum, o) => sum + o.total, 0);
-    const revenueChange = previousRevenue > 0 
-      ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
-      : totalRevenue > 0 ? 100 : 0;
-
-    // Total Orders
-    const totalOrders = filteredOrders.length;
-    const previousOrderCount = previousOrders.length;
-    const ordersChange = previousOrderCount > 0 
-      ? ((totalOrders - previousOrderCount) / previousOrderCount) * 100 
-      : totalOrders > 0 ? 100 : 0;
-
-    // Average Order Value
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const previousAvg = previousOrderCount > 0 ? previousRevenue / previousOrderCount : 0;
-    const avgChange = previousAvg > 0 
-      ? ((avgOrderValue - previousAvg) / previousAvg) * 100 
-      : avgOrderValue > 0 ? 100 : 0;
-
-    // Conversion Rate (simulated)
-    const conversionRate = 3.2 + Math.random() * 0.5;
-    const previousConversion = 3.0 + Math.random() * 0.3;
-    const conversionChange = ((conversionRate - previousConversion) / previousConversion) * 100;
-
-    // Orders by status
-    const ordersByStatus = STATUS_OPTIONS.reduce((acc, status) => {
-      acc[status] = filteredOrders.filter(o => o.status === status).length;
-      return acc;
-    }, {} as Record<Order["status"], number>);
-
-    // Orders by day (last 7 days)
-    const ordersByDay: number[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const dayStart = now - (i + 1) * dayInMs;
-      const dayEnd = now - i * dayInMs;
-      const count = allOrders.filter(o => {
-        const t = getOrderTime(o);
-        return t >= dayStart && t < dayEnd;
-      }).length;
-      ordersByDay.push(count);
-    }
-
-    // Revenue by day (last 7 days)
-    const revenueByDay: number[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const dayStart = now - (i + 1) * dayInMs;
-      const dayEnd = now - i * dayInMs;
-      const rev = allOrders
-        .filter(o => {
-          const t = getOrderTime(o);
-          return t >= dayStart && t < dayEnd;
-        })
-        .reduce((sum, o) => sum + o.total, 0);
-      revenueByDay.push(rev);
-    }
-
-    // Top selling products
-    const productSales: Record<string, { name: string; image: string; count: number; revenue: number }> = {};
-    filteredOrders.forEach(order => {
-      order.items.forEach(item => {
-        const key = item.productId || item.name;
-        if (!productSales[key]) {
-          productSales[key] = { name: item.name, image: item.image, count: 0, revenue: 0 };
-        }
-        productSales[key].count += item.quantity;
-        productSales[key].revenue += item.price * item.quantity;
-      });
-    });
-    const topProducts = Object.entries(productSales)
-      .sort((a, b) => b[1].revenue - a[1].revenue)
-      .slice(0, 5)
-      .map(([id, data]) => ({ id, ...data }));
-
-    // Sales by category
-    const salesByCategory: Record<string, number> = {};
-    filteredOrders.forEach(order => {
-      order.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        const category = product?.category || "Other";
-        salesByCategory[category] = (salesByCategory[category] || 0) + item.price * item.quantity;
-      });
-    });
-
-    // Unique customers
-    const uniqueCustomers = new Set(filteredOrders.map(o => o.userEmail)).size;
-    const previousUniqueCustomers = new Set(previousOrders.map(o => o.userEmail)).size;
-    const customersChange = previousUniqueCustomers > 0 
-      ? ((uniqueCustomers - previousUniqueCustomers) / previousUniqueCustomers) * 100 
-      : uniqueCustomers > 0 ? 100 : 0;
-
-    // Recent activity
-    const recentOrders = [...allOrders]
-      .sort((a, b) => getOrderTime(b) - getOrderTime(a))
-      .slice(0, 5);
-
-    // Customer Segmentation Data
-    const customerData: Record<string, CustomerData> = {};
-    
-    allOrders.forEach(order => {
-      const email = order.userEmail;
-      if (!customerData[email]) {
-        customerData[email] = {
-          email,
-          orders: 0,
-          totalSpent: 0,
-          lastOrder: 0,
-          avgOrderValue: 0,
-          categories: []
-        };
-      }
-      customerData[email].orders++;
-      customerData[email].totalSpent += order.total;
-      const orderTime = getOrderTime(order);
-      if (orderTime > customerData[email].lastOrder) {
-        customerData[email].lastOrder = orderTime;
-      }
-      order.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (product && !customerData[email].categories.includes(product.category)) {
-          customerData[email].categories.push(product.category);
-        }
-      });
-    });
-
-    // Calculate average order value for each customer
-    Object.values(customerData).forEach(c => {
-      c.avgOrderValue = c.orders > 0 ? c.totalSpent / c.orders : 0;
-    });
-
-    // Segment customers
-    const customerSegments = {
-      vip: [] as CustomerData[],
-      loyal: [] as CustomerData[],
-      regular: [] as CustomerData[],
-      newCustomers: [] as CustomerData[],
-      atRisk: [] as CustomerData[],
-      dormant: [] as CustomerData[]
-    };
-
-    const thirtyDaysAgo = now - 30 * dayInMs;
-    const ninetyDaysAgo = now - 90 * dayInMs;
-
-    Object.values(customerData).forEach(customer => {
-      if (customer.totalSpent >= 500 || customer.orders >= 5) {
-        customerSegments.vip.push(customer);
-      } else if (customer.orders >= 3 && customer.lastOrder > thirtyDaysAgo) {
-        customerSegments.loyal.push(customer);
-      } else if (customer.orders >= 2) {
-        customerSegments.regular.push(customer);
-      } else if (customer.orders === 1 && customer.lastOrder > thirtyDaysAgo) {
-        customerSegments.newCustomers.push(customer);
-      } else if (customer.lastOrder < ninetyDaysAgo) {
-        customerSegments.dormant.push(customer);
-      } else if (customer.lastOrder < thirtyDaysAgo && customer.lastOrder >= ninetyDaysAgo) {
-        customerSegments.atRisk.push(customer);
-      }
-    });
-
-    // Abandoned Cart Metrics
-    const abandonedCartMetrics = {
-      total: abandonedCarts.length,
-      potentialRevenue: abandonedCarts.reduce((sum, cart) => sum + cart.total, 0),
-      remindersSent: abandonedCarts.filter(cart => cart.remindersSent > 0).length,
-      recovered: abandonedCarts.filter(cart => cart.recovered).length,
-      hotLeads: abandonedCarts.filter(cart => {
-        const abandonedTime = cart.abandonedAt instanceof Date 
-          ? cart.abandonedAt.getTime() 
-          : new Date(cart.abandonedAt).getTime();
-        return (now - abandonedTime) < dayInMs;
-      }).length,
-      noReminders: abandonedCarts.filter(cart => cart.email && cart.remindersSent === 0).length,
-    };
-
-    // Inventory Forecasting
-    const inventoryForecast: InventoryForecastItem[] = products.map(product => {
-      const last30Sales = allOrders
-        .filter(o => getOrderTime(o) > now - 30 * dayInMs)
-        .reduce((sum, o) => {
-          const item = o.items.find(i => i.productId === product.id || i.name === product.name);
-          return sum + (item?.quantity || 0);
-        }, 0);
-
-      const last7Sales = allOrders
-        .filter(o => getOrderTime(o) > now - 7 * dayInMs)
-        .reduce((sum, o) => {
-          const item = o.items.find(i => i.productId === product.id || i.name === product.name);
-          return sum + (item?.quantity || 0);
-        }, 0);
-
-      const avgDaily30 = last30Sales / 30;
-      const avgDaily7 = last7Sales / 7;
-      
-      const stockLevel = getProductStock(product.id);
-      const daysUntilStockout = avgDaily30 > 0 ? Math.floor(stockLevel / avgDaily30) : 999;
-      
-      let trend: "up" | "down" | "stable" = "stable";
-      if (avgDaily7 > avgDaily30 * 1.2) trend = "up";
-      else if (avgDaily7 < avgDaily30 * 0.8) trend = "down";
-
-      return {
-        product: {
-          id: product.id,
-          name: product.name,
-          image: product.image,
-          category: product.category,
-          price: product.price,
-        },
-        salesLast30: last30Sales,
-        salesLast7: last7Sales,
-        avgDailySales: avgDaily30,
-        currentStock: stockLevel,
-        daysUntilStockout,
-        reorderSuggested: daysUntilStockout < 14,
-        trend
-      };
-    }).sort((a, b) => a.daysUntilStockout - b.daysUntilStockout);
-
-    return {
-      totalRevenue,
-      revenueChange,
-      totalOrders,
-      ordersChange,
-      avgOrderValue,
-      avgChange,
-      conversionRate,
-      conversionChange,
-      ordersByStatus,
-      ordersByDay,
-      revenueByDay,
-      topProducts,
-      salesByCategory,
-      uniqueCustomers,
-      customersChange,
-      recentOrders,
-      customerSegments,
-      customerData: Object.values(customerData),
-      abandonedCartMetrics,
-      inventoryForecast,
-    };
-  }, [allOrders, products, dateRange, abandonedCarts, getProductStock]);
-  
-  // Initialize inventory for products that don't have it
   useEffect(() => {
     if (!inventoryLoading && products.length > 0) {
       products.forEach(product => {
@@ -420,82 +59,42 @@ function AdminPageContent() {
       });
     }
   }, [products, inventory, inventoryLoading, initializeInventory]);
-  
-  // Handle stock update
-  const handleUpdateStock = async (productId: string) => {
-    const newStock = parseInt(stockInput);
-    if (isNaN(newStock) || newStock < 0) {
-      toast.error("Please enter a valid stock number");
-      return;
-    }
-    setUpdatingStock(true);
-    const success = await updateStock(productId, newStock, "Manual adjustment from admin");
-    if (success) {
-      toast.success("Stock updated successfully");
-      setEditingStock(null);
-      setStockInput("");
-    } else {
-      toast.error("Failed to update stock");
-    }
-    setUpdatingStock(false);
-  };
-  
-  // Handle restock
-  const handleRestock = async (productId: string) => {
-    const quantity = parseInt(restockInput);
-    if (isNaN(quantity) || quantity <= 0) {
-      toast.error("Please enter a valid quantity");
-      return;
-    }
-    setUpdatingStock(true);
-    const success = await restockProduct(productId, quantity, "Restocked from admin");
-    if (success) {
-      toast.success(`Added ${quantity} units to stock`);
-      setEditingStock(null);
-      setRestockInput("");
-    } else {
-      toast.error("Failed to restock product");
-    }
-    setUpdatingStock(false);
-  };
 
-  // Redirect non-admins
+  // Calculate quick stats
+  const stats = useMemo(() => {
+    const now = Date.now();
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const getOrderTime = (order: Order) => order.createdAt instanceof Date ? order.createdAt.getTime() : new Date(order.createdAt).getTime();
+
+    const totalRevenue = allOrders.reduce((sum, o) => sum + o.total, 0);
+    const pendingOrders = allOrders.filter(o => o.status === "pending").length;
+    
+    const lowStockCount = products.filter(product => {
+      const stockLevel = getProductStock(product.id);
+      const last30Sales = allOrders
+        .filter(o => getOrderTime(o) > now - 30 * dayInMs)
+        .reduce((sum, o) => {
+          const item = o.items.find(i => i.productId === product.id || i.name === product.name);
+          return sum + (item?.quantity || 0);
+        }, 0);
+      const avgDaily = last30Sales / 30;
+      const daysUntilStockout = avgDaily > 0 ? Math.floor(stockLevel / avgDaily) : 999;
+      return daysUntilStockout < 14;
+    }).length;
+
+    return {
+      totalRevenue,
+      pendingOrders,
+      lowStockCount,
+    };
+  }, [allOrders, products, getProductStock]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
   }, [user, authLoading, router]);
 
-  // Filter products by search
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Filter orders by search
-  const filteredOrders = allOrders.filter(o =>
-    o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    o.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    o.shippingAddress.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    o.shippingAddress.lastName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleDelete = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
-    await deleteProduct(productId);
-    toast.success("Product deleted successfully");
-  };
-
-  const handleStatusChange = async (orderId: string, newStatus: Order["status"]) => {
-    await updateOrderStatus(orderId, newStatus);
-    toast.success(`Order status updated to ${newStatus}`);
-  };
-
-  const handleCreatePricingRule = async (rule: Omit<PricingRule, "id" | "createdAt" | "updatedAt">) => {
-    await createRule(rule);
-  };
-
-  // Loading state
   if (authLoading || productsLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -504,7 +103,6 @@ function AdminPageContent() {
     );
   }
 
-  // Not authorized
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
@@ -526,18 +124,120 @@ function AdminPageContent() {
     );
   }
 
+  const navItems = [
+    { 
+      key: "dashboard", 
+      label: "Dashboard", 
+      description: "Overview of sales, orders, and performance",
+      href: "/admin/dashboard", 
+      icon: SquaresFour,
+      color: "bg-blue-50 text-blue-600",
+    },
+    { 
+      key: "products", 
+      label: "Products", 
+      description: "Manage your product catalog",
+      href: "/admin/products", 
+      icon: Package,
+      color: "bg-purple-50 text-purple-600",
+      badge: products.length,
+    },
+    { 
+      key: "orders", 
+      label: "Orders", 
+      description: "View and manage customer orders",
+      href: "/admin/orders", 
+      icon: ShoppingBag,
+      color: "bg-green-50 text-green-600",
+      badge: stats.pendingOrders > 0 ? stats.pendingOrders : undefined,
+      badgeColor: "bg-orange-500",
+    },
+    { 
+      key: "customers", 
+      label: "Customers", 
+      description: "Customer analytics and segmentation",
+      href: "/admin/customers", 
+      icon: Users,
+      color: "bg-sky-50 text-sky-600",
+    },
+    { 
+      key: "abandoned", 
+      label: "Abandoned Carts", 
+      description: "Recover lost sales from abandoned carts",
+      href: "/admin/abandoned", 
+      icon: ShoppingCart,
+      color: "bg-red-50 text-red-600",
+      badge: abandonedCarts.length > 0 ? abandonedCarts.length : undefined,
+      badgeColor: "bg-red-500",
+    },
+    { 
+      key: "inventory", 
+      label: "Inventory", 
+      description: "Stock levels and forecasting",
+      href: "/admin/inventory", 
+      icon: Package,
+      color: "bg-amber-50 text-amber-600",
+      badge: stats.lowStockCount > 0 ? stats.lowStockCount : undefined,
+      badgeColor: "bg-amber-500",
+    },
+    { 
+      key: "pricing", 
+      label: "Pricing", 
+      description: "Dynamic pricing and flash sales",
+      href: "/admin/pricing", 
+      icon: Percent,
+      color: "bg-emerald-50 text-emerald-600",
+      badge: getActiveFlashSales().length > 0 ? getActiveFlashSales().length : undefined,
+      badgeColor: "bg-emerald-500",
+    },
+    { 
+      key: "influencers", 
+      label: "Influencers", 
+      description: "Manage influencer partnerships",
+      href: "/admin/influencers", 
+      icon: UserCirclePlus,
+      color: "bg-pink-50 text-pink-600",
+      badge: applications.filter(a => a.status === "pending").length > 0 ? applications.filter(a => a.status === "pending").length : undefined,
+      badgeColor: "bg-pink-500",
+    },
+    { 
+      key: "analytics", 
+      label: "Analytics", 
+      description: "Deep dive into your data",
+      href: "/admin/analytics", 
+      icon: ChartLineUp,
+      color: "bg-indigo-50 text-indigo-600",
+    },
+    { 
+      key: "reviews", 
+      label: "Reviews", 
+      description: "Moderate customer reviews",
+      href: "/admin/reviews", 
+      icon: Star,
+      color: "bg-yellow-50 text-yellow-600",
+    },
+    { 
+      key: "loyalty", 
+      label: "Loyalty Program", 
+      description: "Manage rewards and points",
+      href: "/admin/loyalty", 
+      icon: Gift,
+      color: "bg-violet-50 text-violet-600",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <section className="bg-black text-white py-12">
-        <div className="container mx-auto px-4">
+      <header className="bg-black text-white">
+        <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <SquaresFour className="w-6 h-6" />
+                <SquaresFour className="w-8 h-8" />
                 <h1 className="text-3xl md:text-4xl font-light tracking-tight">ADMIN PANEL</h1>
               </div>
-              <p className="text-white/60">Manage products and orders</p>
+              <p className="text-white/60">Manage your store</p>
             </div>
             <Link
               href="/admin/design-voting"
@@ -548,306 +248,118 @@ function AdminPageContent() {
             </Link>
           </div>
         </div>
-      </section>
+      </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats */}
+        {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-50 p-6">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <Package className="w-5 h-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{products.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">PRODUCTS</p>
           </div>
-          <div className="bg-gray-50 p-6">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <Tag className="w-5 h-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{CATEGORIES.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">CATEGORIES</p>
           </div>
-          <div className="bg-gray-50 p-6">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <ShoppingBag className="w-5 h-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{allOrders.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">TOTAL ORDERS</p>
           </div>
-          <div className="bg-gray-50 p-6">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <CurrencyDollar className="w-5 h-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">
-              ${allOrders.reduce((sum, o) => sum + o.total, 0).toFixed(0)}
+              ${stats.totalRevenue.toFixed(0)}
             </p>
             <p className="text-xs text-gray-500 tracking-wider">TOTAL REVENUE</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 md:gap-8 mb-8 border-b border-gray-200 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap ${
-              activeTab === "dashboard" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            DASHBOARD
-          </button>
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap ${
-              activeTab === "products" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            PRODUCTS
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap ${
-              activeTab === "orders" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            ORDERS
-          </button>
-          <button
-            onClick={() => setActiveTab("customers")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "customers" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            CUSTOMERS
-          </button>
-          <button
-            onClick={() => setActiveTab("abandoned")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "abandoned" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <ShoppingCart className="w-4 h-4" />
-            ABANDONED
-            {abandonedCarts.length > 0 && (
-              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {abandonedCarts.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("inventory")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "inventory" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            INVENTORY
-            {metrics.inventoryForecast.filter(i => i.reorderSuggested).length > 0 && (
-              <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {metrics.inventoryForecast.filter(i => i.reorderSuggested).length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("pricing")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "pricing" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <Percent className="w-4 h-4" />
-            PRICING
-            {getActiveFlashSales().length > 0 && (
-              <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {getActiveFlashSales().length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("influencers")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "influencers" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <UserCirclePlus className="w-4 h-4" />
-            INFLUENCERS
-            {applications.filter(a => a.status === "pending").length > 0 && (
-              <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {applications.filter(a => a.status === "pending").length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "analytics" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <ChartLineUp className="w-4 h-4" />
-            ANALYTICS
-          </button>
-          <button
-            onClick={() => setActiveTab("reviews")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "reviews" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <Star className="w-4 h-4" />
-            REVIEWS
-          </button>
-          <button
-            onClick={() => setActiveTab("loyalty")}
-            className={`pb-4 text-sm tracking-wider font-medium transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === "loyalty" 
-                ? "border-b-2 border-black text-black" 
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <Gift className="w-4 h-4" />
-            LOYALTY
-          </button>
-        </div>
-
-        {/* Dashboard Tab */}
-        {activeTab === "dashboard" && (
-          <DashboardTab
-            metrics={metrics}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-          />
-        )}
-
-        {/* Search and Add (for products/orders) */}
-        {(activeTab === "products" || activeTab === "orders") && (
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
-              <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeTab === "products" ? "Search products..." : "Search orders..."}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-              />
-            </div>
-            {activeTab === "products" && (
-              <Link
-                href="/admin/products/new"
-                className="bg-black text-white px-6 py-3 text-sm tracking-wider font-medium flex items-center justify-center gap-2 hover:bg-gray-900 transition"
+        {/* Alerts */}
+        {(stats.pendingOrders > 0 || stats.lowStockCount > 0 || abandonedCarts.length > 0) && (
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            {stats.pendingOrders > 0 && (
+              <Link 
+                href="/admin/orders"
+                className="bg-orange-50 border border-orange-200 p-4 rounded-lg flex items-center gap-4 hover:border-orange-400 transition"
               >
-                <Plus className="w-4 h-4" /> ADD PRODUCT
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <TrendUp className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-orange-900">{stats.pendingOrders} Pending Orders</p>
+                  <p className="text-xs text-orange-600">Require attention</p>
+                </div>
+              </Link>
+            )}
+            {stats.lowStockCount > 0 && (
+              <Link 
+                href="/admin/inventory"
+                className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-center gap-4 hover:border-amber-400 transition"
+              >
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Warning className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-amber-900">{stats.lowStockCount} Low Stock Items</p>
+                  <p className="text-xs text-amber-600">Reorder suggested</p>
+                </div>
+              </Link>
+            )}
+            {abandonedCarts.length > 0 && (
+              <Link 
+                href="/admin/abandoned"
+                className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-center gap-4 hover:border-red-400 transition"
+              >
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <ShoppingCart className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-red-900">{abandonedCarts.length} Abandoned Carts</p>
+                  <p className="text-xs text-red-600">Potential revenue to recover</p>
+                </div>
               </Link>
             )}
           </div>
         )}
 
-        {/* Products Tab */}
-        {activeTab === "products" && (
-          <ProductsTab
-            products={filteredProducts}
-            onDelete={handleDelete}
-          />
-        )}
-
-        {/* Orders Tab */}
-        {activeTab === "orders" && (
-          <OrdersTab
-            orders={filteredOrders}
-            onStatusChange={handleStatusChange}
-          />
-        )}
-
-        {/* Customers Tab */}
-        {activeTab === "customers" && (
-          <CustomersTab metrics={metrics} />
-        )}
-
-        {/* Abandoned Tab */}
-        {activeTab === "abandoned" && (
-          <AbandonedTab
-            abandonedCarts={abandonedCarts}
-            abandonedCartsLoading={abandonedCartsLoading}
-            abandonedCartMetrics={metrics.abandonedCartMetrics}
-            sendingReminder={sendingReminder}
-            sendingBulk={sendingBulk}
-            onSendReminder={handleSendReminder}
-            onBulkReminders={handleBulkReminders}
-            onDeleteCart={deleteAbandonedCart}
-            onRefreshCarts={refreshCarts}
-          />
-        )}
-
-        {/* Inventory Tab */}
-        {activeTab === "inventory" && (
-          <InventoryTab
-            inventoryForecast={metrics.inventoryForecast}
-            editingStock={editingStock}
-            stockInput={stockInput}
-            restockInput={restockInput}
-            updatingStock={updatingStock}
-            setEditingStock={setEditingStock}
-            setStockInput={setStockInput}
-            setRestockInput={setRestockInput}
-            onUpdateStock={handleUpdateStock}
-            onRestock={handleRestock}
-          />
-        )}
-
-        {/* Pricing Tab */}
-        {activeTab === "pricing" && (
-          <PricingTab
-            products={products}
-            pricingRules={pricingRules}
-            activeFlashSalesCount={getActiveFlashSales().length}
-            onCreateRule={handleCreatePricingRule}
-            onToggleRule={toggleRule}
-            onDeleteRule={deleteRule}
-          />
-        )}
-
-        {/* Influencers Tab */}
-        {activeTab === "influencers" && (
-          <InfluencersTab
-            influencers={influencers}
-            applications={applications}
-            onApproveApplication={approveApplication}
-            onRejectApplication={rejectApplication}
-            onUpdateTier={updateInfluencerTier}
-            onUpdateCommissionRate={updateCommissionRate}
-          />
-        )}
-
-        {/* Analytics Tab */}
-        {activeTab === "analytics" && (
-          <AnalyticsTab />
-        )}
-
-        {/* Reviews Tab */}
-        {activeTab === "reviews" && (
-          <ReviewsTab />
-        )}
-
-        {/* Loyalty Tab */}
-        {activeTab === "loyalty" && (
-          <LoyaltyTab />
-        )}
+        {/* Navigation Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className="bg-white border border-gray-200 p-6 rounded-lg hover:border-black hover:shadow-lg transition group"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-12 h-12 ${item.color} rounded-lg flex items-center justify-center`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  {item.badge && (
+                    <span className={`${item.badgeColor || "bg-gray-500"} text-white text-xs px-2 py-1 rounded-full`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-medium text-lg mb-1 group-hover:underline">{item.label}</h3>
+                <p className="text-sm text-gray-500 mb-4">{item.description}</p>
+                <div className="flex items-center gap-1 text-sm text-gray-400 group-hover:text-black transition">
+                  <span>View</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-// Loading fallback for Suspense
 function AdminPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -856,7 +368,6 @@ function AdminPageLoading() {
   );
 }
 
-// Main export with Suspense wrapper
 export default function AdminPage() {
   return (
     <Suspense fallback={<AdminPageLoading />}>
