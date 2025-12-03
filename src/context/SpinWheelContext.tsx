@@ -75,26 +75,27 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
   const [isFirstTimeVisitor, setIsFirstTimeVisitor] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  // Check if first-time visitor on mount
+  // Check if user has already spun on mount
   useEffect(() => {
-    const hasVisited = localStorage.getItem("cipher-has-visited");
     const spinData = localStorage.getItem("cipher-spin-result");
+    const hasSpunBefore = localStorage.getItem("cipher-has-spun");
     
-    if (!hasVisited) {
-      setIsFirstTimeVisitor(true);
-      // Show wheel after a short delay for better UX
-      const timer = setTimeout(() => {
-        setShowWheel(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    } else if (spinData) {
-      try {
-        const parsed = JSON.parse(spinData);
-        setResult(parsed);
-        setHasSpun(true);
-      } catch {
-        // Invalid data, ignore
+    if (hasSpunBefore) {
+      setHasSpun(true);
+      if (spinData) {
+        try {
+          const parsed = JSON.parse(spinData);
+          // Check if reward is still valid (not expired)
+          if (parsed.expiresAt > Date.now()) {
+            setResult(parsed);
+          }
+        } catch {
+          // Invalid data, ignore
+        }
       }
+    } else {
+      // First time visitor - could show wheel automatically
+      setIsFirstTimeVisitor(true);
     }
     
     setInitialized(true);
@@ -124,8 +125,8 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
     setHasSpun(true);
     setIsSpinning(false);
 
-    // Save to localStorage
-    localStorage.setItem("cipher-has-visited", "true");
+    // Save to localStorage - mark as spun permanently
+    localStorage.setItem("cipher-has-spun", "true");
     if (winningSegment.type !== "tryAgain") {
       localStorage.setItem("cipher-spin-result", JSON.stringify(spinResult));
     }
@@ -135,7 +136,6 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
 
   const dismissWheel = useCallback(() => {
     setShowWheel(false);
-    localStorage.setItem("cipher-has-visited", "true");
     setIsFirstTimeVisitor(false);
   }, []);
 

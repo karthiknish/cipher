@@ -32,6 +32,13 @@ export default function SpinWheel() {
 
   const segmentAngle = 360 / segments.length;
 
+  // If already spun and has result, show the result directly
+  useEffect(() => {
+    if (showWheel && hasSpun && result) {
+      setShowResult(true);
+    }
+  }, [showWheel, hasSpun, result]);
+
   const handleSpin = async () => {
     if (isSpinning || hasSpun) return;
 
@@ -232,7 +239,9 @@ export default function SpinWheel() {
                   <div>
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <Confetti className="w-6 h-6 text-amber-500" />
-                      <p className="text-lg font-medium">Congratulations!</p>
+                      <p className="text-lg font-medium">
+                        {hasSpun && !isSpinning ? "Your Reward" : "Congratulations!"}
+                      </p>
                       <Confetti className="w-6 h-6 text-amber-500" />
                     </div>
                     <p className="text-gray-600 mb-4">
@@ -259,7 +268,10 @@ export default function SpinWheel() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-400 mt-2">
-                        Valid for 7 days
+                        {result.expiresAt > Date.now() 
+                          ? `Expires ${new Date(result.expiresAt).toLocaleDateString()}`
+                          : "Expired"
+                        }
                       </p>
                     </div>
 
@@ -278,11 +290,17 @@ export default function SpinWheel() {
             )}
           </AnimatePresence>
 
-          {/* Pre-spin Instructions */}
-          {!hasSpun && !showResult && (
+          {/* Pre-spin Instructions or Already Spun Message */}
+          {!showResult && (
             <div className="text-center text-sm text-gray-500">
-              <p>Click the wheel or SPIN button to try your luck!</p>
-              <p className="text-xs mt-2">One spin per visitor • Rewards expire in 7 days</p>
+              {hasSpun ? (
+                <p>You've already used your spin! Check back later for more chances.</p>
+              ) : (
+                <>
+                  <p>Click the wheel or SPIN button to try your luck!</p>
+                  <p className="text-xs mt-2">One spin per visitor • Rewards expire in 7 days</p>
+                </>
+              )}
             </div>
           )}
 
@@ -296,33 +314,5 @@ export default function SpinWheel() {
         {/* Floating Trigger (shown when wheel is dismissed but reward not used) */}
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-// Mini trigger button to re-open wheel
-export function SpinWheelTrigger() {
-  const { result, hasSpun, showWheel, setShowWheel } = useSpinWheel();
-
-  // Only show if user has a reward and wheel is closed
-  if (!result || !hasSpun || showWheel || result.segment.type === "tryAgain") {
-    return null;
-  }
-
-  // Check if reward is still valid
-  if (Date.now() > result.expiresAt) {
-    return null;
-  }
-
-  return (
-    <motion.button
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.1 }}
-      onClick={() => setShowWheel(true)}
-      className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition"
-      title="View your reward"
-    >
-      <Gift className="w-6 h-6" />
-    </motion.button>
   );
 }

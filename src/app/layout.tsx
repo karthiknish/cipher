@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Chatbot from "@/components/Chatbot";
 import ActivityTicker from "@/components/ActivityTicker";
-import SpinWheel, { SpinWheelTrigger } from "@/components/SpinWheel";
+import SpinWheel from "@/components/SpinWheel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -123,7 +123,6 @@ export default function RootLayout({
           <Chatbot />
           <ActivityTicker />
           <SpinWheel />
-          <SpinWheelTrigger />
         </Providers>
       </body>
     </html>

@@ -9,7 +9,8 @@ import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useProducts } from "@/context/ProductContext";
 import { signOut } from "@/lib/firebase";
-import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock } from "@phosphor-icons/react";
+import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock, Gift } from "@phosphor-icons/react";
+import { useSpinWheel } from "@/context/SpinWheelContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
@@ -18,6 +19,7 @@ export default function Navbar() {
   const toast = useToast();
   const { wishlist } = useWishlist();
   const { products } = useProducts();
+  const { hasSpun, result, setShowWheel } = useSpinWheel();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
   
@@ -154,6 +156,22 @@ export default function Navbar() {
 
           {/* Right Icons */}
           <div className="flex items-center gap-6">
+            {/* Spin to Win */}
+            <button
+              onClick={() => setShowWheel(true)}
+              className="relative hover:opacity-60 transition-opacity group"
+              aria-label="Spin to Win"
+              title={hasSpun ? (result ? "View your reward" : "Already spun") : "Spin to Win!"}
+            >
+              <Gift className="w-5 h-5" />
+              {!hasSpun && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
+              {result && !hasSpun === false && result.segment.type !== "tryAgain" && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[8px] rounded-full flex items-center justify-center">✓</span>
+              )}
+            </button>
+
             {/* Search */}
             <button
               onClick={() => setSearchOpen(true)}
