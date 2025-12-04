@@ -1,5 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { db, doc, getDoc, setDoc, serverTimestamp } from "@/lib/firebase";
 
 export interface WheelSegment {
   id: string;
@@ -15,6 +17,7 @@ export interface SpinResult {
   code: string;
   expiresAt: number;
   usedAt?: number;
+  spunAt: number; // Timestamp when spin occurred
 }
 
 interface SpinWheelContextType {
@@ -23,11 +26,14 @@ interface SpinWheelContextType {
   showWheel: boolean;
   isSpinning: boolean;
   result: SpinResult | null;
+  canSpinToday: boolean;
+  nextSpinTime: Date | null;
   spin: () => Promise<WheelSegment>;
   setShowWheel: (show: boolean) => void;
   dismissWheel: () => void;
   applyReward: () => void;
-  isFirstTimeVisitor: boolean;
+  isLoading: boolean;
+  requiresLogin: boolean;
 }
 
 const SpinWheelContext = createContext<SpinWheelContextType | undefined>(undefined);
@@ -66,44 +72,102 @@ function selectWeightedSegment(segments: WheelSegment[]): WheelSegment {
   return segments[0];
 }
 
+// Helper to check if user can spin today (24 hours since last spin)
+function canSpinAgain(lastSpinTime: number): boolean {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  return Date.now() - lastSpinTime >= oneDayMs;
+}
+
+// Helper to get next spin time
+function getNextSpinTime(lastSpinTime: number): Date {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  return new Date(lastSpinTime + oneDayMs);
+}
+
 export function SpinWheelProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [segments] = useState<WheelSegment[]>(DEFAULT_SEGMENTS);
   const [hasSpun, setHasSpun] = useState(false);
   const [showWheel, setShowWheel] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
-  const [isFirstTimeVisitor, setIsFirstTimeVisitor] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [canSpinToday, setCanSpinToday] = useState(false);
+  const [nextSpinTime, setNextSpinTime] = useState<Date | null>(null);
 
-  // Check if user has already spun on mount
+  // Require login to spin
+  const requiresLogin = !user;
+
+  // Load spin data from Firebase (only for logged-in users)
   useEffect(() => {
-    const spinData = localStorage.getItem("cipher-spin-result");
-    const hasSpunBefore = localStorage.getItem("cipher-has-spun");
-    
-    if (hasSpunBefore) {
-      setHasSpun(true);
-      if (spinData) {
-        try {
-          const parsed = JSON.parse(spinData);
-          // Check if reward is still valid (not expired)
-          if (parsed.expiresAt > Date.now()) {
-            setResult(parsed);
-          }
-        } catch {
-          // Invalid data, ignore
-        }
+    const loadSpinData = async () => {
+      // Reset state when user changes
+      setResult(null);
+      setHasSpun(false);
+      setNextSpinTime(null);
+      
+      if (!user) {
+        // Not logged in - can't spin
+        setCanSpinToday(false);
+        setIsLoading(false);
+        return;
       }
-    } else {
-      // First time visitor - could show wheel automatically
-      setIsFirstTimeVisitor(true);
-    }
-    
-    setInitialized(true);
-  }, []);
+      
+      setIsLoading(true);
+      
+      try {
+        // Load from Firebase for logged-in users
+        const spinDocRef = doc(db, "spinWheelResults", user.uid);
+        const spinDoc = await getDoc(spinDocRef);
+        
+        if (spinDoc.exists()) {
+          const data = spinDoc.data();
+          const spinTime = data.spunAt?.toDate?.()?.getTime() || data.spunAt;
+          
+          if (spinTime) {
+            // Check if can spin again (24 hours rule)
+            if (canSpinAgain(spinTime)) {
+              setCanSpinToday(true);
+              setHasSpun(false);
+              setResult(null);
+            } else {
+              setCanSpinToday(false);
+              setHasSpun(true);
+              setNextSpinTime(getNextSpinTime(spinTime));
+              
+              // Load the result if reward is still valid
+              if (data.expiresAt > Date.now() && data.segment?.type !== "tryAgain") {
+                setResult({
+                  segment: data.segment,
+                  code: data.code,
+                  expiresAt: data.expiresAt,
+                  spunAt: spinTime,
+                });
+              }
+            }
+          }
+        } else {
+          // First time for this user - can spin
+          setCanSpinToday(true);
+        }
+      } catch (error) {
+        console.error("Error loading spin data:", error);
+        setCanSpinToday(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSpinData();
+  }, [user]);
 
   const spin = useCallback(async (): Promise<WheelSegment> => {
-    if (hasSpun || isSpinning) {
-      throw new Error("Already spun");
+    if (!user) {
+      throw new Error("Login required to spin");
+    }
+    
+    if (!canSpinToday || isSpinning) {
+      throw new Error("Cannot spin right now");
     }
 
     setIsSpinning(true);
@@ -114,34 +178,47 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
     // Simulate spin duration
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
+    const now = Date.now();
+    
     // Generate result
     const spinResult: SpinResult = {
       segment: winningSegment,
       code: winningSegment.type !== "tryAgain" ? generatePromoCode(winningSegment) : "",
-      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      expiresAt: now + 7 * 24 * 60 * 60 * 1000, // 7 days
+      spunAt: now,
     };
 
     setResult(spinResult);
     setHasSpun(true);
+    setCanSpinToday(false);
+    setNextSpinTime(getNextSpinTime(now));
     setIsSpinning(false);
 
-    // Save to localStorage - mark as spun permanently
-    localStorage.setItem("cipher-has-spun", "true");
-    if (winningSegment.type !== "tryAgain") {
-      localStorage.setItem("cipher-spin-result", JSON.stringify(spinResult));
+    // Save to Firebase
+    try {
+      const spinDocRef = doc(db, "spinWheelResults", user.uid);
+      await setDoc(spinDocRef, {
+        segment: winningSegment,
+        code: spinResult.code,
+        expiresAt: spinResult.expiresAt,
+        spunAt: now,
+        userId: user.uid,
+        userEmail: user.email,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error saving spin result:", error);
     }
 
     return winningSegment;
-  }, [hasSpun, isSpinning, segments]);
+  }, [user, canSpinToday, isSpinning, segments]);
 
   const dismissWheel = useCallback(() => {
     setShowWheel(false);
-    setIsFirstTimeVisitor(false);
   }, []);
 
   const applyReward = useCallback(() => {
     if (result && result.code) {
-      // Copy code to clipboard
       navigator.clipboard.writeText(result.code);
       setShowWheel(false);
     }
@@ -155,11 +232,14 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
         showWheel,
         isSpinning,
         result,
+        canSpinToday,
+        nextSpinTime,
         spin,
         setShowWheel,
         dismissWheel,
         applyReward,
-        isFirstTimeVisitor,
+        isLoading,
+        requiresLogin,
       }}
     >
       {children}

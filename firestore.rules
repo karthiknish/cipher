@@ -281,5 +281,30 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if true;  // Allow anonymous analytics tracking
     }
+    
+    // Spin wheel results collection - users can read/write their own results
+    match /spinWheelResults/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();
+      allow list: if isAdmin();
+    }
+    
+    // User measurements collection - for size recommendations
+    match /userMeasurements/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // Influencer clicks collection - for tracking referral clicks
+    match /influencerClicks/{clickId} {
+      allow read: if isAdmin();
+      allow create: if true;  // Allow anonymous click tracking
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
   }
 }

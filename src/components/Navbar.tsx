@@ -19,7 +19,7 @@ export default function Navbar() {
   const toast = useToast();
   const { wishlist } = useWishlist();
   const { products } = useProducts();
-  const { hasSpun, result, setShowWheel } = useSpinWheel();
+  const { canSpinToday, result, setShowWheel, requiresLogin } = useSpinWheel();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
   
@@ -161,13 +161,13 @@ export default function Navbar() {
               onClick={() => setShowWheel(true)}
               className="relative hover:opacity-60 transition-opacity group"
               aria-label="Spin to Win"
-              title={hasSpun ? (result ? "View your reward" : "Already spun") : "Spin to Win!"}
+              title={requiresLogin ? "Sign in to spin!" : canSpinToday ? "Spin to Win!" : (result ? "View your reward" : "Come back tomorrow!")}
             >
               <Gift className="w-5 h-5" />
-              {!hasSpun && (
+              {(requiresLogin || canSpinToday) && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               )}
-              {result && !hasSpun === false && result.segment.type !== "tryAgain" && (
+              {!requiresLogin && !canSpinToday && result && result.segment.type !== "tryAgain" && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[8px] rounded-full flex items-center justify-center">✓</span>
               )}
             </button>

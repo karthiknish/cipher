@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSpinWheel, WheelSegment } from "@/context/SpinWheelContext";
+import Link from "next/link";
 import {
   X,
   Gift,
@@ -10,6 +11,7 @@ import {
   Check,
   SpinnerGap,
   Sparkle,
+  SignIn,
 } from "@phosphor-icons/react";
 
 export default function SpinWheel() {
@@ -19,9 +21,12 @@ export default function SpinWheel() {
     isSpinning,
     hasSpun,
     result,
+    canSpinToday,
+    nextSpinTime,
     spin,
     dismissWheel,
-    applyReward,
+    isLoading,
+    requiresLogin,
   } = useSpinWheel();
 
   const [rotation, setRotation] = useState(0);
@@ -40,7 +45,7 @@ export default function SpinWheel() {
   }, [showWheel, hasSpun, result]);
 
   const handleSpin = async () => {
-    if (isSpinning || hasSpun) return;
+    if (isSpinning || !canSpinToday || requiresLogin) return;
 
     try {
       const winningSegment = await spin();
@@ -205,12 +210,16 @@ export default function SpinWheel() {
               {/* Center Button */}
               <button
                 onClick={handleSpin}
-                disabled={isSpinning || hasSpun}
+                disabled={isSpinning || !canSpinToday || requiresLogin}
                 className="absolute inset-0 m-auto w-20 h-20 md:w-24 md:h-24 rounded-full bg-white border-4 border-black flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-50 shadow-lg z-10"
               >
                 {isSpinning ? (
                   <SpinnerGap className="w-8 h-8 animate-spin" />
-                ) : hasSpun ? (
+                ) : isLoading ? (
+                  <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+                ) : requiresLogin ? (
+                  <SignIn className="w-8 h-8" />
+                ) : !canSpinToday ? (
                   <Gift className="w-8 h-8" />
                 ) : (
                   <span className="text-xs font-bold tracking-wider">SPIN</span>
@@ -293,12 +302,36 @@ export default function SpinWheel() {
           {/* Pre-spin Instructions or Already Spun Message */}
           {!showResult && (
             <div className="text-center text-sm text-gray-500">
-              {hasSpun ? (
-                <p>You've already used your spin! Check back later for more chances.</p>
+              {isLoading ? (
+                <p>Loading...</p>
+              ) : requiresLogin ? (
+                <div>
+                  <p className="mb-4">Sign in to spin the wheel and win exclusive rewards!</p>
+                  <Link
+                    href="/login"
+                    onClick={handleClose}
+                    className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 transition"
+                  >
+                    <SignIn className="w-4 h-4" />
+                    SIGN IN TO SPIN
+                  </Link>
+                  <p className="text-xs mt-4 text-gray-400">
+                    Create an account or sign in to try your luck!
+                  </p>
+                </div>
+              ) : !canSpinToday ? (
+                <div>
+                  <p>You've already spun today!</p>
+                  {nextSpinTime && (
+                    <p className="text-xs mt-2">
+                      Come back at {nextSpinTime.toLocaleString()} for another spin
+                    </p>
+                  )}
+                </div>
               ) : (
                 <>
                   <p>Click the wheel or SPIN button to try your luck!</p>
-                  <p className="text-xs mt-2">One spin per visitor • Rewards expire in 7 days</p>
+                  <p className="text-xs mt-2">One spin per day • Rewards expire in 7 days</p>
                 </>
               )}
             </div>
