@@ -22,7 +22,7 @@ export default function Navbar() {
   const { canSpinToday, result, setShowWheel, requiresLogin } = useSpinWheel();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -71,11 +71,11 @@ export default function Navbar() {
   // Filter products based on search query
   const searchResults = searchQuery.trim().length >= 2
     ? products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-      ).slice(0, 8)
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    ).slice(0, 8)
     : [];
 
   // Popular categories for quick search
@@ -83,12 +83,12 @@ export default function Navbar() {
 
   const handleSearch = (query: string) => {
     if (!query.trim()) return;
-    
+
     // Save to recent searches
     const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("cipher-recent-searches", JSON.stringify(updated));
-    
+
     // Navigate to shop with search query
     router.push(`/shop?search=${encodeURIComponent(query)}`);
     setSearchOpen(false);
@@ -111,8 +111,8 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/shop", label: "SHOP" },
+    { href: "/features", label: "FEATURES" },
     { href: "/bundles", label: "BUNDLES" },
-    { href: "/events", label: "EVENTS" },
     { href: "/challenges", label: "CHALLENGES" },
     { href: "/creators", label: "CREATORS" },
     { href: "/vote", label: "VOTE" },
@@ -293,13 +293,13 @@ export default function Navbar() {
                 ))}
                 {user ? (
                   <>
-                    <Link                      href="/profile"
+                    <Link href="/profile"
                       onClick={() => setMobileMenuOpen(false)}
                       className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
                       MY PROFILE
                     </Link>
-                    <Link                      href="/wishlist"
+                    <Link href="/wishlist"
                       onClick={() => setMobileMenuOpen(false)}
                       className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >

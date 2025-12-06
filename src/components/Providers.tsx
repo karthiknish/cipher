@@ -31,6 +31,7 @@ import { SpinWheelProvider } from "@/context/SpinWheelContext";
 import { CustomerBehaviorProvider } from "@/context/CustomerBehaviorContext";
 import { LocalSceneProvider } from "@/context/LocalSceneContext";
 import { NewsletterProvider } from "@/context/NewsletterContext";
+import { SmartMatchProvider } from "@/context/SmartMatchContext";
 import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -66,9 +67,11 @@ export function Providers({ children }: { children: ReactNode }) {
                                                             <SpinWheelProvider>
                                                               <CustomerBehaviorProvider>
                                                                 <LocalSceneProvider>
-                                                                  <NewsletterProvider>
-                                                                    {children}
-                                                                  </NewsletterProvider>
+                                                                  <SmartMatchProvider>
+                                                                    <NewsletterProvider>
+                                                                      {children}
+                                                                    </NewsletterProvider>
+                                                                  </SmartMatchProvider>
                                                                 </LocalSceneProvider>
                                                               </CustomerBehaviorProvider>
                                                             </SpinWheelProvider>

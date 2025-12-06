@@ -1,7 +1,8 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
-import { Trash, Palette, Ruler, Drop, PencilSimple, Check, X, Upload, ImageSquare, SpinnerGap } from "@phosphor-icons/react";
+import { motion, AnimatePresence } from "@/lib/motion";
+import { Trash, Palette, Ruler, Drop, PencilSimple, Check, X, Upload, ImageSquare, SpinnerGap, Camera, CheckCircle, Link as LinkIcon } from "@phosphor-icons/react";
 import { ColorVariant } from "@/context/ProductContext";
 import { ProductFormProps, ALL_SIZES } from "./types";
 import { uploadImage, generateImagePath } from "@/lib/uploadImage";
@@ -31,39 +32,71 @@ interface VariantsTabProps extends ProductFormProps {
   setNewColor: React.Dispatch<React.SetStateAction<ColorVariant>>;
 }
 
-// Mini image uploader for color variants
-function ColorImageUploader({ 
-  value, 
-  onChange, 
+// Image Upload Modal Component
+function ImageUploadModal({
+  isOpen,
+  onClose,
+  onUpload,
   colorName,
-  colorHex 
-}: { 
-  value: string; 
-  onChange: (url: string) => void;
+  colorHex,
+  currentImage,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onUpload: (url: string) => void;
   colorName: string;
   colorHex: string;
+  currentImage?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(currentImage || "");
+  const [urlInput, setUrlInput] = useState("");
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const simulateProgress = () => {
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          return prev;
+        }
+        return prev + Math.random() * 20;
+      });
+    }, 150);
+    return interval;
+  };
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
     if (file.size > 5 * 1024 * 1024) return;
 
+    // Show preview immediately
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
+
     setIsLoading(true);
+    const progressInterval = simulateProgress();
+
     try {
       const path = generateImagePath("products/colors", file.name);
-      console.log("Uploading color image to:", path);
       const downloadURL = await uploadImage(file, path);
-      console.log("Color image uploaded, URL:", downloadURL);
-      onChange(downloadURL);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      onUpload(downloadURL);
+      onClose();
     } catch (err) {
       console.error("Upload error:", err);
+      setPreviewUrl("");
     } finally {
       setIsLoading(false);
+      setUploadProgress(0);
     }
-  }, [onChange]);
+  }, [onUpload, onClose]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -72,79 +105,296 @@ function ColorImageUploader({
     if (file) handleFile(file);
   }, [handleFile]);
 
-  if (value) {
-    return (
-      <div className="relative group w-20 h-20">
-        <Image
-          src={value}
-          alt={`${colorName} variant`}
-          fill
-          className="object-cover rounded-lg"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = `https://placehold.co/200x200/${colorHex.replace('#', '')}/ffffff?text=${colorName}`;
-          }}
-        />
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition rounded-lg flex items-center justify-center gap-1">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="p-1.5 bg-white/90 text-gray-700 rounded hover:bg-white transition"
-            title="Replace image"
-          >
-            <Upload className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition"
-            title="Remove image"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-          }}
-          className="hidden"
-        />
-      </div>
-    );
-  }
+  const handleUrlSubmit = () => {
+    if (urlInput.trim()) {
+      onUpload(urlInput.trim());
+      onClose();
+    }
+  };
+
+  const handleClear = () => {
+    setPreviewUrl("");
+    setUrlInput("");
+    onUpload("");
+  };
+
+  const handleBrowseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    inputRef.current?.click();
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div
-      onDrop={handleDrop}
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-      onClick={() => inputRef.current?.click()}
-      className={`w-20 h-20 rounded-lg border-2 border-dashed cursor-pointer flex flex-col items-center justify-center transition ${
-        isDragging ? "border-black bg-gray-100" : "border-gray-300 hover:border-gray-400 bg-gray-50"
-      }`}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      onClick={onClose}
     >
-      {isLoading ? (
-        <SpinnerGap className="w-5 h-5 text-gray-400 animate-spin" />
-      ) : (
-        <>
-          <ImageSquare className="w-5 h-5 text-gray-400 mb-1" />
-          <span className="text-[10px] text-gray-400">Upload</span>
-        </>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-        className="hidden"
-      />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white w-full max-w-md rounded-xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg border-2 border-gray-200"
+              style={{ backgroundColor: colorHex }}
+            />
+            <div>
+              <h3 className="font-bold text-sm">Upload Image for {colorName || "Color"}</h3>
+              <p className="text-xs text-gray-500">Add a product image for this color variant</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          {/* Hidden file input - placed at content level */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+              // Reset input so same file can be selected again
+              e.target.value = '';
+            }}
+            className="hidden"
+          />
+
+          {/* Current/Preview Image */}
+          {previewUrl ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative aspect-square max-w-[200px] mx-auto"
+            >
+              <Image
+                src={previewUrl}
+                alt="Preview"
+                fill
+                className="object-cover rounded-xl"
+              />
+
+              {/* Loading overlay */}
+              {isLoading && (
+                <div className="absolute inset-0 bg-black/50 rounded-xl flex flex-col items-center justify-center">
+                  <SpinnerGap className="w-8 h-8 text-white animate-spin mb-2" />
+                  <div className="w-32 h-2 bg-white/30 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-white"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-white text-xs mt-2">Uploading... {Math.round(uploadProgress)}%</p>
+                </div>
+              )}
+
+              {/* Success badge */}
+              {!isLoading && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                >
+                  <CheckCircle className="w-3 h-3" weight="bold" />
+                  Ready
+                </motion.div>
+              )}
+
+              {/* Action buttons */}
+              {!isLoading && (
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={handleBrowseClick}
+                    className="p-2 bg-white/90 hover:bg-white rounded-lg shadow transition"
+                    title="Change image"
+                  >
+                    <Camera className="w-4 h-4 text-gray-700" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="p-2 bg-red-500/90 hover:bg-red-500 rounded-lg shadow transition"
+                    title="Remove image"
+                  >
+                    <Trash className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <>
+              {/* Drag & Drop Zone */}
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                onClick={handleBrowseClick}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition relative ${isDragging ? 'border-black bg-gray-50 scale-[1.02]' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+              >
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform ${isDragging ? 'scale-110 -translate-y-1' : ''
+                    }`}
+                  style={{ backgroundColor: colorHex + "20" }}
+                >
+                  <Camera className="w-8 h-8" style={{ color: colorHex === "#FFFFFF" ? "#000" : colorHex }} />
+                </div>
+
+                <p className="text-base font-medium mb-1">
+                  {isDragging ? "Drop your image here" : "Drag & drop your image"}
+                </p>
+                <p className="text-sm text-gray-500 mb-3">or click to browse</p>
+
+                <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <ImageSquare className="w-4 h-4" />
+                    JPG, PNG, WEBP
+                  </span>
+                  <span>•</span>
+                  <span>Max 5MB</span>
+                </div>
+              </div>
+
+              {/* URL Input Toggle */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowUrlInput(!showUrlInput); }}
+                  className="text-sm text-gray-500 hover:text-black transition flex items-center gap-2 mx-auto"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  {showUrlInput ? "Hide URL input" : "Paste an image URL instead"}
+                </button>
+              </div>
+
+              {showUrlInput && (
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 px-4 py-3 border border-gray-200 focus:border-black outline-none text-sm rounded-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUrlSubmit}
+                    disabled={!urlInput.trim()}
+                    className="px-4 py-3 bg-black text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-50 transition"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-black transition"
+          >
+            Cancel
+          </button>
+          {previewUrl && !isLoading && (
+            <button
+              type="button"
+              onClick={() => {
+                onUpload(previewUrl);
+                onClose();
+              }}
+              className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition"
+            >
+              Use This Image
+            </button>
+          )}
+        </div>
+      </motion.div>
     </div>
+  );
+}
+
+// Mini image uploader trigger for color variants
+function ColorImageUploader({
+  value,
+  onChange,
+  colorName,
+  colorHex
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  colorName: string;
+  colorHex: string;
+}) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      {value ? (
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="relative group w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-black transition"
+        >
+          <Image
+            src={value}
+            alt={`${colorName} variant`}
+            fill
+            className="object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://placehold.co/200x200/${colorHex.replace('#', '')}/ffffff?text=${colorName}`;
+            }}
+          />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <PencilSimple className="w-5 h-5 text-white" />
+          </div>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 hover:border-black flex flex-col items-center justify-center transition cursor-pointer bg-gray-50 hover:bg-gray-100"
+        >
+          <Camera className="w-6 h-6 text-gray-400 mb-1" />
+          <span className="text-[10px] text-gray-400">Add Image</span>
+        </button>
+      )}
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <ImageUploadModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onUpload={onChange}
+            colorName={colorName}
+            colorHex={colorHex}
+            currentImage={value}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -270,9 +520,8 @@ export function VariantsTab({
               return (
                 <div
                   key={size}
-                  className={`flex items-center justify-between p-4 border rounded-lg transition ${
-                    isActive ? "border-black bg-gray-50" : "border-gray-200"
-                  }`}
+                  className={`flex items-center justify-between p-4 border rounded-lg transition ${isActive ? "border-black bg-gray-50" : "border-gray-200"
+                    }`}
                 >
                   <label className="flex items-center gap-3 cursor-pointer flex-1">
                     <input
@@ -321,7 +570,7 @@ export function VariantsTab({
           {/* Add New Color */}
           <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-4">
             <p className="text-xs text-gray-500 tracking-wider">ADD NEW COLOR</p>
-            
+
             {/* Preset Colors */}
             <div>
               <p className="text-xs text-gray-400 mb-2">Quick Select</p>
@@ -331,22 +580,20 @@ export function VariantsTab({
                     key={preset.hex}
                     type="button"
                     onClick={() => selectPresetColor(preset)}
-                    className={`group relative w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
-                      newColor.hex.toLowerCase() === preset.hex.toLowerCase()
-                        ? "border-black ring-2 ring-black ring-offset-2"
-                        : "border-gray-200 hover:border-gray-400"
-                    }`}
+                    className={`group relative w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${newColor.hex.toLowerCase() === preset.hex.toLowerCase()
+                      ? "border-black ring-2 ring-black ring-offset-2"
+                      : "border-gray-200 hover:border-gray-400"
+                      }`}
                     style={{ backgroundColor: preset.hex }}
                     title={preset.name}
                   >
                     {newColor.hex.toLowerCase() === preset.hex.toLowerCase() && (
-                      <Check 
-                        className={`absolute inset-0 m-auto w-4 h-4 ${
-                          preset.hex === "#FFFFFF" || preset.hex === "#d4c5a9" || preset.hex === "#eab308"
-                            ? "text-black" 
-                            : "text-white"
-                        }`} 
-                        weight="bold" 
+                      <Check
+                        className={`absolute inset-0 m-auto w-4 h-4 ${preset.hex === "#FFFFFF" || preset.hex === "#d4c5a9" || preset.hex === "#eab308"
+                          ? "text-black"
+                          : "text-white"
+                          }`}
+                        weight="bold"
                       />
                     )}
                   </button>
@@ -388,11 +635,11 @@ export function VariantsTab({
                           setNewColor((prev) => ({ ...prev, hex: e.target.value }))
                         }
                         className="w-12 h-full border-0 rounded-lg cursor-pointer appearance-none"
-                        style={{ 
+                        style={{
                           backgroundColor: newColor.hex,
                         }}
                       />
-                      <div 
+                      <div
                         className="absolute inset-0 rounded-lg border-2 border-gray-200 pointer-events-none"
                         style={{ backgroundColor: newColor.hex }}
                       />
@@ -463,7 +710,7 @@ export function VariantsTab({
                           </button>
                         </div>
                       </div>
-                      
+
                       {/* Preset Colors for Editing */}
                       <div className="flex flex-wrap gap-1.5">
                         {PRESET_COLORS.map((preset) => (
@@ -471,17 +718,16 @@ export function VariantsTab({
                             key={preset.hex}
                             type="button"
                             onClick={() => setEditingColor((prev) => prev ? { ...prev, name: preset.name, hex: preset.hex } : null)}
-                            className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${
-                              editingColor.hex.toLowerCase() === preset.hex.toLowerCase()
-                                ? "border-black"
-                                : "border-gray-200"
-                            }`}
+                            className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${editingColor.hex.toLowerCase() === preset.hex.toLowerCase()
+                              ? "border-black"
+                              : "border-gray-200"
+                              }`}
                             style={{ backgroundColor: preset.hex }}
                             title={preset.name}
                           />
                         ))}
                       </div>
-                      
+
                       {/* Color details with image */}
                       <div className="flex gap-4">
                         {/* Image Uploader for Editing */}
@@ -494,7 +740,7 @@ export function VariantsTab({
                             colorHex={editingColor.hex}
                           />
                         </div>
-                        
+
                         <div className="flex-1 space-y-2">
                           <div className="grid grid-cols-2 gap-2">
                             <input
@@ -547,7 +793,7 @@ export function VariantsTab({
                               (e.target as HTMLImageElement).src = `https://placehold.co/200x200/${color.hex.replace('#', '')}/ffffff?text=${color.name}`;
                             }}
                           />
-                          <div 
+                          <div
                             className="absolute bottom-0 right-0 w-4 h-4 rounded-tl border-t border-l border-white"
                             style={{ backgroundColor: color.hex }}
                             title={color.hex}

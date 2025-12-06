@@ -14,6 +14,7 @@ import {
   EditorialBanner,
   NewsletterSection,
 } from "@/components/home";
+import ForYouSection from "@/components/ForYouSection";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
       <StyleAgentSection />
       <SpinToWinBanner />
       <FeaturedShowcase />
+      <ForYouSection />
       <CollectionsGrid />
       <FeaturesSection />
       <EventsHomeBanner />

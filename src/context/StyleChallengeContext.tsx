@@ -42,6 +42,16 @@ export interface StyleChallenge {
   participantCount: number;
 }
 
+export interface UserChallengeStats {
+  totalParticipations: number;
+  totalWins: number;
+  totalVotesReceived: number;
+  totalVotesGiven: number;
+  currentRank?: number;
+  badges: string[];
+  recentSubmissions: ChallengeSubmission[];
+}
+
 interface StyleChallengeContextType {
   challenges: StyleChallenge[];
   loading: boolean;
@@ -55,6 +65,9 @@ interface StyleChallengeContextType {
   hasUserVoted: (challengeId: string, submissionId: string) => boolean;
   getUserSubmission: (challengeId: string) => ChallengeSubmission | null;
   getTopSubmissions: (challengeId: string, limit?: number) => ChallengeSubmission[];
+  getUserStats: () => UserChallengeStats;
+  getLeaderboard: (challengeId: string) => { submission: ChallengeSubmission; rank: number }[];
+  shareSubmission: (submissionId: string, platform: "twitter" | "facebook" | "copy") => void;
 }
 
 // Sample challenges data
@@ -203,6 +216,16 @@ const StyleChallengeContext = createContext<StyleChallengeContextType>({
   hasUserVoted: () => false,
   getUserSubmission: () => null,
   getTopSubmissions: () => [],
+  getUserStats: () => ({
+    totalParticipations: 0,
+    totalWins: 0,
+    totalVotesReceived: 0,
+    totalVotesGiven: 0,
+    badges: [],
+    recentSubmissions: []
+  }),
+  getLeaderboard: () => [],
+  shareSubmission: () => { },
 });
 
 export const useStyleChallenges = () => useContext(StyleChallengeContext);
@@ -238,9 +261,9 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
   }, [challenges]);
 
   const submitEntry = useCallback(async (
-    challengeId: string, 
-    imageUrl: string, 
-    caption: string, 
+    challengeId: string,
+    imageUrl: string,
+    caption: string,
     productIds: string[]
   ): Promise<boolean> => {
     if (!user) return false;
@@ -280,7 +303,7 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
   }, [user, challenges]);
 
   const voteForSubmission = useCallback(async (
-    challengeId: string, 
+    challengeId: string,
     submissionId: string
   ): Promise<boolean> => {
     if (!user) return false;
@@ -346,6 +369,131 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
       .slice(0, limit);
   }, [challenges]);
 
+  const getUserStats = useCallback((): UserChallengeStats => {
+    if (!user) {
+      return {
+        totalParticipations: 0,
+        totalWins: 0,
+        totalVotesReceived: 0,
+        totalVotesGiven: 0,
+        badges: [],
+        recentSubmissions: [],
+      };
+    }
+
+    // Gather all user submissions across all challenges
+    const userSubmissions: ChallengeSubmission[] = [];
+    let totalVotesReceived = 0;
+    let totalVotesGiven = 0;
+    let totalWins = 0;
+
+    challenges.forEach(challenge => {
+      // Count submissions
+      challenge.submissions.forEach(sub => {
+        if (sub.userId === user.uid) {
+          userSubmissions.push(sub);
+          totalVotesReceived += sub.votes;
+        }
+        // Count votes given by this user
+        if (sub.votedBy.includes(user.uid)) {
+          totalVotesGiven++;
+        }
+      });
+
+      // Count wins
+      challenge.winners?.forEach(winner => {
+        if (winner.userId === user.uid) {
+          totalWins++;
+        }
+      });
+    });
+
+    // Calculate badges
+    const badges: string[] = [];
+    if (userSubmissions.length >= 1) badges.push("first_entry");
+    if (userSubmissions.length >= 5) badges.push("regular_contestant");
+    if (userSubmissions.length >= 10) badges.push("style_veteran");
+    if (totalWins >= 1) badges.push("challenge_winner");
+    if (totalWins >= 3) badges.push("style_champion");
+    if (totalVotesReceived >= 50) badges.push("crowd_favorite");
+    if (totalVotesReceived >= 100) badges.push("style_icon");
+    if (totalVotesGiven >= 10) badges.push("active_voter");
+    if (totalVotesGiven >= 50) badges.push("community_supporter");
+
+    // Get current rank in active challenge
+    let currentRank: number | undefined;
+    const activeChallenge = challenges.find(c => c.status === "active" || c.status === "voting");
+    if (activeChallenge) {
+      const ranked = [...activeChallenge.submissions].sort((a, b) => b.votes - a.votes);
+      const userRankIndex = ranked.findIndex(s => s.userId === user.uid);
+      if (userRankIndex >= 0) {
+        currentRank = userRankIndex + 1;
+      }
+    }
+
+    return {
+      totalParticipations: userSubmissions.length,
+      totalWins,
+      totalVotesReceived,
+      totalVotesGiven,
+      currentRank,
+      badges,
+      recentSubmissions: userSubmissions.slice(-5).reverse(),
+    };
+  }, [user, challenges]);
+
+  const getLeaderboard = useCallback((challengeId: string): { submission: ChallengeSubmission; rank: number }[] => {
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (!challenge) return [];
+
+    return [...challenge.submissions]
+      .sort((a, b) => b.votes - a.votes)
+      .map((submission, index) => ({
+        submission,
+        rank: index + 1,
+      }));
+  }, [challenges]);
+
+  const shareSubmission = useCallback((submissionId: string, platform: "twitter" | "facebook" | "copy") => {
+    // Find the submission
+    let submission: ChallengeSubmission | null = null;
+    let challenge: StyleChallenge | null = null;
+
+    for (const c of challenges) {
+      const s = c.submissions.find(sub => sub.id === submissionId);
+      if (s) {
+        submission = s;
+        challenge = c;
+        break;
+      }
+    }
+
+    if (!submission || !challenge) return;
+
+    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/challenges?submission=${submissionId}`;
+    const shareText = `Check out my entry in the ${challenge.title} challenge on CIPHER! ${submission.caption}`;
+
+    switch (platform) {
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+          "_blank"
+        );
+        break;
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`,
+          "_blank"
+        );
+        break;
+      case "copy":
+        if (typeof navigator !== "undefined" && navigator.clipboard) {
+          navigator.clipboard.writeText(shareUrl);
+        }
+        break;
+    }
+  }, [challenges]);
+
   return (
     <StyleChallengeContext.Provider value={{
       challenges,
@@ -360,6 +508,9 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
       hasUserVoted,
       getUserSubmission,
       getTopSubmissions,
+      getUserStats,
+      getLeaderboard,
+      shareSubmission,
     }}>
       {children}
     </StyleChallengeContext.Provider>
