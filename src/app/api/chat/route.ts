@@ -56,7 +56,7 @@ SHIPPING & RETURNS:
 - Easy returns process through the Orders page
 
 CUSTOMER SERVICE:
-- Email: support@cipher.com (placeholder)
+- Email: hello@cipherstreet.com
 - Response time: Within 24 hours
 - Business hours: Monday-Friday, 9am-6pm EST
 

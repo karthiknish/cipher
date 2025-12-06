@@ -101,7 +101,7 @@ const FAQS = [
       },
       {
         q: "How can I contact customer support?",
-        a: "You can reach us via our Contact page, email at support@cipher.com, or through our social media channels. Our team typically responds within 24 hours on business days.",
+        a: "You can reach us via our Contact page, email at hello@cipherstreet.com, or through our social media channels. Our team typically responds within 24 hours on business days.",
       },
       {
         q: "Do you offer gift cards?",

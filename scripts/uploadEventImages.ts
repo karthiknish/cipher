@@ -21,7 +21,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
-const IMAGE_FILES = {
+const IMAGE_FILES: Record<string, string> = {
   "CIPHER Pop-Up NYC": "public/images/events/event_popup_nyc_1765007440899.png",
   "Streetwear Meetup LA": "public/images/events/event_meetup_la_1765007456974.png", 
   "VIP Gold Member Launch": "public/images/events/event_vip_launch_1765007471883.png",
@@ -35,7 +35,8 @@ async function uploadEventImages() {
   
   for (const doc of snapshot.docs) {
     const data = doc.data();
-    const localPath = IMAGE_FILES[data.title];
+    const title = data.title as string;
+    const localPath = IMAGE_FILES[title];
     
     if (localPath && fs.existsSync(localPath)) {
       const fileName = path.basename(localPath);

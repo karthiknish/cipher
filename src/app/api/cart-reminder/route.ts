@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
 import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse } from "@/lib/api-auth";
+import { Resend } from "resend";
+
+// Initialize Resend client
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Support email configuration
+const SUPPORT_EMAIL = "hello@cipherstreet.com";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "CIPHER <noreply@cipherstreet.com>";
 
 interface CartItem {
   productId: string;
@@ -82,16 +90,6 @@ export async function POST(request: NextRequest) {
       return badRequestResponse("Too many items in cart");
     }
 
-    // In production, you would integrate with an email service like:
-    // - SendGrid
-    // - Mailgun
-    // - AWS SES
-    // - Resend
-    // - Postmark
-    
-    // For now, we'll simulate the email sending
-    // In production, replace this with actual email sending logic
-    
     const emailSubject = getEmailSubject(reminderNumber);
     const emailMessage = getEmailMessage(reminderNumber);
     
@@ -100,100 +98,98 @@ export async function POST(request: NextRequest) {
     const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/cart?recover=${recoveryToken}`;
     
     // Build email content
-    const emailContent = {
-      to: email,
-      subject: emailSubject,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${emailSubject}</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #e0e0e0;">
-                  <!-- Header -->
-                  <tr>
-                    <td style="background-color: #000000; padding: 30px; text-align: center;">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: 4px; font-weight: 500;">CIPHER</h1>
-                    </td>
-                  </tr>
-                  
-                  <!-- Main Content -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 500; color: #000000;">${emailSubject}</h2>
-                      <p style="margin: 0 0 30px; font-size: 14px; line-height: 1.6; color: #666666;">${emailMessage}</p>
-                      
-                      <!-- Cart Items -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                        ${items.map(item => `
-                          <tr>
-                            <td style="padding: 15px 0; border-bottom: 1px solid #f0f0f0;">
-                              <table width="100%" cellpadding="0" cellspacing="0">
-                                <tr>
-                                  <td width="80" style="vertical-align: top;">
-                                    <img src="${item.image}" alt="${item.name}" width="70" height="85" style="object-fit: cover; background-color: #f5f5f5;">
-                                  </td>
-                                  <td style="vertical-align: top; padding-left: 15px;">
-                                    <p style="margin: 0 0 5px; font-size: 14px; font-weight: 500; color: #000000;">${item.name}</p>
-                                    <p style="margin: 0; font-size: 12px; color: #666666;">Size: ${item.size} ${item.color ? `• Color: ${item.color}` : ""}</p>
-                                    <p style="margin: 5px 0 0; font-size: 12px; color: #666666;">Qty: ${item.quantity} × $${item.price.toFixed(2)}</p>
-                                  </td>
-                                  <td width="80" style="vertical-align: top; text-align: right;">
-                                    <p style="margin: 0; font-size: 14px; font-weight: 500; color: #000000;">$${(item.price * item.quantity).toFixed(2)}</p>
-                                  </td>
-                                </tr>
-                              </table>
-                            </td>
-                          </tr>
-                        `).join("")}
-                      </table>
-                      
-                      <!-- Total -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${emailSubject}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #e0e0e0;">
+                <!-- Header -->
+                <tr>
+                  <td style="background-color: #000000; padding: 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: 4px; font-weight: 500;">CIPHER</h1>
+                  </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 500; color: #000000;">${emailSubject}</h2>
+                    <p style="margin: 0 0 30px; font-size: 14px; line-height: 1.6; color: #666666;">${emailMessage}</p>
+                    
+                    <!-- Cart Items -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                      ${items.map(item => `
                         <tr>
-                          <td style="padding: 15px 0; border-top: 2px solid #000000;">
+                          <td style="padding: 15px 0; border-bottom: 1px solid #f0f0f0;">
                             <table width="100%" cellpadding="0" cellspacing="0">
                               <tr>
-                                <td style="font-size: 14px; font-weight: 500; color: #000000;">Subtotal</td>
-                                <td style="text-align: right; font-size: 16px; font-weight: 600; color: #000000;">$${total.toFixed(2)}</td>
+                                <td width="80" style="vertical-align: top;">
+                                  <img src="${item.image}" alt="${item.name}" width="70" height="85" style="object-fit: cover; background-color: #f5f5f5;">
+                                </td>
+                                <td style="vertical-align: top; padding-left: 15px;">
+                                  <p style="margin: 0 0 5px; font-size: 14px; font-weight: 500; color: #000000;">${item.name}</p>
+                                  <p style="margin: 0; font-size: 12px; color: #666666;">Size: ${item.size} ${item.color ? `• Color: ${item.color}` : ""}</p>
+                                  <p style="margin: 5px 0 0; font-size: 12px; color: #666666;">Qty: ${item.quantity} × $${item.price.toFixed(2)}</p>
+                                </td>
+                                <td width="80" style="vertical-align: top; text-align: right;">
+                                  <p style="margin: 0; font-size: 14px; font-weight: 500; color: #000000;">$${(item.price * item.quantity).toFixed(2)}</p>
+                                </td>
                               </tr>
                             </table>
                           </td>
                         </tr>
-                      </table>
-                      
-                      <!-- CTA Button -->
-                      <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                          <td align="center">
-                            <a href="${recoveryUrl}" style="display: inline-block; background-color: #000000; color: #ffffff; text-decoration: none; padding: 15px 40px; font-size: 13px; letter-spacing: 2px; font-weight: 500;">COMPLETE YOUR ORDER</a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #fafafa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;">
-                      <p style="margin: 0 0 10px; font-size: 12px; color: #999999;">Need help? Contact us at support@cipher.com</p>
-                      <p style="margin: 0; font-size: 11px; color: #cccccc;">© ${new Date().getFullYear()} CIPHER. All rights reserved.</p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `,
-      text: `
+                      `).join("")}
+                    </table>
+                    
+                    <!-- Total -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                      <tr>
+                        <td style="padding: 15px 0; border-top: 2px solid #000000;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size: 14px; font-weight: 500; color: #000000;">Subtotal</td>
+                              <td style="text-align: right; font-size: 16px; font-weight: 600; color: #000000;">$${total.toFixed(2)}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <!-- CTA Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${recoveryUrl}" style="display: inline-block; background-color: #000000; color: #ffffff; text-decoration: none; padding: 15px 40px; font-size: 13px; letter-spacing: 2px; font-weight: 500;">COMPLETE YOUR ORDER</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #fafafa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 10px; font-size: 12px; color: #999999;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
+                    <p style="margin: 0; font-size: 11px; color: #cccccc;">© ${new Date().getFullYear()} CIPHER. All rights reserved.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const textContent = `
 ${emailSubject}
 
 ${emailMessage}
@@ -205,38 +201,69 @@ Subtotal: $${total.toFixed(2)}
 
 Complete your order: ${recoveryUrl}
 
-Need help? Contact us at support@cipher.com
+Need help? Contact us at ${SUPPORT_EMAIL}
 
 © ${new Date().getFullYear()} CIPHER. All rights reserved.
-      `
-    };
+    `;
 
-    // Log the email for development (remove in production)
-    console.log("📧 Cart reminder email would be sent:", {
-      to: email,
-      subject: emailSubject,
-      reminderNumber,
-      itemCount: items.length,
-      total,
-      recoveryUrl
-    });
+    // Send email using Resend if configured
+    if (resend) {
+      try {
+        const { data, error } = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject: emailSubject,
+          html: htmlContent,
+          text: textContent,
+        });
 
-    // TODO: Implement actual email sending
-    // Example with Resend:
-    // const resend = new Resend(process.env.RESEND_API_KEY);
-    // await resend.emails.send({
-    //   from: 'CIPHER <noreply@cipher.com>',
-    //   to: email,
-    //   subject: emailContent.subject,
-    //   html: emailContent.html,
-    // });
+        if (error) {
+          console.error("Resend API error:", error);
+          return NextResponse.json(
+            { error: "Failed to send email", details: error.message },
+            { status: 500 }
+          );
+        }
 
-    // Simulate success for now
-    return NextResponse.json({
-      success: true,
-      message: `Reminder #${reminderNumber} sent to ${email}`,
-      recoveryUrl,
-    });
+        console.log("📧 Cart reminder email sent:", {
+          messageId: data?.id,
+          to: email,
+          subject: emailSubject,
+          reminderNumber,
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Reminder #${reminderNumber} sent to ${email}`,
+          messageId: data?.id,
+          recoveryUrl,
+        });
+      } catch (emailError) {
+        console.error("Failed to send email via Resend:", emailError);
+        return NextResponse.json(
+          { error: "Email service error" },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Log email for development when Resend is not configured
+      console.log("📧 [DEV MODE] Cart reminder email would be sent:", {
+        to: email,
+        subject: emailSubject,
+        reminderNumber,
+        itemCount: items.length,
+        total,
+        recoveryUrl,
+      });
+      console.log("⚠️  To enable email sending, set RESEND_API_KEY in .env.local");
+
+      return NextResponse.json({
+        success: true,
+        message: `[DEV MODE] Reminder #${reminderNumber} logged for ${email}`,
+        recoveryUrl,
+        note: "Email not sent - RESEND_API_KEY not configured",
+      });
+    }
 
   } catch (error) {
     console.error("Failed to send cart reminder:", error);
