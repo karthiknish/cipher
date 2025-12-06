@@ -22,6 +22,7 @@ import {
 } from "@phosphor-icons/react";
 import { useLocalScene, CipherEvent, EventType, LoyaltyTier } from "@/context/LocalSceneContext";
 import { useToast } from "@/context/ToastContext";
+import { ImageUploader } from "@/components/ImageUploader";
 
 const EVENT_TYPE_CONFIG = {
   popup: { label: "Pop-Up", color: "bg-purple-500", icon: Lightning },
@@ -407,14 +408,15 @@ export default function AdminEventsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs tracking-wider text-gray-500 mb-2">IMAGE URL</label>
-                    <input
-                      type="url"
+                    <label className="block text-xs tracking-wider text-gray-500 mb-2">EVENT IMAGE</label>
+                    <ImageUploader
+                      mode="single"
                       value={formData.imageUrl}
-                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition"
-                      placeholder="https://..."
-                      required
+                      onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                      folder="events"
+                      aspectRatio="16/9"
+                      label="Upload Event Image"
+                      size="md"
                     />
                   </div>
                 </div>
