@@ -306,5 +306,90 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+    
+    // ==========================================================================
+    // LOCAL SCENE COLLECTIONS (Events, Stores)
+    // ==========================================================================
+    
+    // Events collection - public read, admin write
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Event RSVPs subcollection - authenticated users can RSVP
+    match /events/{eventId}/rsvps/{rsvpId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid || isAdmin();
+    }
+    
+    // Event RSVPs as top-level collection
+    match /event_rsvps/{rsvpId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow list: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+    
+    // Stores collection - public read, admin write
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ==========================================================================
+    // NEWSLETTER COLLECTION
+    // ==========================================================================
+    
+    // Newsletter subscribers - public subscribe, admin manage
+    match /newsletter_subscribers/{subscriberId} {
+      // Anyone can check if an email exists (for duplicate check)
+      allow read: if isAdmin();
+      // Anyone can subscribe (public form)
+      allow create: if true;
+      // Only admin can update (tags, status changes)
+      allow update: if isAdmin();
+      // Only admin can delete
+      allow delete: if isAdmin();
+    }
+    
+    // Newsletter campaigns - admin only
+    match /newsletter_campaigns/{campaignId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ==========================================================================
+    // GAMIFICATION COLLECTIONS (Challenges, Achievements)
+    // ==========================================================================
+    
+    // Style challenges collection - public read, admin write
+    match /style_challenges/{challengeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Challenge submissions - authenticated users can submit
+    match /challenge_submissions/{submissionId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // Achievement definitions - public read, admin write
+    match /achievement_definitions/{achievementId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

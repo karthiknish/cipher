@@ -1,30 +1,24 @@
 /**
  * Rate Limiting Utility
  * 
- * Distributed rate limiter using Redis with sliding window algorithm.
- * Falls back to in-memory storage if Redis is unavailable.
+ * Simple in-memory rate limiter using sliding window algorithm.
+ * Suitable for single-instance deployments.
  * 
  * Features:
- * - Atomic Redis operations for distributed rate limiting
- * - Automatic fallback to in-memory when Redis is unavailable
  * - Sliding window algorithm for smooth rate limiting
  * - Automatic cleanup of expired entries
+ * - Zero external dependencies
  */
-
-import { getRedisClient, getRateLimitKey, isRedisConfigured } from "@/lib/redis";
 
 interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
 
-// In-memory store for rate limiting (fallback)
+// In-memory store for rate limiting
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Track if we're using Redis or in-memory
-let usingRedis = false;
-
-// Cleanup old entries periodically (every 5 minutes) for in-memory store
+// Cleanup old entries periodically (every 5 minutes)
 if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const now = Date.now();
@@ -54,91 +48,22 @@ export interface RateLimitResult {
 }
 
 /**
- * Check rate limit using Redis (distributed)
- * Uses Lua script for atomic increment and TTL check
+ * Check if a request should be rate limited
+ * 
+ * @param identifier - Unique identifier (usually IP address or user ID)
+ * @param config - Rate limit configuration
  */
-async function checkRateLimitRedis(
+export async function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
-): Promise<RateLimitResult | null> {
-  const redis = getRedisClient();
-  
-  if (!redis) {
-    return null; // Fallback to in-memory
-  }
-
-  const { limit, windowSec, prefix = "default" } = config;
-  const key = getRateLimitKey(identifier, prefix);
-  const now = Date.now();
-  const windowMs = windowSec * 1000;
-
-  try {
-    // Use multi/exec for atomic operations
-    const pipeline = redis.multi();
-    
-    // Get current count
-    pipeline.get(key);
-    // Get TTL
-    pipeline.pttl(key);
-    
-    const results = await pipeline.exec();
-    
-    if (!results) {
-      return null; // Fallback to in-memory
-    }
-
-    const [countResult, ttlResult] = results;
-    const currentCount = countResult?.[1] ? parseInt(countResult[1] as string, 10) : 0;
-    const ttl = ttlResult?.[1] as number;
-
-    // Key doesn't exist or expired
-    if (!currentCount || ttl <= 0) {
-      // Set new counter with expiry
-      await redis.set(key, "1", "PX", windowMs);
-      usingRedis = true;
-      
-      return {
-        success: true,
-        limit,
-        remaining: limit - 1,
-        resetTime: now + windowMs,
-      };
-    }
-
-    // Check if limit exceeded
-    if (currentCount >= limit) {
-      const resetTime = now + ttl;
-      const retryAfterSec = Math.ceil(ttl / 1000);
-      
-      return {
-        success: false,
-        limit,
-        remaining: 0,
-        resetTime,
-        retryAfterSec,
-      };
-    }
-
-    // Increment counter atomically
-    await redis.incr(key);
-    usingRedis = true;
-
-    return {
-      success: true,
-      limit,
-      remaining: limit - currentCount - 1,
-      resetTime: now + ttl,
-    };
-  } catch (error) {
-    console.error("[Rate Limit] Redis error, falling back to in-memory:", error);
-    return null; // Fallback to in-memory
-  }
+): Promise<RateLimitResult> {
+  return checkRateLimitSync(identifier, config);
 }
 
 /**
- * Check rate limit using in-memory storage (fallback)
+ * Synchronous rate limit check
  */
-function checkRateLimitInMemory(
+export function checkRateLimitSync(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
@@ -183,49 +108,6 @@ function checkRateLimitInMemory(
     remaining: limit - existing.count,
     resetTime: existing.resetTime,
   };
-}
-
-/**
- * Check if a request should be rate limited
- * 
- * Uses Redis for distributed rate limiting if available,
- * otherwise falls back to in-memory storage.
- * 
- * @param identifier - Unique identifier (usually IP address or user ID)
- * @param config - Rate limit configuration
- */
-export async function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  // Try Redis first if configured
-  if (isRedisConfigured()) {
-    const redisResult = await checkRateLimitRedis(identifier, config);
-    if (redisResult) {
-      return redisResult;
-    }
-  }
-
-  // Fallback to in-memory
-  return checkRateLimitInMemory(identifier, config);
-}
-
-/**
- * Synchronous rate limit check (in-memory only)
- * Use this when async operations are not possible
- */
-export function checkRateLimitSync(
-  identifier: string,
-  config: RateLimitConfig
-): RateLimitResult {
-  return checkRateLimitInMemory(identifier, config);
-}
-
-/**
- * Check if rate limiting is using Redis
- */
-export function isUsingRedis(): boolean {
-  return usingRedis;
 }
 
 /**

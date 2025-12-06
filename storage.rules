@@ -61,5 +61,17 @@ service firebase.storage {
       allow write: if isOwner(userId) && isValidImage();
       // Note: Set up a Cloud Function to auto-delete after 24 hours
     }
+    
+    // Events images - public read, admin write
+    match /events/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+    }
+    
+    // General uploads folder (used by ImageUploader)
+    match /uploads/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage();
+    }
   }
 }
