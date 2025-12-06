@@ -11,7 +11,7 @@ import { useProducts } from "@/context/ProductContext";
 import { signOut } from "@/lib/firebase";
 import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock, Gift } from "@phosphor-icons/react";
 import { useSpinWheel } from "@/context/SpinWheelContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 
 export default function Navbar() {
   const { user } = useAuth();

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { House, MagnifyingGlass, ArrowLeft, Compass } from "@phosphor-icons/react";
 
 export default function NotFound() {

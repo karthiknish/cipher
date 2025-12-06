@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, viewportAnimations } from "@/lib/motion";
 import { ArrowRight } from "@phosphor-icons/react";
 
 export default function EditorialBanner() {
   return (
     <section className="relative h-[70vh] md:h-[80vh] overflow-hidden">
       <Image
-        src="https://placehold.co/1920x1080/1a1a1a/ffffff?text="
+        src="/images/editorial_banner_1765006746120.png"
         alt="Editorial"
         fill
         className="object-cover"
@@ -16,10 +16,7 @@ export default function EditorialBanner() {
       <div className="absolute inset-0 bg-black/50" />
       <div className="absolute inset-0 flex items-center justify-center text-center text-white px-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          {...viewportAnimations.fadeUp}
         >
           <p className="text-sm tracking-[0.4em] mb-6 text-white/60">
             NEW ARRIVALS

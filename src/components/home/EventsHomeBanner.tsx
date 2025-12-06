@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, viewportAnimations, createViewportAnimation, withDelay, transitions } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin, ArrowRight, Users, Lightning } from "@phosphor-icons/react";
@@ -23,9 +23,7 @@ export function EventsHomeBanner() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Featured Event Image */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            {...viewportAnimations.fadeLeft}
             className="relative aspect-[4/3] overflow-hidden"
           >
             <Image
@@ -56,10 +54,7 @@ export function EventsHomeBanner() {
           
           {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
+            {...createViewportAnimation("right", 0.1)}
           >
             <div className="flex items-center gap-3 mb-4">
               <Lightning weight="fill" className="w-5 h-5 text-purple-400" />
@@ -110,10 +105,7 @@ export function EventsHomeBanner() {
         {/* More Events Preview */}
         {upcomingEvents.length > 1 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            {...createViewportAnimation("up", 0.2)}
             className="mt-16 pt-12 border-t border-white/10"
           >
             <div className="flex items-center justify-between mb-8">

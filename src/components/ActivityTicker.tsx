@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLiveActivity, LiveActivity } from "@/context/LiveActivityContext";
 import { ShoppingBag, Heart, Eye, ShoppingCart, X } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 
 const activityIcons = {
   purchase: ShoppingBag,

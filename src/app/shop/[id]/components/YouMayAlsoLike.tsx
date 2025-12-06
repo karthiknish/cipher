@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { Sparkle, ShoppingBag } from "@phosphor-icons/react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";

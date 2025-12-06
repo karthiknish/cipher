@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { ChartLineUp, Envelope, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { CustomerData } from "../types";
 import { CLVPrediction, SortBy } from "./types";

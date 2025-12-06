@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUserProfile, SavedAddress } from "@/context/UserProfileContext";
 import { signOut } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { 
   User, Envelope, MapPin, Plus, PencilSimple, Trash,
   Heart, Palette, Ruler, FloppyDisk, Camera, SignOut,

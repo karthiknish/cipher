@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { Warning, Eye } from "@phosphor-icons/react";
 import { useInventory } from "@/context/InventoryContext";
 import { useLiveActivity } from "@/context/LiveActivityContext";

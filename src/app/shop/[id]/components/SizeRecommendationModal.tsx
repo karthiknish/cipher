@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { X, Sparkle } from "@phosphor-icons/react";
 import { useSizeRecommendation } from "@/context/SizeRecommendationContext";
 import { useToast } from "@/context/ToastContext";

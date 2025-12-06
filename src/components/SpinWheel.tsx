@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { useSpinWheel, WheelSegment } from "@/context/SpinWheelContext";
 import Link from "next/link";
 import {

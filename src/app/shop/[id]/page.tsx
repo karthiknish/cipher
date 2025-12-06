@@ -19,7 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { 
   Truck, ArrowsClockwise, ArrowLeft, SpinnerGap,
   Check, Heart, Sparkle, Scales, Clock, Bell, Camera, TrendUp, MagicWand,

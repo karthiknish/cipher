@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { ChatCircle, X, PaperPlaneTilt, SpinnerGap, Robot, User, Sparkle, Lightning, Moon, Coffee, Heart } from "@phosphor-icons/react";
 import { useMoodStyle, MoodType } from "@/context/MoodStyleContext";
 import { useProducts } from "@/context/ProductContext";

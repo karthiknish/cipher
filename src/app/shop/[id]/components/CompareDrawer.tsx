@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { Scales, ArrowRight, X } from "@phosphor-icons/react";
 import { useCompare } from "@/context/CompareContext";
 

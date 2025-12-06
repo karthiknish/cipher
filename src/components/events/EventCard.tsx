@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, hoverEffects, fadeInUp } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import { 

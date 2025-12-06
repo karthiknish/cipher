@@ -7,7 +7,7 @@ import { useDesignVoting } from "@/context/DesignVotingContext";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Image as ImageIcon, Trash, Eye, Calendar, Trophy, SpinnerGap, Sparkle, X } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import ImageUploader from "@/components/ImageUploader";
 
 export default function AdminDesignVotingPage() {

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { useToast } from "@/context/ToastContext";
 import { 
   Envelope, 

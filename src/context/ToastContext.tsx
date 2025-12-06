@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { X, CheckCircle, WarningCircle, Info, Warning } from "@phosphor-icons/react";
 
 type ToastType = "success" | "error" | "info" | "warning";

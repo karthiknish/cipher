@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import Image from "next/image";
 import { 
   ChartBar, 
@@ -19,6 +19,7 @@ import {
 import { Order } from "@/context/OrderContext";
 import { MiniBarChart, DonutChart } from "./Charts";
 import { Metrics, DateRange, STATUS_OPTIONS, STATUS_COLORS, CATEGORIES } from "./types";
+import { LiveStatsView } from "./LiveStatsView";
 
 interface DashboardTabProps {
   metrics: Metrics;
@@ -29,6 +30,9 @@ interface DashboardTabProps {
 export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabProps) {
   return (
     <div className="space-y-8">
+      {/* Live Stats - Shopify Style */}
+      <LiveStatsView />
+
       {/* Date Range Filter */}
       <div className="flex justify-end">
         <div className="flex gap-2 bg-gray-100 p-1">

@@ -4,7 +4,7 @@ import { useBlog } from "@/context/BlogContext";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { 
   ArrowLeft,
   Clock, 

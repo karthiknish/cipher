@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import Link from "next/link";
 import {
   InstagramLogo,

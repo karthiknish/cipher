@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { useOrders, Order } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";

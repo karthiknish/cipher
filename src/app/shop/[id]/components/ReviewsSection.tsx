@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "@/lib/motion";
 import { Star, X, SpinnerGap } from "@phosphor-icons/react";
 import { useAuth } from "@/context/AuthContext";
 import { useReviews, Review } from "@/context/ReviewContext";

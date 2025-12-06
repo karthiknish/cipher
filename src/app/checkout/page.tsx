@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { useCart } from "@/context/CartContext";
 import { useOrders, ShippingAddress } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";

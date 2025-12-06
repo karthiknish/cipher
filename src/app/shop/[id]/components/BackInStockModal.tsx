@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { X, Bell, Warning, CheckCircle, Envelope, SpinnerGap } from "@phosphor-icons/react";
 import { useAuth } from "@/context/AuthContext";
 import { useStockNotification } from "@/context/StockNotificationContext";

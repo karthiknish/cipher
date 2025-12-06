@@ -30,6 +30,7 @@ import { BlogProvider } from "@/context/BlogContext";
 import { SpinWheelProvider } from "@/context/SpinWheelContext";
 import { CustomerBehaviorProvider } from "@/context/CustomerBehaviorContext";
 import { LocalSceneProvider } from "@/context/LocalSceneContext";
+import { NewsletterProvider } from "@/context/NewsletterContext";
 import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -65,7 +66,9 @@ export function Providers({ children }: { children: ReactNode }) {
                                                             <SpinWheelProvider>
                                                               <CustomerBehaviorProvider>
                                                                 <LocalSceneProvider>
-                                                                  {children}
+                                                                  <NewsletterProvider>
+                                                                    {children}
+                                                                  </NewsletterProvider>
                                                                 </LocalSceneProvider>
                                                               </CustomerBehaviorProvider>
                                                             </SpinWheelProvider>

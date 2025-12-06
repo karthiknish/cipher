@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { ArrowRight, Sparkle, MagnifyingGlass, SpinnerGap, ShoppingBag, Heart, Moon, Confetti, Brain, Lightning, Coffee, Fire, Palette, Trophy } from "@phosphor-icons/react";
 import { useProducts, Product } from "@/context/ProductContext";
 import { useCart } from "@/context/CartContext";

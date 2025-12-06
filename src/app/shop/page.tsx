@@ -5,7 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { Plus, X, SpinnerGap } from "@phosphor-icons/react";
 
 const CATEGORIES = ["All", "Hoodies", "Tees", "Pants", "Outerwear", "Accessories"];

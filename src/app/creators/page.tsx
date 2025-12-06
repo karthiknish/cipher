@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -28,7 +28,7 @@ const FEATURED_CREATORS = [
   {
     name: "Sarah Chen",
     username: "sarahstyles",
-    avatar: "https://placehold.co/200x200/1a1a1a/ffffff?text=SC",
+    avatar: "/images/avatars/creator_avatar_1_1765006771142.png",
     followers: "125K",
     sales: "500+",
     specialty: "Streetwear",
@@ -36,7 +36,7 @@ const FEATURED_CREATORS = [
   {
     name: "Marcus Johnson",
     username: "marcusjstyle",
-    avatar: "https://placehold.co/200x200/1a1a1a/ffffff?text=MJ",
+    avatar: "/images/avatars/creator_avatar_2_1765006792028.png",
     followers: "89K",
     sales: "350+",
     specialty: "Minimalist",
@@ -44,7 +44,7 @@ const FEATURED_CREATORS = [
   {
     name: "Olivia Park",
     username: "oliviawears",
-    avatar: "https://placehold.co/200x200/1a1a1a/ffffff?text=OP",
+    avatar: "/images/avatars/creator_avatar_3_1765006807024.png",
     followers: "210K",
     sales: "800+",
     specialty: "Athleisure",
@@ -681,21 +681,21 @@ export default function CreatorsLandingPage() {
                 quote: "CIPHER's creator program changed everything for me. I went from recommending products for free to earning over $5K monthly.",
                 name: "Alex Rivera",
                 role: "Fashion Creator",
-                avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=AR",
+                avatar: "/images/avatars/creator_avatar_1_1765006771142.png",
                 followers: "180K",
               },
               {
                 quote: "The analytics dashboard is incredible. I can see exactly which products resonate with my audience and optimize my content.",
                 name: "Jordan Lee",
                 role: "Style Influencer",
-                avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=JL",
+                avatar: "/images/avatars/creator_avatar_2_1765006792028.png",
                 followers: "95K",
               },
               {
                 quote: "I love that I can curate my own collection. My followers trust my picks and the conversion rate is amazing.",
                 name: "Maya Patel",
                 role: "Lifestyle Blogger",
-                avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=MP",
+                avatar: "/images/avatars/creator_avatar_3_1765006807024.png",
                 followers: "320K",
               },
             ].map((testimonial, i) => (

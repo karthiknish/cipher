@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, viewportAnimations, staggerDelay } from "@/lib/motion";
 import { ArrowRight } from "@phosphor-icons/react";
 
 const COLLECTIONS = [
@@ -33,10 +33,7 @@ export default function CollectionsGrid() {
     <section className="py-20 md:py-32 bg-neutral-50">
       <div className="w-full px-6 md:px-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          {...viewportAnimations.fadeUp}
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
@@ -53,8 +50,8 @@ export default function CollectionsGrid() {
               key={collection.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              viewport={{ once: true }}
+              transition={staggerDelay(i, 0.1)}
             >
               <Link
                 href={`/shop?category=${collection.title}`}

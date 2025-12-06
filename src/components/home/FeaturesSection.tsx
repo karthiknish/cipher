@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, viewportAnimations, staggerDelay } from "@/lib/motion";
 import { Sparkle, Brain, Trophy, ShieldCheck } from "@phosphor-icons/react";
 
 const FEATURES = [
@@ -30,9 +30,7 @@ export default function FeaturesSection() {
     <section className="py-20 md:py-32 bg-white">
       <div className="w-full px-6 md:px-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...viewportAnimations.fadeUp}
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
@@ -50,7 +48,7 @@ export default function FeaturesSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={staggerDelay(i, 0.1)}
               className="text-center p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group"
             >
               <div className="w-16 h-16 bg-black text-white rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">

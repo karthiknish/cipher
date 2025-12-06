@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, fadeIn, fadeInUp, staggerDelay } from "@/lib/motion";
 import { 
   Calendar, 
   MapPin, 

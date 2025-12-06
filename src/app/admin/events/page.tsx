@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, modalOverlay, modalContent } from "@/lib/motion";
 import Image from "next/image";
 import { 
   Plus, 

@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, viewportAnimations, staggerDelay, fadeInUp } from "@/lib/motion";
 import { Quotes, Star } from "@phosphor-icons/react";
 
 const TESTIMONIALS = [
@@ -9,7 +9,7 @@ const TESTIMONIALS = [
     id: 1,
     name: "Alex Chen",
     role: "Fashion Enthusiast",
-    avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=AC",
+    avatar: "/images/avatars/testimonial_avatar_1_1765006701076.png",
     text: "The quality of their hoodies is unmatched. I've never felt fabric this premium before. My go-to brand now!",
     rating: 5,
     product: "Cipher Hoodie",
@@ -18,7 +18,7 @@ const TESTIMONIALS = [
     id: 2,
     name: "Jordan Lee",
     role: "Street Style Creator",
-    avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=JL",
+    avatar: "/images/avatars/testimonial_avatar_2_1765006714639.png",
     text: "Finally a brand that understands modern streetwear. The fit, the details, everything is perfect.",
     rating: 5,
     product: "Cargo Pants",
@@ -27,7 +27,7 @@ const TESTIMONIALS = [
     id: 3,
     name: "Taylor Kim",
     role: "Creative Director",
-    avatar: "https://placehold.co/100x100/1a1a1a/ffffff?text=TK",
+    avatar: "/images/avatars/testimonial_avatar_3_1765006729470.png",
     text: "The AI try-on feature is game-changing. Saved me from so many wrong purchases. Love this brand!",
     rating: 5,
     product: "Tactical Vest",
@@ -48,9 +48,7 @@ export default function TestimonialsSection() {
     <section className="py-20 md:py-32 bg-neutral-100">
       <div className="w-full px-6 md:px-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...viewportAnimations.fadeUp}
           className="text-center mb-16"
         >
           <span className="text-sm tracking-[0.3em] text-gray-400 mb-4 block">WHAT PEOPLE SAY</span>
@@ -67,7 +65,7 @@ export default function TestimonialsSection() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={staggerDelay(i, 0.1)}
               className="text-center"
             >
               <p className="text-4xl md:text-5xl font-bold mb-2">{stat.value}</p>
@@ -81,9 +79,10 @@ export default function TestimonialsSection() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="bg-white p-8 md:p-12 rounded-2xl shadow-sm"
             >
               <Quotes className="w-12 h-12 text-gray-200 mb-6" weight="fill" />

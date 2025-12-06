@@ -28,6 +28,7 @@ import {
   ArrowRight,
   TrendUp,
   Warning,
+  Envelope,
 } from "@phosphor-icons/react";
 import { CATEGORIES } from "./components";
 
@@ -223,6 +224,14 @@ function AdminPageContent() {
       href: "/admin/loyalty", 
       icon: Gift,
       color: "bg-violet-50 text-violet-600",
+    },
+    { 
+      key: "newsletter", 
+      label: "Newsletter", 
+      description: "Manage email subscribers",
+      href: "/admin/newsletter", 
+      icon: Envelope,
+      color: "bg-teal-50 text-teal-600",
     },
   ];
 

@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useBlog } from "@/context/BlogContext";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { 
   MagnifyingGlass, 
   Clock, 

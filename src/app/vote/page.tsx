@@ -6,7 +6,7 @@ import { useDesignVoting } from "@/context/DesignVotingContext";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { Trophy, Users, Clock, CheckCircle, Heart, ArrowRight, Confetti } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 
 export default function VotePage() {
   const { user } = useAuth();

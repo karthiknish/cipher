@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, viewportAnimations } from "@/lib/motion";
 import { ArrowRight, Play, Sparkle, Check } from "@phosphor-icons/react";
 
 export default function AITryOnSection() {
@@ -9,10 +9,7 @@ export default function AITryOnSection() {
       <div className="w-full px-6 md:px-12">
         <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
+            {...viewportAnimations.fadeLeft}
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6">
               <Play className="w-4 h-4" weight="fill" />
@@ -61,10 +58,7 @@ export default function AITryOnSection() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
+            {...viewportAnimations.fadeRight}
             className="relative"
           >
             <div className="aspect-square bg-white/5 rounded-3xl flex items-center justify-center border border-white/10">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { SpinnerGap, Envelope, Lock, User, ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 
 // Google Icon SVG

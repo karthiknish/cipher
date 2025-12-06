@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { 
   ThumbsUp, CheckCircle, Star, X, ArrowLeft, ArrowRight 
 } from "@phosphor-icons/react";

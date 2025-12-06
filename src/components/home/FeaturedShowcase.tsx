@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, viewportAnimations, scaleIn, transitions, hoverEffects } from "@/lib/motion";
 import { ArrowRight } from "@phosphor-icons/react";
 import { useProducts } from "@/context/ProductContext";
 
@@ -24,9 +24,7 @@ export default function FeaturedShowcase() {
     <section className="py-20 md:py-32 bg-white">
       <div className="w-full px-6 md:px-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...viewportAnimations.fadeUp}
           className="text-center mb-12"
         >
           <span className="text-sm tracking-[0.3em] text-gray-400 mb-4 block">FEATURED THIS WEEK</span>

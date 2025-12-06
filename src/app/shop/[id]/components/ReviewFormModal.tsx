@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/motion";
 import { X, SpinnerGap, Camera } from "@phosphor-icons/react";
 import { useReviews } from "@/context/ReviewContext";
 import { useToast } from "@/context/ToastContext";

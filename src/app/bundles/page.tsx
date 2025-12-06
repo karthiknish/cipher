@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/motion";
 import { useBundles, BundleWithProducts } from "@/context/BundleContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
