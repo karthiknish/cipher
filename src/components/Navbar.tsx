@@ -14,7 +14,7 @@ import { useSpinWheel } from "@/context/SpinWheelContext";
 import { motion, AnimatePresence } from "@/lib/motion";
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { cart } = useCart();
   const toast = useToast();
   const { wishlist } = useWishlist();
@@ -261,16 +261,18 @@ export default function Navbar() {
                       </div>
 
                       {/* Admin Section */}
-                      <div className="border-t border-gray-100 py-1">
-                        <Link
-                          href="/admin"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
-                        >
-                          <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
-                          ADMIN PANEL
-                        </Link>
-                      </div>
+                      {userRole?.isAdmin && (
+                        <div className="border-t border-gray-100 py-1">
+                          <Link
+                            href="/admin"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
+                            ADMIN PANEL
+                          </Link>
+                        </div>
+                      )}
 
                       {/* Sign Out */}
                       <div className="border-t border-gray-100">
@@ -373,14 +375,16 @@ export default function Navbar() {
                     {/* Divider */}
                     <div className="border-t border-gray-100 my-3"></div>
                     
-                    <Link
-                      href="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
-                    >
-                      <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
-                      ADMIN
-                    </Link>
+                    {userRole?.isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
+                      >
+                        <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
+                        ADMIN
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
                         handleSignOut();
