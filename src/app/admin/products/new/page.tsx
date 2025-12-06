@@ -24,7 +24,7 @@ import { NewProductHeader, NewProductFooter } from "./components";
 
 export default function NewProductPage() {
   const router = useRouter();
-  const { loading: authLoading, userRole } = useAuth();
+  const { user, loading: authLoading, userRole } = useAuth();
   const { addProduct } = useProducts();
   const toast = useToast();
 
@@ -262,11 +262,22 @@ export default function NewProductPage() {
       return;
     }
 
+    if (!user) {
+      toast.error("You must be logged in to generate content");
+      return;
+    }
+
     setIsGeneratingAI(true);
     try {
+      // Get the auth token for the API request
+      const token = await user.getIdToken();
+      
       const response = await fetch("/api/generate-product-details", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({
           name: formData.name,
           category: formData.category,
@@ -275,7 +286,8 @@ export default function NewProductPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate content");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to generate content");
       }
 
       const data = await response.json();
@@ -292,7 +304,7 @@ export default function NewProductPage() {
       toast.success("AI-generated content applied!");
     } catch (error) {
       console.error("AI generation error:", error);
-      toast.error("Failed to generate content. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to generate content. Please try again.");
     } finally {
       setIsGeneratingAI(false);
     }

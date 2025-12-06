@@ -1,4 +1,4 @@
-import { storage } from "./firebase";
+import { storage, auth } from "./firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 /**
@@ -9,11 +9,26 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
  */
 export async function uploadImage(file: File, path: string): Promise<string> {
   try {
+    // Debug: Log auth state
+    const currentUser = auth.currentUser;
+    console.log("Upload auth state:", {
+      isAuthenticated: !!currentUser,
+      uid: currentUser?.uid,
+      email: currentUser?.email,
+    });
+    
+    if (!currentUser) {
+      throw new Error("User not authenticated. Please sign in and try again.");
+    }
+    
     // Create a storage reference
     const storageRef = ref(storage, path);
     
-    // Upload the file
-    const snapshot = await uploadBytes(storageRef, file);
+    // Upload the file with explicit content type
+    const metadata = {
+      contentType: file.type || 'image/jpeg',
+    };
+    const snapshot = await uploadBytes(storageRef, file, metadata);
     
     // Get the download URL
     const downloadURL = await getDownloadURL(snapshot.ref);

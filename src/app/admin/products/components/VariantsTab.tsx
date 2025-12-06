@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { Trash, Palette, Ruler, Drop, PencilSimple, Check, X, Upload, ImageSquare, SpinnerGap, Camera, CheckCircle, Link as LinkIcon } from "@phosphor-icons/react";
@@ -51,10 +51,19 @@ function ImageUploadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImage || "");
+  const [uploadedUrl, setUploadedUrl] = useState(currentImage || "");
   const [urlInput, setUrlInput] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keep local state in sync when a different color is edited
+  useEffect(() => {
+    setPreviewUrl(currentImage || "");
+    setUploadedUrl(currentImage || "");
+    setUploadError(null);
+  }, [currentImage]);
 
   const simulateProgress = () => {
     setUploadProgress(0);
@@ -71,8 +80,16 @@ function ImageUploadModal({
   };
 
   const handleFile = useCallback(async (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) return;
+    setUploadError(null);
+    
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be less than 5MB");
+      return;
+    }
 
     // Show preview immediately
     const preview = URL.createObjectURL(file);
@@ -87,11 +104,22 @@ function ImageUploadModal({
       clearInterval(progressInterval);
       setUploadProgress(100);
       await new Promise(resolve => setTimeout(resolve, 300));
-      onUpload(downloadURL);
-      onClose();
-    } catch (err) {
+      setPreviewUrl(downloadURL); // ensure preview reflects uploaded asset, not the local blob
+      setUploadedUrl(downloadURL);
+      // Don't auto-close - let user confirm with "Use This Image" button
+      // This ensures state updates propagate properly before modal unmounts
+    } catch (err: unknown) {
       console.error("Upload error:", err);
+      clearInterval(progressInterval);
       setPreviewUrl("");
+      setUploadedUrl("");
+      // Check for permission errors
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("unauthorized") || errorMessage.includes("permission") || errorMessage.includes("403")) {
+        setUploadError("Permission denied. Make sure you're logged in as an admin.");
+      } else {
+        setUploadError("Upload failed. Please try again or use a URL instead.");
+      }
     } finally {
       setIsLoading(false);
       setUploadProgress(0);
@@ -107,6 +135,8 @@ function ImageUploadModal({
 
   const handleUrlSubmit = () => {
     if (urlInput.trim()) {
+      setPreviewUrl(urlInput.trim());
+      setUploadedUrl(urlInput.trim());
       onUpload(urlInput.trim());
       onClose();
     }
@@ -114,6 +144,7 @@ function ImageUploadModal({
 
   const handleClear = () => {
     setPreviewUrl("");
+    setUploadedUrl("");
     setUrlInput("");
     onUpload("");
   };
@@ -162,6 +193,13 @@ function ImageUploadModal({
 
         {/* Content */}
         <div className="p-4 space-y-4">
+          {/* Error message */}
+          {uploadError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {uploadError}
+            </div>
+          )}
+
           {/* Hidden file input - placed at content level */}
           <input
             ref={inputRef}
@@ -322,9 +360,12 @@ function ImageUploadModal({
             <button
               type="button"
               onClick={() => {
-                onUpload(previewUrl);
-                onClose();
+                if (uploadedUrl) {
+                  onUpload(uploadedUrl);
+                  onClose();
+                }
               }}
+              disabled={!uploadedUrl}
               className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition"
             >
               Use This Image
@@ -735,7 +776,14 @@ export function VariantsTab({
                           <p className="text-xs text-gray-400 mb-1">Image</p>
                           <ColorImageUploader
                             value={editingColor.image}
-                            onChange={(url) => setEditingColor((prev) => prev ? { ...prev, image: url } : null)}
+                            onChange={(url) => {
+                              // Update local editing state
+                              setEditingColor((prev) => prev ? { ...prev, image: url } : null);
+                              // Also update formData directly so image is saved immediately
+                              if (editingColorIndex !== null) {
+                                updateColor(editingColorIndex, { image: url });
+                              }
+                            }}
                             colorName={editingColor.name}
                             colorHex={editingColor.hex}
                           />

@@ -43,12 +43,10 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
     setVisibleActivities(recentActivities.slice(0, 8));
   }, [recentActivities]);
 
-  // Calculate live visitors from viewer counts
+  // Calculate live visitors from actual viewer counts (no simulation)
   useEffect(() => {
     const totalViewers = Object.values(viewerCounts).reduce((sum, count) => sum + count, 0);
-    // Add some simulated visitors for demo
-    const simulated = Math.floor(Math.random() * 15) + 5;
-    setLiveVisitors(totalViewers + simulated);
+    setLiveVisitors(totalViewers);
   }, [viewerCounts]);
 
   const getTimeAgo = (timestamp: Date) => {
@@ -91,6 +89,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
   // Calculate real-time stats
   const now = Date.now();
   const todayStart = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
   
   const getOrderTime = (order: Order) => order.createdAt instanceof Date ? order.createdAt.getTime() : new Date(order.createdAt).getTime();
   
@@ -98,17 +97,25 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
   const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
   const lastHourOrders = allOrders.filter(o => now - getOrderTime(o) < 60 * 60 * 1000);
   
-  // Simulated real-time conversion rate
-  const [conversionRate, setConversionRate] = useState(3.2);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setConversionRate(prev => {
-        const change = (Math.random() - 0.5) * 0.3;
-        return Math.max(1.5, Math.min(6, prev + change));
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Calculate yesterday's revenue for comparison
+  const yesterdayOrders = allOrders.filter(o => {
+    const time = getOrderTime(o);
+    return time >= yesterdayStart && time < todayStart;
+  });
+  const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + o.total, 0);
+  const revenueChange = yesterdayRevenue > 0 
+    ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
+    : todayRevenue > 0 ? 100 : 0;
+  
+  // Calculate actual conversion rate based on today's orders vs total activities
+  const todayActivities = recentActivities.filter(a => {
+    const activityTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+    return activityTime >= todayStart;
+  });
+  
+  const conversionRate = todayActivities.length > 0 
+    ? (todayOrders.length / Math.max(todayActivities.length, 1)) * 100
+    : 0;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -170,9 +177,9 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
             <span className="text-xs text-gray-500">TODAY'S REVENUE</span>
           </div>
           <p className="text-3xl font-bold">${todayRevenue.toLocaleString()}</p>
-          <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
-            <TrendUp className="w-3 h-3" />
-            <span>+12% vs yesterday</span>
+          <div className={`flex items-center gap-1 mt-1 text-xs ${revenueChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {revenueChange >= 0 ? <TrendUp className="w-3 h-3" /> : <ArrowUp className="w-3 h-3 rotate-180" />}
+            <span>{revenueChange >= 0 ? '+' : ''}{revenueChange.toFixed(0)}% vs yesterday</span>
           </div>
         </div>
 
@@ -184,8 +191,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
           </div>
           <p className="text-3xl font-bold">{conversionRate.toFixed(1)}%</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <ArrowUp className="w-3 h-3 text-green-500" />
-            <span>Above avg (2.8%)</span>
+            <span>{todayOrders.length} orders / {todayActivities.length} activities</span>
           </div>
         </div>
       </div>
@@ -288,34 +294,62 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
         </div>
       )}
 
-      {/* World Map Placeholder - Countries */}
+      {/* Visitor Locations - derived from activity data */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
             <span className="font-medium text-sm">Visitor Locations</span>
           </div>
-          <span className="text-xs text-gray-400">Last 24 hours</span>
+          <span className="text-xs text-gray-400">From recent activity</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { country: "United States", flag: "🇺🇸", visitors: 45, change: "+12%" },
-            { country: "United Kingdom", flag: "🇬🇧", visitors: 23, change: "+8%" },
-            { country: "Canada", flag: "🇨🇦", visitors: 18, change: "+5%" },
-            { country: "Germany", flag: "🇩🇪", visitors: 12, change: "+3%" },
-          ].map((loc) => (
-            <div key={loc.country} className="bg-white/10 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">{loc.flag}</span>
-                <span className="text-xs text-gray-300 truncate">{loc.country}</span>
+        {(() => {
+          // Extract locations from activity userNames (e.g., "Alex from NYC")
+          const locationCounts: Record<string, number> = {};
+          recentActivities.forEach(activity => {
+            const match = activity.userName.match(/from\s+(\w+)/i);
+            if (match) {
+              const location = match[1];
+              locationCounts[location] = (locationCounts[location] || 0) + 1;
+            }
+          });
+          
+          const locationFlags: Record<string, string> = {
+            "NYC": "🇺🇸", "LA": "🇺🇸", "London": "🇬🇧", "Tokyo": "🇯🇵",
+            "Paris": "🇫🇷", "Berlin": "🇩🇪", "Sydney": "🇦🇺", "Toronto": "🇨🇦"
+          };
+          
+          const sortedLocations = Object.entries(locationCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4);
+          
+          if (sortedLocations.length === 0) {
+            return (
+              <div className="text-center py-4 text-gray-400">
+                <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No location data yet</p>
+                <p className="text-xs mt-1">Location data appears as users interact</p>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xl font-bold">{loc.visitors}</span>
-                <span className="text-xs text-green-400">{loc.change}</span>
-              </div>
+            );
+          }
+          
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {sortedLocations.map(([location, count]) => (
+                <div key={location} className="bg-white/10 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">{locationFlags[location] || "🌍"}</span>
+                    <span className="text-xs text-gray-300 truncate">{location}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold">{count}</span>
+                    <span className="text-xs text-gray-400">activities</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );

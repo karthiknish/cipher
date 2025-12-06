@@ -9,7 +9,7 @@ import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useProducts } from "@/context/ProductContext";
 import { signOut } from "@/lib/firebase";
-import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock, Gift } from "@phosphor-icons/react";
+import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock, Gift, CaretDown, Trophy, ShoppingBag, UserCircle, Fire } from "@phosphor-icons/react";
 import { useSpinWheel } from "@/context/SpinWheelContext";
 import { motion, AnimatePresence } from "@/lib/motion";
 
@@ -115,7 +115,6 @@ export default function Navbar() {
     { href: "/bundles", label: "BUNDLES" },
     { href: "/challenges", label: "CHALLENGES" },
     { href: "/creators", label: "CREATORS" },
-    { href: "/vote", label: "VOTE" },
   ];
 
   const handleSignOut = async () => {
@@ -209,45 +208,80 @@ export default function Navbar() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 shadow-lg"
+                      className="absolute right-0 mt-4 w-56 bg-white border border-gray-100 shadow-lg rounded-lg overflow-hidden"
                     >
-                      <div className="px-4 py-3 border-b border-gray-100">
+                      {/* User Info Header */}
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
                       </div>
-                      <Link
-                        href="/profile"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
-                      >
-                        MY PROFILE
-                      </Link>
-                      <Link
-                        href="/wishlist"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
-                      >
-                        MY WISHLIST
-                      </Link>
-                      <Link
-                        href="/orders"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
-                      >
-                        MY ORDERS
-                      </Link>
-                      <Link
-                        href="/admin"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors"
-                      >
-                        ADMIN PANEL
-                      </Link>
-                      <button
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-3 text-xs tracking-wider hover:bg-gray-50 transition-colors text-red-600"
-                      >
-                        SIGN OUT
-                      </button>
+
+                      {/* My Activity Section */}
+                      <div className="py-1">
+                        <p className="px-4 py-2 text-[10px] tracking-widest text-gray-400 font-medium">MY ACTIVITY</p>
+                        <Link
+                          href="/profile"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <UserCircle className="w-4 h-4 text-gray-400" />
+                          PROFILE
+                        </Link>
+                        <Link
+                          href="/orders"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <ShoppingBag className="w-4 h-4 text-gray-400" />
+                          ORDERS
+                        </Link>
+                        <Link
+                          href="/wishlist"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <Heart className="w-4 h-4 text-gray-400" />
+                          WISHLIST
+                        </Link>
+                        <Link
+                          href="/achievements"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <Trophy className="w-4 h-4 text-gray-400" />
+                          ACHIEVEMENTS
+                        </Link>
+                        <Link
+                          href="/challenges"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <Fire className="w-4 h-4 text-gray-400" />
+                          CHALLENGES
+                        </Link>
+                      </div>
+
+                      {/* Admin Section */}
+                      <div className="border-t border-gray-100 py-1">
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
+                          ADMIN PANEL
+                        </Link>
+                      </div>
+
+                      {/* Sign Out */}
+                      <div className="border-t border-gray-100">
+                        <button
+                          onClick={handleSignOut}
+                          className="flex items-center gap-3 w-full text-left px-4 py-3 text-xs tracking-wider hover:bg-red-50 transition-colors text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                          SIGN OUT
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -293,30 +327,58 @@ export default function Navbar() {
                 ))}
                 {user ? (
                   <>
-                    <Link href="/profile"
+                    {/* Activity Section Header */}
+                    <p className="text-[10px] tracking-widest text-gray-400 font-medium mt-4 mb-2">MY ACTIVITY</p>
+                    <Link 
+                      href="/profile"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      MY PROFILE
+                      <UserCircle className="w-4 h-4 text-gray-400" />
+                      PROFILE
                     </Link>
-                    <Link href="/wishlist"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
-                    >
-                      MY WISHLIST
-                    </Link>
-                    <Link
+                    <Link 
                       href="/orders"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      MY ORDERS
+                      <ShoppingBag className="w-4 h-4 text-gray-400" />
+                      ORDERS
                     </Link>
+                    <Link 
+                      href="/wishlist"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
+                    >
+                      <Heart className="w-4 h-4 text-gray-400" />
+                      WISHLIST
+                    </Link>
+                    <Link 
+                      href="/achievements"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
+                    >
+                      <Trophy className="w-4 h-4 text-gray-400" />
+                      ACHIEVEMENTS
+                    </Link>
+                    <Link 
+                      href="/challenges"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
+                    >
+                      <Fire className="w-4 h-4 text-gray-400" />
+                      CHALLENGES
+                    </Link>
+                    
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 my-3"></div>
+                    
                     <Link
                       href="/admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm tracking-wider hover:opacity-60 transition-opacity"
+                      className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
+                      <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
                       ADMIN
                     </Link>
                     <button
@@ -324,8 +386,9 @@ export default function Navbar() {
                         handleSignOut();
                         setMobileMenuOpen(false);
                       }}
-                      className="block text-sm tracking-wider text-red-600 hover:opacity-60 transition-opacity"
+                      className="flex items-center gap-3 text-sm tracking-wider text-red-600 hover:opacity-60 transition-opacity"
                     >
+                      <X className="w-4 h-4" />
                       SIGN OUT
                     </button>
                   </>

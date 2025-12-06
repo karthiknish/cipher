@@ -91,31 +91,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine garment type for more specific prompting
+    const category = (productCategory || "").toLowerCase();
+    const name = (productName || "").toLowerCase();
+    
+    const isBottomWear = 
+      category.includes("pants") || category.includes("bottom") || category.includes("trouser") ||
+      category.includes("jeans") || category.includes("shorts") || category.includes("skirt") ||
+      name.includes("pants") || name.includes("cargo") || name.includes("jeans") ||
+      name.includes("trouser") || name.includes("shorts") || name.includes("skirt");
+    
+    const isFullBody = 
+      category.includes("dress") || category.includes("jumpsuit") || category.includes("romper") ||
+      name.includes("dress") || name.includes("jumpsuit") || name.includes("romper");
+
     // Construct an enhanced virtual try-on prompt
     const colorInfo = colorVariant ? ` in ${colorVariant} color` : "";
     
-    const prompt = `You are a world-class fashion AI specializing in photorealistic virtual try-on technology. Your task is to create a stunning, professional-quality image.
+    // Build garment-specific instructions
+    let garmentInstructions = "";
+    if (isBottomWear) {
+      garmentInstructions = `
+GARMENT TYPE: BOTTOM WEAR (Pants/Shorts/Skirt)
+- Replace ONLY the person's lower body clothing (from waist down)
+- Keep the person's upper body and any top/shirt they are wearing COMPLETELY UNCHANGED
+- The pants/bottoms should start at the natural waistline
+- Preserve the person's legs, feet, and shoes if visible
+- Make sure the bottom garment flows naturally with the person's leg position and stance`;
+    } else if (isFullBody) {
+      garmentInstructions = `
+GARMENT TYPE: FULL BODY (Dress/Jumpsuit)
+- Replace the person's entire outfit with this garment
+- The garment should cover from shoulders/neckline down to the appropriate length
+- Preserve the person's body shape and pose underneath`;
+    } else {
+      garmentInstructions = `
+GARMENT TYPE: TOP WEAR (Shirt/Jacket/Sweater)
+- Replace ONLY the person's upper body clothing (torso area)
+- Keep the person's lower body and any pants/bottoms they are wearing COMPLETELY UNCHANGED
+- The top should fit naturally on shoulders, chest, and arms
+- Preserve sleeves and collar as shown in the product image`;
+    }
 
-TASK: Generate a photorealistic image showing the person from the first photo wearing the ${productName}${colorInfo} shown in the second photo.
+    const prompt = `You are a world-class fashion AI specializing in photorealistic virtual try-on technology.
 
-CLOTHING DETAILS:
-- Item: ${productName}
-- Category: ${productCategory || "Apparel"}
-${colorVariant ? `- Color: ${colorVariant}` : ""}
+CRITICAL TASK: Take the PERSON from IMAGE 1 (their full body, face, pose, background) and dress them in the CLOTHING ITEM from IMAGE 2.
 
-CRITICAL REQUIREMENTS FOR PHOTOREALISM:
-1. PRESERVE IDENTITY: Keep the person's exact face, facial features, expression, skin tone, hair style, and hair color unchanged
-2. MAINTAIN BODY: Preserve the person's exact body shape, proportions, and pose from the original photo
-3. NATURAL FIT: Apply the clothing so it fits naturally on the person's body with realistic draping, folds, and wrinkles
-4. LIGHTING MATCH: Ensure the lighting on the clothing matches the original photo's lighting conditions (direction, intensity, color temperature)
-5. SHADOW INTEGRATION: Add appropriate shadows where the clothing meets the body
-6. FABRIC PHYSICS: Simulate realistic fabric behavior based on the garment type and the person's pose
-7. BACKGROUND: Keep the original background from the person's photo intact
-8. SEAMLESS EDGES: Ensure no visible seams or artifacts where the clothing meets skin or other elements
-9. COLOR ACCURACY: Maintain the exact color of the clothing item as shown in the product image
-10. PROFESSIONAL QUALITY: The result should look like a professional fashion photograph, not a digital composite
+IMAGE 1: A photo of a person - YOU MUST USE THIS PERSON in the output
+IMAGE 2: A product photo of ${productName}${colorInfo} - extract this clothing item
 
-OUTPUT: Generate a single, high-resolution photorealistic image of the person naturally wearing the ${productName}. The image should be indistinguishable from an actual photograph.`;
+${garmentInstructions}
+
+ABSOLUTE REQUIREMENTS - FAILURE TO FOLLOW MEANS FAILURE:
+1. THE OUTPUT MUST SHOW THE EXACT SAME PERSON FROM IMAGE 1 - same face, same body, same pose, same background
+2. Only the specified clothing area should change - everything else stays IDENTICAL to Image 1
+3. The person's face, hair, skin tone, body proportions must be EXACTLY preserved
+4. The background from Image 1 must be kept EXACTLY as is
+5. The lighting on the new clothing must match Image 1's lighting
+6. The clothing must fit naturally on the person's body with realistic draping
+
+DO NOT:
+- Generate a new person or model
+- Show just the clothing item alone
+- Change the person's face, body, or pose
+- Change or remove the background
+- Add or remove any other elements
+
+OUTPUT: A photorealistic image of THE SAME PERSON from Image 1, now wearing the ${productName} from Image 2, with everything else unchanged. This should look like a real photograph, not a composite.`;
 
     // Extract base64 data from data URLs
     const userImageData = userImage.replace(/^data:image\/\w+;base64,/, "");

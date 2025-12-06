@@ -14,9 +14,16 @@ service firebase.storage {
     
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.token.admin == true ||
         request.auth.token.role == 'admin' ||
         request.auth.token.email == 'karthik.nishanth06@gmail.com'
       );
+    }
+    
+    // Alternative: check admin by email only (for debugging)
+    function isAdminByEmail() {
+      return isAuthenticated() && 
+        request.auth.token.email == 'karthik.nishanth06@gmail.com';
     }
     
     function isValidImage() {
@@ -40,7 +47,7 @@ service firebase.storage {
     // Product images - admin only upload, public read
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImage();
+      allow write: if (isAdmin() || isAdminByEmail()) && isValidImage();
     }
     
     // Review images and videos
@@ -52,7 +59,7 @@ service firebase.storage {
     // Bundle images
     match /bundles/{bundleId}/{fileName} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImage();
+      allow write: if (isAdmin() || isAdminByEmail()) && isValidImage();
     }
     
     // Temporary uploads (for virtual try-on, etc)
@@ -65,13 +72,14 @@ service firebase.storage {
     // Events images - public read, admin write
     match /events/{fileName} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImage();
+      allow write: if (isAdmin() || isAdminByEmail()) && isValidImage();
     }
     
     // General uploads folder (used by ImageUploader)
+    // Allow authenticated users to upload images
     match /uploads/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImage();
+      allow write: if isAuthenticated();
     }
   }
 }

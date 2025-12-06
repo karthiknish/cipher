@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
-import Image from "next/image";
+import NextImage from "next/image";
+import { useAuth } from "@/context/AuthContext";
 import { 
   X, Upload, Camera, SpinnerGap, DownloadSimple, ShareNetwork, ArrowsClockwise, 
   Sparkle, CheckCircle, WarningCircle, ImageSquare, MagicWand,
@@ -65,6 +66,9 @@ export default function VirtualTryOn({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  const { user } = useAuth();
 
   // Get current product image based on selected color
   const getProductImage = useCallback(() => {
@@ -108,39 +112,74 @@ export default function VirtualTryOn({
       throw new Error("This product uses a placeholder image. Virtual try-on requires a real product photo.");
     }
     
-    const response = await fetch(url);
-    const contentType = response.headers.get("content-type") || "";
+    // Use server-side proxy to avoid CORS issues
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
     
-    // Check if response is SVG
-    if (contentType.includes("svg")) {
-      throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+    try {
+      const response = await fetch(proxyUrl);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch image: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get("content-type") || "";
+      
+      // Check if response is SVG
+      if (contentType.includes("svg")) {
+        throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+      }
+      
+      const blob = await response.blob();
+      
+      // Additional check on blob type
+      if (blob.type.includes("svg")) {
+        throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+      }
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Final check on the data URL
+          if (result.startsWith("data:image/svg")) {
+            reject(new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG)."));
+          } else {
+            resolve(result);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to load product image. Please try again.");
     }
-    
-    const blob = await response.blob();
-    
-    // Additional check on blob type
-    if (blob.type.includes("svg")) {
-      throw new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG).");
+  };
+
+  const handleCancelTryOn = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        // Final check on the data URL
-        if (result.startsWith("data:image/svg")) {
-          reject(new Error("This product uses an SVG placeholder. Virtual try-on requires a real product photo (JPEG or PNG)."));
-        } else {
-          resolve(result);
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    setProcessingStage("idle");
+    setProgress(0);
+    setError(null);
   };
 
   const handleGenerateTryOn = async () => {
     if (!userImage || !product) return;
+    
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
     
     setError(null);
     setTryOnResult(null);
@@ -155,17 +194,33 @@ export default function VirtualTryOn({
     // Start progress animation
     for (const { stage, progress: prog, delay } of stages) {
       setTimeout(() => {
-        setProcessingStage(stage);
-        setProgress(prog);
+        if (!signal.aborted) {
+          setProcessingStage(stage);
+          setProgress(prog);
+        }
       }, delay);
     }
 
     try {
       const productImageBase64 = await fetchProductImageAsBase64(getProductImage());
       
+      if (signal.aborted) return;
+      
+      // Get auth token for authenticated API call
+      const token = await user?.getIdToken();
+      
+      if (!token) {
+        setProcessingStage("error");
+        setError("Please sign in to use the virtual try-on feature.");
+        return;
+      }
+      
       const response = await fetch("/api/try-on", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({
           userImage,
           productImage: productImageBase64,
@@ -173,6 +228,7 @@ export default function VirtualTryOn({
           productCategory: product.category,
           colorVariant: selectedProductColor,
         }),
+        signal,
       });
 
       const data = await response.json();
@@ -190,6 +246,10 @@ export default function VirtualTryOn({
         setError(data.error || "Failed to generate try-on image. Please try again.");
       }
     } catch (err) {
+      // Don't show error if request was cancelled
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
       console.error(err);
       setProcessingStage("error");
       // Show specific error message if available
@@ -198,6 +258,8 @@ export default function VirtualTryOn({
       } else {
         setError("Network error. Please check your connection and try again.");
       }
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -306,7 +368,7 @@ export default function VirtualTryOn({
               <div className="p-5 border-b border-gray-100 bg-white">
                 <div className="flex gap-4">
                   <div className="w-24 h-28 bg-gray-100 relative overflow-hidden flex-shrink-0 rounded-lg shadow-sm">
-                    <Image
+                    <NextImage
                       src={getProductImage()}
                       alt={product.name}
                       fill
@@ -407,7 +469,7 @@ export default function VirtualTryOn({
                         </div>
                       ) : (
                         <div className="relative w-full h-full group">
-                          <Image
+                          <NextImage
                             src={userImage}
                             alt="Your photo"
                             fill
@@ -479,30 +541,42 @@ export default function VirtualTryOn({
 
               {/* Generate Button */}
               <div className="p-5 border-t border-gray-100 bg-white">
-                <button
-                  onClick={handleGenerateTryOn}
-                  disabled={!userImage || isProcessing}
-                  className={`w-full py-4 text-sm tracking-wider font-semibold transition-all flex items-center justify-center gap-3 rounded-xl ${
-                    isProcessing
-                      ? "bg-gray-100 text-gray-500"
-                      : userImage
-                      ? "bg-black text-white hover:bg-gray-800 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  {isProcessing ? (
-                    <>
-                      <SpinnerGap className="w-5 h-5 animate-spin" />
-                      {PROCESSING_MESSAGES[processingStage].title}
-                    </>
-                  ) : (
-                    <>
-                      <MagicWand className="w-5 h-5" />
-                      Try It On
-                    </>
-                  )}
-                </button>
-                {!userImage && (
+                {!user ? (
+                  <div className="text-center py-2">
+                    <p className="text-sm text-gray-600 mb-2">Sign in to use Virtual Try-On</p>
+                    <a
+                      href="/login"
+                      className="inline-block px-6 py-3 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition"
+                    >
+                      Sign In
+                    </a>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleGenerateTryOn}
+                    disabled={!userImage || isProcessing}
+                    className={`w-full py-4 text-sm tracking-wider font-semibold transition-all flex items-center justify-center gap-3 rounded-xl ${
+                      isProcessing
+                        ? "bg-gray-100 text-gray-500"
+                        : userImage
+                        ? "bg-black text-white hover:bg-gray-800 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <SpinnerGap className="w-5 h-5 animate-spin" />
+                        {PROCESSING_MESSAGES[processingStage].title}
+                      </>
+                    ) : (
+                      <>
+                        <MagicWand className="w-5 h-5" />
+                        Try It On
+                      </>
+                    )}
+                  </button>
+                )}
+                {user && !userImage && (
                   <p className="text-xs text-gray-400 text-center mt-2">
                     Upload a photo to see the magic ✨
                   </p>
@@ -610,7 +684,7 @@ export default function VirtualTryOn({
                       <div className="relative w-full max-w-lg aspect-[3/4] overflow-hidden rounded-2xl shadow-2xl">
                         {/* Before Image */}
                         <div className="absolute inset-0">
-                          <Image
+                          <NextImage
                             src={userImage}
                             alt="Before"
                             fill
@@ -622,7 +696,7 @@ export default function VirtualTryOn({
                           className="absolute inset-0 overflow-hidden"
                           style={{ clipPath: `inset(0 ${100 - comparisonPosition}% 0 0)` }}
                         >
-                          <Image
+                          <NextImage
                             src={tryOnResult}
                             alt="After"
                             fill
@@ -664,7 +738,7 @@ export default function VirtualTryOn({
                         className="relative max-w-lg w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-white"
                         style={{ transform: `scale(${zoom})` }}
                       >
-                        <Image
+                        <NextImage
                           src={tryOnResult}
                           alt="Try-on result"
                           fill
@@ -786,6 +860,15 @@ export default function VirtualTryOn({
                             </div>
                           ))}
                         </div>
+                        
+                        {/* Cancel Button */}
+                        <button
+                          onClick={handleCancelTryOn}
+                          className="mt-4 px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-2 mx-auto"
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </button>
                       </motion.div>
                     ) : (
                       <div className="space-y-6">
