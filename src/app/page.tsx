@@ -11,7 +11,6 @@ import {
   FeaturesSection,
   EventsHomeBanner,
   AITryOnSection,
-  TestimonialsSection,
   EditorialBanner,
   NewsletterSection,
 } from "@/components/home";
@@ -29,7 +28,6 @@ export default function Home() {
       <FeaturesSection />
       <EventsHomeBanner />
       <AITryOnSection />
-      <TestimonialsSection />
       <EditorialBanner />
       <NewsletterSection />
     </div>
