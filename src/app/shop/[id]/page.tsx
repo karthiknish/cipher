@@ -402,9 +402,12 @@ export default function ProductPage() {
               <InventoryAlert productId={product.id} />
             </div>
 
-            <p className="text-gray-500 mb-8 leading-relaxed">
-              {product.description} Designed for the modern urban explorer.
-            </p>
+            {/* Short Description - shown at top */}
+            {product.shortDescription && (
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                {product.shortDescription}
+              </p>
+            )}
 
             {/* Color Selection */}
             {product.colors && product.colors.length > 0 && (
@@ -668,7 +671,7 @@ export default function ProductPage() {
             {activeTab === "description" ? (
               <div className="max-w-2xl">
                 <p className="text-gray-600 leading-relaxed mb-6">
-                  {product.description} This piece is crafted with premium materials and designed for both style and comfort.
+                  {product.description}
                 </p>
                 <h4 className="font-medium mb-3">Features</h4>
                 <ul className="list-disc list-inside text-gray-600 space-y-1">

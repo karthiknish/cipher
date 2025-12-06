@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
 import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields } from "@/lib/api-auth";
+import { generateTryOnPrompt, detectGarmentType, detectGender, Gender } from "@/lib/tryon-prompts/index";
 
 // Initialize the Gemini client
 const genAI = new GoogleGenAI({
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userImage, productImage, productName, productCategory, colorVariant } = body;
+    const { userImage, productImage, productName, productCategory, colorVariant, gender } = body;
 
     // Validate required fields
     const fieldError = validateRequiredFields(body, ["userImage", "productImage", "productName"]);
@@ -91,73 +92,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine garment type for more specific prompting
-    const category = (productCategory || "").toLowerCase();
-    const name = (productName || "").toLowerCase();
-    
-    const isBottomWear = 
-      category.includes("pants") || category.includes("bottom") || category.includes("trouser") ||
-      category.includes("jeans") || category.includes("shorts") || category.includes("skirt") ||
-      name.includes("pants") || name.includes("cargo") || name.includes("jeans") ||
-      name.includes("trouser") || name.includes("shorts") || name.includes("skirt");
-    
-    const isFullBody = 
-      category.includes("dress") || category.includes("jumpsuit") || category.includes("romper") ||
-      name.includes("dress") || name.includes("jumpsuit") || name.includes("romper");
-
-    // Construct an enhanced virtual try-on prompt
-    const colorInfo = colorVariant ? ` in ${colorVariant} color` : "";
-    
-    // Build garment-specific instructions
-    let garmentInstructions = "";
-    if (isBottomWear) {
-      garmentInstructions = `
-GARMENT TYPE: BOTTOM WEAR (Pants/Shorts/Skirt)
-- Replace ONLY the person's lower body clothing (from waist down)
-- Keep the person's upper body and any top/shirt they are wearing COMPLETELY UNCHANGED
-- The pants/bottoms should start at the natural waistline
-- Preserve the person's legs, feet, and shoes if visible
-- Make sure the bottom garment flows naturally with the person's leg position and stance`;
-    } else if (isFullBody) {
-      garmentInstructions = `
-GARMENT TYPE: FULL BODY (Dress/Jumpsuit)
-- Replace the person's entire outfit with this garment
-- The garment should cover from shoulders/neckline down to the appropriate length
-- Preserve the person's body shape and pose underneath`;
-    } else {
-      garmentInstructions = `
-GARMENT TYPE: TOP WEAR (Shirt/Jacket/Sweater)
-- Replace ONLY the person's upper body clothing (torso area)
-- Keep the person's lower body and any pants/bottoms they are wearing COMPLETELY UNCHANGED
-- The top should fit naturally on shoulders, chest, and arms
-- Preserve sleeves and collar as shown in the product image`;
-    }
-
-    const prompt = `You are a world-class fashion AI specializing in photorealistic virtual try-on technology.
-
-CRITICAL TASK: Take the PERSON from IMAGE 1 (their full body, face, pose, background) and dress them in the CLOTHING ITEM from IMAGE 2.
-
-IMAGE 1: A photo of a person - YOU MUST USE THIS PERSON in the output
-IMAGE 2: A product photo of ${productName}${colorInfo} - extract this clothing item
-
-${garmentInstructions}
-
-ABSOLUTE REQUIREMENTS - FAILURE TO FOLLOW MEANS FAILURE:
-1. THE OUTPUT MUST SHOW THE EXACT SAME PERSON FROM IMAGE 1 - same face, same body, same pose, same background
-2. Only the specified clothing area should change - everything else stays IDENTICAL to Image 1
-3. The person's face, hair, skin tone, body proportions must be EXACTLY preserved
-4. The background from Image 1 must be kept EXACTLY as is
-5. The lighting on the new clothing must match Image 1's lighting
-6. The clothing must fit naturally on the person's body with realistic draping
-
-DO NOT:
-- Generate a new person or model
-- Show just the clothing item alone
-- Change the person's face, body, or pose
-- Change or remove the background
-- Add or remove any other elements
-
-OUTPUT: A photorealistic image of THE SAME PERSON from Image 1, now wearing the ${productName} from Image 2, with everything else unchanged. This should look like a real photograph, not a composite.`;
+    // Generate the appropriate prompt based on garment type and gender
+    const detectedGender = (gender as Gender) || detectGender(productName, productCategory || "");
+    const prompt = generateTryOnPrompt(productName, productCategory || "", colorVariant, detectedGender);
+    const garmentType = detectGarmentType(productName, productCategory || "");
 
     // Extract base64 data from data URLs
     const userImageData = userImage.replace(/^data:image\/\w+;base64,/, "");
@@ -223,6 +161,7 @@ OUTPUT: A photorealistic image of THE SAME PERSON from Image 1, now wearing the 
             productName,
             productCategory,
             colorVariant,
+            garmentType,
             timestamp: new Date().toISOString(),
           },
         });
