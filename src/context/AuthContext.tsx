@@ -41,11 +41,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAdmin: isAdminByEmail,
     });
 
-    // Force refresh the token to get updated custom claims (like admin role)
+    // Force refresh the token to get updated custom claims (like admin role set via service account)
     try {
-      await currentUser.getIdToken(true);
+      const tokenResult = await currentUser.getIdTokenResult(true);
+      const claims = tokenResult.claims;
+      
+      // Check custom claims set by Firebase Admin SDK (via service account)
+      if (claims.admin === true || claims.role === "admin") {
+        setUserRole({
+          role: "admin",
+          isAdmin: true,
+        });
+        return; // Admin verified via custom claims, no need to check Firestore
+      }
     } catch {
-      // Token refresh failed, continue with cached token
+      // Token refresh failed, continue with other checks
     }
 
     // Then try to fetch from Firestore in background (non-blocking)

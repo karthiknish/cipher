@@ -29,6 +29,7 @@ import { AchievementProvider } from "@/context/AchievementContext";
 import { BlogProvider } from "@/context/BlogContext";
 import { SpinWheelProvider } from "@/context/SpinWheelContext";
 import { CustomerBehaviorProvider } from "@/context/CustomerBehaviorContext";
+import { LocalSceneProvider } from "@/context/LocalSceneContext";
 import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -63,7 +64,9 @@ export function Providers({ children }: { children: ReactNode }) {
                                                           <BlogProvider>
                                                             <SpinWheelProvider>
                                                               <CustomerBehaviorProvider>
-                                                                {children}
+                                                                <LocalSceneProvider>
+                                                                  {children}
+                                                                </LocalSceneProvider>
                                                               </CustomerBehaviorProvider>
                                                             </SpinWheelProvider>
                                                           </BlogProvider>

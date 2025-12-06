@@ -212,9 +212,27 @@ export function LiveActivityProvider({ children }: { children: ReactNode }) {
 
     const viewerCollectionRef = collection(db, "productViewers", productId, "viewers");
     const unsubscribeViewers = onSnapshot(viewerCollectionRef, (snapshot) => {
+      const now = Date.now();
+      const activeWindowMs = 2 * 60 * 1000; // 2 minutes
+      let activeCount = 0;
+
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        const lastActive = data.lastActive?.toDate?.() || data.lastActive || data.timestamp?.toDate?.();
+        const lastActiveMs = lastActive ? new Date(lastActive).getTime() : 0;
+
+        // Count only active viewers within the window
+        if (lastActiveMs && now - lastActiveMs <= activeWindowMs) {
+          activeCount += 1;
+        } else {
+          // Clean up stale viewer docs to keep counts accurate
+          deleteDoc(docSnap.ref).catch(() => {});
+        }
+      });
+
       setViewerCounts(prev => ({
         ...prev,
-        [productId]: snapshot.size,
+        [productId]: activeCount,
       }));
     }, (error) => {
       console.error("Error tracking viewer count:", error);

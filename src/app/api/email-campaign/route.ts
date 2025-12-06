@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, forbiddenResponse } from "@/lib/api-auth";
 
 // Email campaign types
 type CampaignType = 
@@ -192,22 +194,36 @@ async function logCampaign(
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for email sending
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.EMAIL);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
+
+    // Require admin authentication for email campaigns
+    const authResult = await requireAuth(request, { requireAdmin: true, allowApiSecret: true });
+    if (!authResult) {
+      return forbiddenResponse("Admin access required to send email campaigns");
+    }
+
     const body: EmailCampaignRequest = await request.json();
     const { type, recipients, subject: customSubject, content: customContent } = body;
 
     if (!type || !recipients || recipients.length === 0) {
-      return NextResponse.json(
-        { error: "Missing required fields: type, recipients" },
-        { status: 400 }
-      );
+      return badRequestResponse("Missing required fields: type, recipients");
+    }
+
+    // Limit recipients per request to prevent abuse
+    const MAX_RECIPIENTS = 100;
+    if (recipients.length > MAX_RECIPIENTS) {
+      return badRequestResponse(`Too many recipients. Maximum ${MAX_RECIPIENTS} per request.`);
     }
 
     const template = EMAIL_TEMPLATES[type];
     if (!template && type !== "custom") {
-      return NextResponse.json(
-        { error: `Unknown campaign type: ${type}` },
-        { status: 400 }
-      );
+      return badRequestResponse(`Unknown campaign type: ${type}`);
     }
 
     const results: Array<{ email: string; success: boolean; messageId?: string; error?: string }> = [];

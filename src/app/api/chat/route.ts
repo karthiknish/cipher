@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, sanitizeString } from "@/lib/api-auth";
 
 // Website context for the chatbot
 const WEBSITE_CONTEXT = `
@@ -75,20 +77,40 @@ GUIDELINES FOR RESPONSES:
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, history } = await request.json();
-
-    if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { success: false, error: "Message is required" },
-        { status: 400 }
-      );
+    // Rate limiting for chat
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.CHAT);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
     }
 
+    const body = await request.json();
+    const { message, history } = body;
+
+    // Input validation
+    if (!message || typeof message !== "string") {
+      return badRequestResponse("Message is required");
+    }
+
+    // Sanitize message
+    const sanitizedMessage = sanitizeString(message, 1000);
+    
+    if (sanitizedMessage.length < 1) {
+      return badRequestResponse("Message cannot be empty");
+    }
+
+    // Limit conversation history to prevent abuse
+    const maxHistoryLength = 20;
+    const limitedHistory = Array.isArray(history) 
+      ? history.slice(-maxHistoryLength) 
+      : [];
+
     // Build conversation history for context
-    const conversationHistory = history?.map((msg: { role: string; content: string }) => ({
+    const conversationHistory = limitedHistory.map((msg: { role: string; content: string }) => ({
       role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }],
-    })) || [];
+      parts: [{ text: sanitizeString(msg.content, 1000) }],
+    }));
 
     // Create the chat with system context
     const response = await genAI.models.generateContent({

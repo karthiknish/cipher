@@ -1,22 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, sanitizeString } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, category, existingDescription } = await request.json();
+    // Rate limiting
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.AI_GENERATION);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
+
+    // Require admin authentication
+    const authResult = await requireAuth(request, { requireAdmin: true });
+    if (!authResult) {
+      return forbiddenResponse("Admin access required to generate product details");
+    }
+
+    const body = await request.json();
+    const { name, category, existingDescription } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: "Product name is required" },
-        { status: 400 }
-      );
+      return badRequestResponse("Product name is required");
     }
+
+    // Sanitize inputs
+    const sanitizedName = sanitizeString(name, 100);
+    const sanitizedCategory = category ? sanitizeString(category, 50) : "Apparel";
+    const sanitizedDescription = existingDescription ? sanitizeString(existingDescription, 1000) : "";
 
     const prompt = `You are a professional fashion copywriter for a premium streetwear brand called "CIPHER". Generate compelling product details for the following item.
 
-Product Name: ${name}
-Category: ${category || "Apparel"}
-${existingDescription ? `Existing Description (improve upon this): ${existingDescription}` : ""}
+Product Name: ${sanitizedName}
+Category: ${sanitizedCategory}
+${sanitizedDescription ? `Existing Description (improve upon this): ${sanitizedDescription}` : ""}
 
 Generate the following in JSON format:
 {

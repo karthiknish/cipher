@@ -9,6 +9,7 @@ import {
   FeaturedShowcase,
   CollectionsGrid,
   FeaturesSection,
+  EventsHomeBanner,
   AITryOnSection,
   TestimonialsSection,
   EditorialBanner,
@@ -26,6 +27,7 @@ export default function Home() {
       <FeaturedShowcase />
       <CollectionsGrid />
       <FeaturesSection />
+      <EventsHomeBanner />
       <AITryOnSection />
       <TestimonialsSection />
       <EditorialBanner />

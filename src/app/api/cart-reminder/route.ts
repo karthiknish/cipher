@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse } from "@/lib/api-auth";
 
 interface CartItem {
   productId: string;
@@ -47,24 +49,37 @@ const getEmailMessage = (reminderNumber: number): string => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for email sending
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.EMAIL);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
+
+    // Require admin or API secret authentication
+    const authResult = await requireAuth(request, { requireAdmin: true, allowApiSecret: true });
+    if (!authResult) {
+      return forbiddenResponse("Admin access or API secret required to send cart reminders");
+    }
+
     const body: ReminderRequest = await request.json();
     const { cartId, email, items, total, reminderNumber } = body;
 
     // Validate required fields
     if (!cartId || !email || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return badRequestResponse("Missing required fields: cartId, email, items");
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Invalid email address" },
-        { status: 400 }
-      );
+      return badRequestResponse("Invalid email address");
+    }
+
+    // Limit items to prevent abuse
+    if (items.length > 20) {
+      return badRequestResponse("Too many items in cart");
     }
 
     // In production, you would integrate with an email service like:

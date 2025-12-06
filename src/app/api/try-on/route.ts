@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields } from "@/lib/api-auth";
 
 // Initialize the Gemini client
 const genAI = new GoogleGenAI({
@@ -9,8 +11,25 @@ const genAI = new GoogleGenAI({
 // Nano Banana Pro model for advanced image generation
 const MODEL = "gemini-2.0-flash-exp-image-generation";
 
+// Maximum image size (2MB)
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - try-on is expensive, so stricter limits
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.TRY_ON);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
+
+    // Require authentication for try-on (costs money)
+    const authResult = await requireAuth(request);
+    if (!authResult) {
+      return unauthorizedResponse("Please sign in to use the virtual try-on feature");
+    }
+
     // Validate API key
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
@@ -23,11 +42,21 @@ export async function POST(request: NextRequest) {
     const { userImage, productImage, productName, productCategory, colorVariant } = body;
 
     // Validate required fields
-    if (!userImage || !productImage || !productName) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields: userImage, productImage, productName" },
-        { status: 400 }
-      );
+    const fieldError = validateRequiredFields(body, ["userImage", "productImage", "productName"]);
+    if (fieldError) {
+      return badRequestResponse(fieldError);
+    }
+
+    // Validate image size (base64 encoded images are ~1.37x larger)
+    const userImageSize = (userImage.length * 3) / 4;
+    const productImageSize = (productImage.length * 3) / 4;
+    
+    if (userImageSize > MAX_IMAGE_SIZE) {
+      return badRequestResponse("User image too large. Please use an image under 2MB.");
+    }
+    
+    if (productImageSize > MAX_IMAGE_SIZE) {
+      return badRequestResponse("Product image too large. Please use an image under 2MB.");
     }
 
     // Validate image formats - Gemini only supports JPEG, PNG, WebP, GIF (not SVG)

@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, requireAuth, forbiddenResponse, sanitizeString } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { hasDesignA, hasDesignB, existingTitle } = await request.json();
+    // Rate limiting
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.AI_GENERATION);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
+
+    // Require admin authentication
+    const authResult = await requireAuth(request, { requireAdmin: true });
+    if (!authResult) {
+      return forbiddenResponse("Admin access required to generate design details");
+    }
+
+    const body = await request.json();
+    const { hasDesignA, hasDesignB, existingTitle } = body;
+    
+    // Sanitize inputs
+    const sanitizedTitle = existingTitle ? sanitizeString(existingTitle, 200) : "";
 
     const prompt = `You are a creative director for a premium streetwear brand called "CIPHER". Generate compelling details for a design voting contest where customers vote between two design options.
 
-${existingTitle ? `Existing Contest Title (can improve upon this): ${existingTitle}` : ""}
+${sanitizedTitle ? `Existing Contest Title (can improve upon this): ${sanitizedTitle}` : ""}
 Number of designs in this contest: ${hasDesignA && hasDesignB ? "2 (A and B)" : hasDesignA ? "1 (A only)" : "1 (B only)"}
 
 Generate the following in JSON format:

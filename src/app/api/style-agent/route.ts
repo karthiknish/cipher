@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimitedResponse, badRequestResponse, sanitizeString } from "@/lib/api-auth";
 
 const STYLE_AGENT_PROMPT = `
 You are a fashion style expert AI for CIPHER, a premium streetwear brand. Your job is to recommend products based on the user's described vibe, style, mood, or needs.
@@ -67,22 +69,38 @@ Response: {"products": ["2", "3", "6"], "reasoning": "Date night confidence: A c
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, mood, context } = await request.json();
+    // Rate limiting
+    const clientId = getClientIdentifier(request);
+    const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.AI_GENERATION);
+    
+    if (!rateLimit.success) {
+      return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+    }
 
+    const body = await request.json();
+    const { query, mood, context } = body;
+
+    // Input validation
     if (!query || typeof query !== "string") {
-      return NextResponse.json(
-        { success: false, error: "Query is required" },
-        { status: 400 }
-      );
+      return badRequestResponse("Query is required");
+    }
+
+    // Sanitize inputs
+    const sanitizedQuery = sanitizeString(query, 500);
+    const sanitizedMood = mood ? sanitizeString(mood, 50) : undefined;
+    const sanitizedContext = context ? sanitizeString(context, 200) : undefined;
+
+    if (sanitizedQuery.length < 2) {
+      return badRequestResponse("Query too short");
     }
 
     // Build enhanced query with mood and context
-    let enhancedQuery = query;
-    if (mood) {
-      enhancedQuery = `User is currently feeling: ${mood}. ${query}`;
+    let enhancedQuery = sanitizedQuery;
+    if (sanitizedMood) {
+      enhancedQuery = `User is currently feeling: ${sanitizedMood}. ${sanitizedQuery}`;
     }
-    if (context) {
-      enhancedQuery = `${enhancedQuery} Context: ${context}`;
+    if (sanitizedContext) {
+      enhancedQuery = `${enhancedQuery} Context: ${sanitizedContext}`;
     }
 
     const response = await genAI.models.generateContent({
