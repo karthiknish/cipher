@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { useProducts, Product } from "./ProductContext";
 
 export interface Bundle {
@@ -22,6 +22,8 @@ export interface BundleWithProducts extends Bundle {
   savings: number;
 }
 
+export type BundleFormData = Omit<Bundle, "id" | "createdAt">;
+
 interface BundleContextType {
   bundles: Bundle[];
   getBundleWithProducts: (bundleId: string) => BundleWithProducts | null;
@@ -29,6 +31,9 @@ interface BundleContextType {
   getFeaturedBundles: () => BundleWithProducts[];
   getBundlesByCategory: (category: Bundle["category"]) => BundleWithProducts[];
   getBundlesContainingProduct: (productId: string) => BundleWithProducts[];
+  addBundle: (data: BundleFormData) => Bundle;
+  updateBundle: (id: string, data: Partial<BundleFormData>) => Bundle | null;
+  deleteBundle: (id: string) => boolean;
 }
 
 // Curated bundles
@@ -95,6 +100,8 @@ const DEFAULT_BUNDLES: Bundle[] = [
   },
 ];
 
+const BUNDLES_STORAGE_KEY = "cipher_bundles";
+
 const BundleContext = createContext<BundleContextType>({
   bundles: [],
   getBundleWithProducts: () => null,
@@ -102,13 +109,40 @@ const BundleContext = createContext<BundleContextType>({
   getFeaturedBundles: () => [],
   getBundlesByCategory: () => [],
   getBundlesContainingProduct: () => [],
+  addBundle: () => ({ id: "", name: "", description: "", tagline: "", image: "", productIds: [], discountPercent: 0, featured: false, category: "essentials", createdAt: 0 }),
+  updateBundle: () => null,
+  deleteBundle: () => false,
 });
 
 export const useBundles = () => useContext(BundleContext);
 
 export const BundleProvider = ({ children }: { children: ReactNode }) => {
   const { products, getProduct } = useProducts();
-  const [bundles] = useState<Bundle[]>(DEFAULT_BUNDLES);
+  const [bundles, setBundles] = useState<Bundle[]>(DEFAULT_BUNDLES);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load bundles from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(BUNDLES_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setBundles(parsed);
+        } catch {
+          // Use default bundles if parsing fails
+        }
+      }
+      setIsInitialized(true);
+    }
+  }, []);
+
+  // Save bundles to localStorage when they change
+  useEffect(() => {
+    if (isInitialized && typeof window !== "undefined") {
+      localStorage.setItem(BUNDLES_STORAGE_KEY, JSON.stringify(bundles));
+    }
+  }, [bundles, isInitialized]);
 
   const getBundleWithProducts = useCallback((bundleId: string): BundleWithProducts | null => {
     const bundle = bundles.find(b => b.id === bundleId);
@@ -152,6 +186,43 @@ export const BundleProvider = ({ children }: { children: ReactNode }) => {
     return getAllBundlesWithProducts().filter(b => b.productIds.includes(productId));
   }, [getAllBundlesWithProducts]);
 
+  const addBundle = useCallback((data: BundleFormData): Bundle => {
+    const newBundle: Bundle = {
+      ...data,
+      id: `bundle-${Date.now()}`,
+      createdAt: Date.now(),
+    };
+    setBundles(prev => [...prev, newBundle]);
+    return newBundle;
+  }, []);
+
+  const updateBundle = useCallback((id: string, data: Partial<BundleFormData>): Bundle | null => {
+    let updatedBundle: Bundle | null = null;
+    setBundles(prev => prev.map(bundle => {
+      if (bundle.id === id) {
+        updatedBundle = { ...bundle, ...data };
+        return updatedBundle;
+      }
+      return bundle;
+    }));
+    return updatedBundle;
+  }, []);
+
+  const deleteBundle = useCallback((id: string): boolean => {
+    let found = false;
+    setBundles(prev => {
+      const filtered = prev.filter(bundle => {
+        if (bundle.id === id) {
+          found = true;
+          return false;
+        }
+        return true;
+      });
+      return filtered;
+    });
+    return found;
+  }, []);
+
   return (
     <BundleContext.Provider value={{
       bundles,
@@ -160,6 +231,9 @@ export const BundleProvider = ({ children }: { children: ReactNode }) => {
       getFeaturedBundles,
       getBundlesByCategory,
       getBundlesContainingProduct,
+      addBundle,
+      updateBundle,
+      deleteBundle,
     }}>
       {children}
     </BundleContext.Provider>

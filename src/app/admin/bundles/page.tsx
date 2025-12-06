@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useBundles, Bundle } from "@/context/BundleContext";
+import { useBundles, Bundle, BundleFormData } from "@/context/BundleContext";
 import { useProducts } from "@/context/ProductContext";
 import { useToast } from "@/context/ToastContext";
 import { useRouter } from "next/navigation";
@@ -21,17 +21,6 @@ import {
 } from "@phosphor-icons/react";
 import AdminLayout from "../components/AdminLayout";
 
-interface BundleFormData {
-  name: string;
-  description: string;
-  tagline: string;
-  image: string;
-  productIds: string[];
-  discountPercent: number;
-  featured: boolean;
-  category: Bundle["category"];
-}
-
 const initialFormData: BundleFormData = {
   name: "",
   description: "",
@@ -45,7 +34,7 @@ const initialFormData: BundleFormData = {
 
 function BundlesPageContent() {
   const { user, loading: authLoading, userRole } = useAuth();
-  const { bundles, getAllBundlesWithProducts } = useBundles();
+  const { bundles, getAllBundlesWithProducts, addBundle, updateBundle, deleteBundle } = useBundles();
   const { products } = useProducts();
   const toast = useToast();
   const router = useRouter();
@@ -106,15 +95,29 @@ function BundlesPageContent() {
       toast.error("A bundle must contain at least 2 products");
       return;
     }
-    // In a real app, this would save to the database
-    toast.success(editingBundle ? "Bundle updated successfully" : "Bundle created successfully");
+    
+    if (editingBundle) {
+      const updated = updateBundle(editingBundle.id, formData);
+      if (updated) {
+        toast.success("Bundle updated successfully");
+      } else {
+        toast.error("Failed to update bundle");
+      }
+    } else {
+      addBundle(formData);
+      toast.success("Bundle created successfully");
+    }
     handleCloseModal();
   };
 
   const handleDelete = (bundleId: string) => {
     if (!confirm("Are you sure you want to delete this bundle?")) return;
-    // In a real app, this would delete from the database
-    toast.success("Bundle deleted successfully");
+    const deleted = deleteBundle(bundleId);
+    if (deleted) {
+      toast.success("Bundle deleted successfully");
+    } else {
+      toast.error("Failed to delete bundle");
+    }
   };
 
   const toggleProductInBundle = (productId: string) => {
@@ -213,13 +216,17 @@ function BundlesPageContent() {
         </div>
         <div className="bg-gray-50 p-4 border border-gray-100">
           <p className="text-2xl font-bold">
-            {Math.round(bundles.reduce((sum, b) => sum + b.discountPercent, 0) / bundles.length)}%
+            {bundles.length > 0 
+              ? Math.round(bundles.reduce((sum, b) => sum + b.discountPercent, 0) / bundles.length) 
+              : 0}%
           </p>
           <p className="text-xs text-gray-500 uppercase tracking-wider">Avg. Discount</p>
         </div>
         <div className="bg-gray-50 p-4 border border-gray-100">
           <p className="text-2xl font-bold">
-            {Math.round(bundles.reduce((sum, b) => sum + b.productIds.length, 0) / bundles.length)}
+            {bundles.length > 0 
+              ? Math.round(bundles.reduce((sum, b) => sum + b.productIds.length, 0) / bundles.length) 
+              : 0}
           </p>
           <p className="text-xs text-gray-500 uppercase tracking-wider">Avg. Products</p>
         </div>
