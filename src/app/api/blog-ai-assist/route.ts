@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, sanitizeString } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || "",
@@ -23,18 +23,23 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Admin access required for blog AI assist");
     }
 
-    const body = await request.json();
-    const { type, selectedText, fullContent } = body;
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
+
+    const parsed = await parseJsonBody<{ type?: unknown; selectedText?: unknown; fullContent?: unknown }>(request);
+    if (!parsed.ok) return parsed.response;
+    const { type, selectedText, fullContent } = parsed.data;
 
     // Validate type
     const validTypes = ["continue", "improve", "shorten", "expand", "tone"];
-    if (!type || !validTypes.includes(type)) {
+    if (!type || typeof type !== "string" || !validTypes.includes(type)) {
       return badRequestResponse(`Invalid type. Must be one of: ${validTypes.join(", ")}`);
     }
 
     // Sanitize inputs
-    const sanitizedSelectedText = selectedText ? sanitizeString(selectedText, 5000) : "";
-    const sanitizedFullContent = fullContent ? sanitizeString(fullContent, 10000) : "";
+    const sanitizedSelectedText = typeof selectedText === "string" ? sanitizeString(selectedText, 5000) : "";
+    const sanitizedFullContent = typeof fullContent === "string" ? sanitizeString(fullContent, 10000) : "";
 
     if (!sanitizedSelectedText && !sanitizedFullContent) {
       return badRequestResponse("Either selectedText or fullContent is required");
@@ -109,6 +114,10 @@ ${sanitizedSelectedText || sanitizedFullContent}`;
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        maxOutputTokens: 800,
+        temperature: 0.7,
+      },
     });
 
     const suggestion = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
@@ -120,7 +129,7 @@ ${sanitizedSelectedText || sanitizedFullContent}`;
   } catch (error) {
     console.error("Blog AI assist error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to generate AI suggestion" },
+      { success: false, error: publicErrorMessage(error, "Failed to generate AI suggestion") },
       { status: 500 }
     );
   }

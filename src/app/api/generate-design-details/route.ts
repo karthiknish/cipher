@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, requireAuth, forbiddenResponse, sanitizeString } from "@/lib/api-auth";
+import { rateLimitedResponse, requireAuth, forbiddenResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,11 +19,16 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Admin access required to generate design details");
     }
 
-    const body = await request.json();
-    const { hasDesignA, hasDesignB, existingTitle } = body;
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
+
+    const parsed = await parseJsonBody<{ hasDesignA?: unknown; hasDesignB?: unknown; existingTitle?: unknown }>(request);
+    if (!parsed.ok) return parsed.response;
+    const { hasDesignA, hasDesignB, existingTitle } = parsed.data;
     
     // Sanitize inputs
-    const sanitizedTitle = existingTitle ? sanitizeString(existingTitle, 200) : "";
+    const sanitizedTitle = typeof existingTitle === "string" ? sanitizeString(existingTitle, 200) : "";
 
     const prompt = `You are a creative director for a premium streetwear brand called "CIPHER". Generate compelling details for a design voting contest where customers vote between two design options.
 
@@ -63,13 +68,22 @@ IMPORTANT:
 
     // Parse the JSON response
     const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
-    const designDetails = JSON.parse(cleanedText);
+    let designDetails: unknown;
+    try {
+      designDetails = JSON.parse(cleanedText);
+    } catch {
+      console.error("AI returned invalid JSON:", { cleanedText });
+      return NextResponse.json(
+        { error: "AI returned an invalid response. Please try again." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json(designDetails);
   } catch (error) {
     console.error("Error generating design details:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate design details" },
+      { error: publicErrorMessage(error, "Failed to generate design details") },
       { status: 500 }
     );
   }

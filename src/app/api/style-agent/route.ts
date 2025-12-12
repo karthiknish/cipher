@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, sanitizeString } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
 const STYLE_AGENT_PROMPT = `
 You are a fashion style expert AI for CIPHER, a premium streetwear brand. Your job is to recommend products based on the user's described vibe, style, mood, or needs.
@@ -77,8 +77,13 @@ export async function POST(request: NextRequest) {
       return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
     }
 
-    const body = await request.json();
-    const { query, mood, context } = body;
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
+
+    const parsed = await parseJsonBody<{ query?: unknown; mood?: unknown; context?: unknown }>(request);
+    if (!parsed.ok) return parsed.response;
+    const { query, mood, context } = parsed.data;
 
     // Input validation
     if (!query || typeof query !== "string") {
@@ -87,8 +92,8 @@ export async function POST(request: NextRequest) {
 
     // Sanitize inputs
     const sanitizedQuery = sanitizeString(query, 500);
-    const sanitizedMood = mood ? sanitizeString(mood, 50) : undefined;
-    const sanitizedContext = context ? sanitizeString(context, 200) : undefined;
+    const sanitizedMood = typeof mood === "string" ? sanitizeString(mood, 50) : undefined;
+    const sanitizedContext = typeof context === "string" ? sanitizeString(context, 200) : undefined;
 
     if (sanitizedQuery.length < 2) {
       return badRequestResponse("Query too short");
@@ -167,7 +172,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : "Failed to process request" 
+        error: publicErrorMessage(error, "Failed to process request")
       },
       { status: 500 }
     );

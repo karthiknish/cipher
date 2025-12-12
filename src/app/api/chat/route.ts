@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, sanitizeString } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
 // Website context for the chatbot
 const WEBSITE_CONTEXT = `
@@ -85,8 +85,13 @@ export async function POST(request: NextRequest) {
       return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
     }
 
-    const body = await request.json();
-    const { message, history } = body;
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
+
+    const parsed = await parseJsonBody<{ message?: unknown; history?: unknown }>(request);
+    if (!parsed.ok) return parsed.response;
+    const { message, history } = parsed.data;
 
     // Input validation
     if (!message || typeof message !== "string") {
@@ -102,15 +107,17 @@ export async function POST(request: NextRequest) {
 
     // Limit conversation history to prevent abuse
     const maxHistoryLength = 20;
-    const limitedHistory = Array.isArray(history) 
-      ? history.slice(-maxHistoryLength) 
+    const limitedHistory = Array.isArray(history)
+      ? history.slice(-maxHistoryLength)
       : [];
 
     // Build conversation history for context
-    const conversationHistory = limitedHistory.map((msg: { role: string; content: string }) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: sanitizeString(msg.content, 1000) }],
-    }));
+    const conversationHistory = limitedHistory
+      .filter((msg): msg is { role: unknown; content: unknown } => msg !== null && typeof msg === "object")
+      .map((msg: { role: unknown; content: unknown }) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: sanitizeString(String(msg.content ?? ""), 1000) }],
+      }));
 
     // Create the chat with system context
     const response = await genAI.models.generateContent({
@@ -152,9 +159,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Chat API Error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Failed to process message" 
+      {
+        success: false,
+        error: publicErrorMessage(error, "Failed to process message"),
       },
       { status: 500 }
     );

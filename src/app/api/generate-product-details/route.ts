@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, sanitizeString } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,17 +19,22 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Admin access required to generate product details");
     }
 
-    const body = await request.json();
-    const { name, category, existingDescription } = body;
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
 
-    if (!name) {
+    const parsed = await parseJsonBody<{ name?: unknown; category?: unknown; existingDescription?: unknown }>(request);
+    if (!parsed.ok) return parsed.response;
+    const { name, category, existingDescription } = parsed.data;
+
+    if (!name || typeof name !== "string") {
       return badRequestResponse("Product name is required");
     }
 
     // Sanitize inputs
     const sanitizedName = sanitizeString(name, 100);
-    const sanitizedCategory = category ? sanitizeString(category, 50) : "Apparel";
-    const sanitizedDescription = existingDescription ? sanitizeString(existingDescription, 1000) : "";
+    const sanitizedCategory = typeof category === "string" ? sanitizeString(category, 50) : "Apparel";
+    const sanitizedDescription = typeof existingDescription === "string" ? sanitizeString(existingDescription, 1000) : "";
 
     const prompt = `You are a professional fashion copywriter for a premium streetwear brand called "CIPHER". Generate compelling product details for the following item.
 
@@ -68,13 +73,22 @@ IMPORTANT:
 
     // Parse the JSON response
     const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
-    const productDetails = JSON.parse(cleanedText);
+    let productDetails: unknown;
+    try {
+      productDetails = JSON.parse(cleanedText);
+    } catch {
+      console.error("AI returned invalid JSON:", { cleanedText });
+      return NextResponse.json(
+        { error: "AI returned an invalid response. Please try again." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json(productDetails);
   } catch (error) {
     console.error("Error generating product details:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate product details" },
+      { error: publicErrorMessage(error, "Failed to generate product details") },
       { status: 500 }
     );
   }

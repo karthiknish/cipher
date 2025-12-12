@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, parseJsonBody, sanitizeString, isValidEmail, publicErrorMessage } from "@/lib/api-auth";
 import { Resend } from "resend";
 
 // Initialize Resend client
@@ -71,17 +71,18 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Admin access or API secret required to send cart reminders");
     }
 
-    const body: ReminderRequest = await request.json();
+    const parsed = await parseJsonBody<ReminderRequest>(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const { cartId, email, items, total, reminderNumber } = body;
 
     // Validate required fields
-    if (!cartId || !email || !items || items.length === 0) {
+    if (!cartId || typeof cartId !== "string" || !email || typeof email !== "string" || !items || !Array.isArray(items) || items.length === 0) {
       return badRequestResponse("Missing required fields: cartId, email, items");
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return badRequestResponse("Invalid email address");
     }
 
@@ -90,8 +91,34 @@ export async function POST(request: NextRequest) {
       return badRequestResponse("Too many items in cart");
     }
 
-    const emailSubject = getEmailSubject(reminderNumber);
-    const emailMessage = getEmailMessage(reminderNumber);
+    // Validate totals and reminder number
+    const safeReminderNumber = typeof reminderNumber === "number" ? reminderNumber : Number(reminderNumber);
+    if (!Number.isFinite(safeReminderNumber) || safeReminderNumber < 1 || safeReminderNumber > 3) {
+      return badRequestResponse("Invalid reminderNumber");
+    }
+
+    const safeTotal = typeof total === "number" ? total : Number(total);
+    if (!Number.isFinite(safeTotal) || safeTotal < 0) {
+      return badRequestResponse("Invalid total");
+    }
+
+    // Basic item validation & sanitization
+    const safeItems: CartItem[] = items.map((item) => ({
+      productId: sanitizeString(String(item.productId || ""), 100),
+      name: sanitizeString(String(item.name || ""), 200),
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      size: sanitizeString(String(item.size || ""), 20),
+      color: item.color ? sanitizeString(String(item.color), 40) : undefined,
+      image: sanitizeString(String(item.image || ""), 2000),
+    })).slice(0, 20);
+
+    if (safeItems.some(i => !i.name || !i.size || !Number.isFinite(i.price) || i.price < 0 || !Number.isFinite(i.quantity) || i.quantity < 1)) {
+      return badRequestResponse("Invalid cart items");
+    }
+
+    const emailSubject = getEmailSubject(safeReminderNumber);
+    const emailMessage = getEmailMessage(safeReminderNumber);
     
     // Generate cart recovery URL with token
     const recoveryToken = Buffer.from(`${cartId}:${Date.now()}`).toString("base64");
@@ -126,7 +153,7 @@ export async function POST(request: NextRequest) {
                     
                     <!-- Cart Items -->
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
-                      ${items.map(item => `
+                      ${safeItems.map(item => `
                         <tr>
                           <td style="padding: 15px 0; border-bottom: 1px solid #f0f0f0;">
                             <table width="100%" cellpadding="0" cellspacing="0">
@@ -195,9 +222,9 @@ ${emailSubject}
 ${emailMessage}
 
 Your Cart:
-${items.map(item => `• ${item.name} (Size: ${item.size}) - $${(item.price * item.quantity).toFixed(2)}`).join("\n")}
+${safeItems.map(item => `• ${item.name} (Size: ${item.size}) - $${(item.price * item.quantity).toFixed(2)}`).join("\n")}
 
-Subtotal: $${total.toFixed(2)}
+Subtotal: $${safeTotal.toFixed(2)}
 
 Complete your order: ${recoveryUrl}
 
@@ -209,7 +236,7 @@ Need help? Contact us at ${SUPPORT_EMAIL}
     // Send email using Resend if configured
     if (resend) {
       try {
-        const { data, error } = await resend.emails.send({
+        const sendResult = await resend.emails.send({
           from: FROM_EMAIL,
           to: email,
           subject: emailSubject,
@@ -217,25 +244,25 @@ Need help? Contact us at ${SUPPORT_EMAIL}
           text: textContent,
         });
 
-        if (error) {
-          console.error("Resend API error:", error);
+        if (sendResult.error) {
+          console.error("Resend API error:", sendResult.error);
           return NextResponse.json(
-            { error: "Failed to send email", details: error.message },
+            { error: "Failed to send email" },
             { status: 500 }
           );
         }
 
         console.log("📧 Cart reminder email sent:", {
-          messageId: data?.id,
+          messageId: sendResult.data?.id,
           to: email,
           subject: emailSubject,
-          reminderNumber,
+          reminderNumber: safeReminderNumber,
         });
 
         return NextResponse.json({
           success: true,
-          message: `Reminder #${reminderNumber} sent to ${email}`,
-          messageId: data?.id,
+          message: `Reminder #${safeReminderNumber} sent to ${email}`,
+          messageId: sendResult.data?.id,
           recoveryUrl,
         });
       } catch (emailError) {
@@ -250,16 +277,16 @@ Need help? Contact us at ${SUPPORT_EMAIL}
       console.log("📧 [DEV MODE] Cart reminder email would be sent:", {
         to: email,
         subject: emailSubject,
-        reminderNumber,
-        itemCount: items.length,
-        total,
+        reminderNumber: safeReminderNumber,
+        itemCount: safeItems.length,
+        total: safeTotal,
         recoveryUrl,
       });
       console.log("⚠️  To enable email sending, set RESEND_API_KEY in .env.local");
 
       return NextResponse.json({
         success: true,
-        message: `[DEV MODE] Reminder #${reminderNumber} logged for ${email}`,
+        message: `[DEV MODE] Reminder #${safeReminderNumber} logged for ${email}`,
         recoveryUrl,
         note: "Email not sent - RESEND_API_KEY not configured",
       });
@@ -268,7 +295,7 @@ Need help? Contact us at ${SUPPORT_EMAIL}
   } catch (error) {
     console.error("Failed to send cart reminder:", error);
     return NextResponse.json(
-      { error: "Failed to send reminder email" },
+      { error: publicErrorMessage(error, "Failed to send reminder email") },
       { status: 500 }
     );
   }

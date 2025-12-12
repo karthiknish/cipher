@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, forbiddenResponse } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, parseJsonBody, sanitizeString, isValidEmail, publicErrorMessage } from "@/lib/api-auth";
 
 // Email campaign types
 type CampaignType = 
@@ -152,8 +152,9 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
 async function sendEmail(
   to: string, 
   subject: string, 
-  htmlContent: string
+  _htmlContent: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  void _htmlContent;
   // In production, replace with actual email service integration:
   // - SendGrid: @sendgrid/mail
   // - Mailchimp Transactional: @mailchimp/mailchimp_transactional
@@ -208,7 +209,9 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Admin access required to send email campaigns");
     }
 
-    const body: EmailCampaignRequest = await request.json();
+    const parsed = await parseJsonBody<EmailCampaignRequest>(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const { type, recipients, subject: customSubject, content: customContent } = body;
 
     if (!type || !recipients || recipients.length === 0) {
@@ -226,15 +229,34 @@ export async function POST(request: NextRequest) {
       return badRequestResponse(`Unknown campaign type: ${type}`);
     }
 
+    if (type === "custom") {
+      const subjectOk = typeof customSubject === "string" && customSubject.trim().length > 0;
+      const contentOk = typeof customContent === "string" && customContent.trim().length > 0;
+      if (!subjectOk || !contentOk) {
+        return badRequestResponse("Custom campaigns require subject and content");
+      }
+    }
+
     const results: Array<{ email: string; success: boolean; messageId?: string; error?: string }> = [];
 
     for (const recipient of recipients) {
-      const subject = customSubject || template.subject;
+      if (!recipient?.email || !isValidEmail(recipient.email)) {
+        results.push({ email: String(recipient?.email || ""), success: false, error: "Invalid recipient email" });
+        continue;
+      }
+
+      const safeSubject = typeof (customSubject || template.subject) === "string"
+        ? sanitizeString(String(customSubject || template.subject), 200)
+        : "Cipher";
+
       const content = type === "custom" 
         ? customContent || "" 
         : template.getContent(recipient.customData || {});
 
-      const result = await sendEmail(recipient.email, subject, content);
+      // Basic guardrail against huge payloads
+      const safeContent = typeof content === "string" ? content.slice(0, 200_000) : "";
+
+      const result = await sendEmail(recipient.email, safeSubject, safeContent);
       results.push({ email: recipient.email, ...result });
     }
 
@@ -257,14 +279,26 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[Email Campaign Error]", error);
     return NextResponse.json(
-      { error: "Failed to send campaign" },
+      { error: publicErrorMessage(error, "Failed to send campaign") },
       { status: 500 }
     );
   }
 }
 
 // GET endpoint to retrieve campaign templates and stats
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Rate limit to avoid probing
+  const clientId = getClientIdentifier(request);
+  const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.API_GENERAL);
+  if (!rateLimit.success) {
+    return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
+  }
+
+  const authResult = await requireAuth(request, { requireAdmin: true, allowApiSecret: true });
+  if (!authResult) {
+    return forbiddenResponse("Admin access required");
+  }
+
   return NextResponse.json({
     templates: Object.keys(EMAIL_TEMPLATES).map(key => ({
       type: key,

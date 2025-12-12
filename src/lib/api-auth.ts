@@ -61,6 +61,61 @@ export function badRequestResponse(message: string): NextResponse {
 }
 
 /**
+ * API response for internal server errors
+ * Avoid leaking details to clients in production.
+ */
+export function internalServerErrorResponse(
+  message = "Internal server error"
+): NextResponse {
+  return NextResponse.json(
+    { success: false, error: message },
+    { status: 500 }
+  );
+}
+
+/**
+ * Create a safe, client-facing error message.
+ * In production we return a generic message; in development we return the error message.
+ */
+export function publicErrorMessage(
+  error: unknown,
+  fallbackMessage: string
+): string {
+  if (process.env.NODE_ENV === "production") {
+    return fallbackMessage;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallbackMessage;
+}
+
+/**
+ * Safely parse JSON body. Returns a NextResponse on failure.
+ */
+export async function parseJsonBody<T = Record<string, unknown>>(
+  request: NextRequest
+): Promise<{ ok: true; data: T } | { ok: false; response: NextResponse }> {
+  try {
+    const data = (await request.json()) as T;
+    return { ok: true, data };
+  } catch {
+    return { ok: false, response: badRequestResponse("Invalid JSON") };
+  }
+}
+
+/**
+ * Very small email validation helper for API payloads.
+ */
+export function isValidEmail(email: string): boolean {
+  if (typeof email !== "string") return false;
+  const trimmed = email.trim();
+  if (trimmed.length < 5 || trimmed.length > 254) return false;
+  // Simple, pragmatic email regex.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+/**
  * Extract Bearer token from Authorization header
  */
 function extractBearerToken(request: NextRequest): string | null {

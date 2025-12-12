@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields } from "@/lib/api-auth";
+import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields, validateRequestSize, parseJsonBody, internalServerErrorResponse, publicErrorMessage } from "@/lib/api-auth";
 import { generateTryOnPrompt, detectGarmentType, detectGender, Gender } from "@/lib/tryon-prompts/index";
 
 // Initialize the Gemini client
@@ -31,15 +31,28 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse("Please sign in to use the virtual try-on feature");
     }
 
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: "Gemini API key not configured. Please add GEMINI_API_KEY to your .env.local file." },
-        { status: 500 }
-      );
+    // Basic request size guard (base64 payloads can be large)
+    const sizeError = await validateRequestSize(request, 8 * 1024 * 1024);
+    if (sizeError) {
+      return badRequestResponse(sizeError);
     }
 
-    const body = await request.json();
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY) {
+      return internalServerErrorResponse("AI service not configured");
+    }
+
+    const parsed = await parseJsonBody<{
+      userImage?: unknown;
+      productImage?: unknown;
+      productName?: unknown;
+      productCategory?: unknown;
+      colorVariant?: unknown;
+      gender?: unknown;
+      [key: string]: unknown;
+    }>(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const { userImage, productImage, productName, productCategory, colorVariant, gender } = body;
 
     // Validate required fields
@@ -47,6 +60,14 @@ export async function POST(request: NextRequest) {
     if (fieldError) {
       return badRequestResponse(fieldError);
     }
+
+    if (typeof userImage !== "string" || typeof productImage !== "string" || typeof productName !== "string") {
+      return badRequestResponse("Invalid request payload");
+    }
+
+    const productCategoryStr = typeof productCategory === "string" ? productCategory : "";
+    const colorVariantStr = typeof colorVariant === "string" ? colorVariant : undefined;
+    const genderStr = typeof gender === "string" ? (gender as Gender) : undefined;
 
     // Validate image size (base64 encoded images are ~1.37x larger)
     const userImageSize = (userImage.length * 3) / 4;
@@ -93,9 +114,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate the appropriate prompt based on garment type and gender
-    const detectedGender = (gender as Gender) || detectGender(productName, productCategory || "");
-    const prompt = generateTryOnPrompt(productName, productCategory || "", colorVariant, detectedGender);
-    const garmentType = detectGarmentType(productName, productCategory || "");
+    const detectedGender = genderStr || detectGender(productName, productCategoryStr);
+    const prompt = generateTryOnPrompt(productName, productCategoryStr, colorVariantStr, detectedGender);
+    const garmentType = detectGarmentType(productName, productCategoryStr);
 
     // Extract base64 data from data URLs
     const userImageData = userImage.replace(/^data:image\/\w+;base64,/, "");
@@ -221,7 +242,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: `Generation failed: ${errorMessage}` },
+      { success: false, error: publicErrorMessage(error, "Generation failed") },
       { status: 500 }
     );
   }
