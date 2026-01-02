@@ -131,12 +131,13 @@ OUTPUT: A single, high-quality photorealistic image of the person wearing the ${
 }
 
 /**
- * Generate a simple image from text prompt using Nano Banana (faster)
+ * Generate an image from a text prompt.
+ * Defaults to Nano Banana Pro (higher quality); pass MODELS.NANO_BANANA for faster/cheaper generation.
  */
-export async function generateImage(prompt: string): Promise<TryOnResponse> {
+export async function generateImage(prompt: string, model: GeminiModel = MODELS.NANO_BANANA_PRO): Promise<TryOnResponse> {
   try {
     const response = await genAI.models.generateContent({
-      model: MODELS.NANO_BANANA,
+      model,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         responseModalities: ["IMAGE"],
@@ -153,7 +154,7 @@ export async function generateImage(prompt: string): Promise<TryOnResponse> {
         return {
           success: true,
           imageBase64: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
-          model: MODELS.NANO_BANANA,
+          model,
         };
       }
     }

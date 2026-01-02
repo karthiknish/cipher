@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
 import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields, validateRequestSize, parseJsonBody, internalServerErrorResponse, publicErrorMessage } from "@/lib/api-auth";
 import { generateTryOnPrompt, detectGarmentType, detectGender, Gender } from "@/lib/tryon-prompts/index";
+import { genAI, MODELS } from "@/lib/gemini";
 
-// Initialize the Gemini client
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
-});
+// Nano Banana Pro (Gemini 3 Pro Image Preview) for advanced image generation/editing
+// https://ai.google.dev/gemini-api/docs/image-generation
+const MODEL = MODELS.NANO_BANANA_PRO;
 
-// Nano Banana Pro model for advanced image generation
-const MODEL = "gemini-2.0-flash-exp-image-generation";
+const DEFAULT_ASPECT_RATIO = "3:4" as const;
+const DEFAULT_IMAGE_SIZE = "2K" as const;
 
 // Maximum image size (2MB)
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -156,6 +155,10 @@ export async function POST(request: NextRequest) {
       ],
       config: {
         responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: {
+          aspectRatio: DEFAULT_ASPECT_RATIO,
+          imageSize: DEFAULT_IMAGE_SIZE,
+        },
       },
     });
 

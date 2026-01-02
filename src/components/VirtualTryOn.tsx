@@ -735,15 +735,22 @@ export default function VirtualTryOn({
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="relative max-w-lg w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-white"
-                        style={{ transform: `scale(${zoom})` }}
+                        className="relative h-full max-h-full w-auto max-w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-white"
                       >
-                        <NextImage
-                          src={tryOnResult}
-                          alt="Try-on result"
-                          fill
-                          className="object-contain"
-                        />
+                        <div
+                          className="absolute inset-0 transition-transform"
+                          style={{
+                            transform: `scale(${zoom})`,
+                            transformOrigin: "center center",
+                          }}
+                        >
+                          <NextImage
+                            src={tryOnResult}
+                            alt="Try-on result"
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
                         {/* Success Badge */}
                         <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg">
                           <CheckCircle className="w-4 h-4" weight="fill" />
