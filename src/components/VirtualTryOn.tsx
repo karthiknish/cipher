@@ -1,9 +1,10 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "@/lib/motion";
 import NextImage from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import { compressImageForTryOn } from "@/lib/compress-image";
 import { 
   X, Upload, Camera, SpinnerGap, DownloadSimple, ShareNetwork, ArrowsClockwise, 
   Sparkle, CheckCircle, WarningCircle, ImageSquare, MagicWand,
@@ -27,23 +28,28 @@ interface TryOnProps {
   onAddToWishlist?: () => void;
 }
 
-type ProcessingStage = "idle" | "uploading" | "analyzing" | "generating" | "finalizing" | "complete" | "error";
+type ProcessingStage =
+  | "idle"
+  | "uploading"
+  | "preparing"
+  | "generating"
+  | "complete"
+  | "error";
 
 const PROCESSING_MESSAGES: Record<ProcessingStage, { title: string; subtitle: string }> = {
   idle: { title: "Ready", subtitle: "Upload a photo to begin" },
-  uploading: { title: "Uploading", subtitle: "Preparing your image..." },
-  analyzing: { title: "Analyzing", subtitle: "Detecting body pose and proportions..." },
-  generating: { title: "Creating Your Look", subtitle: "AI is styling you in this piece..." },
-  finalizing: { title: "Almost There", subtitle: "Adding finishing touches..." },
-  complete: { title: "Your New Look!", subtitle: "Looking amazing! ✨" },
-  error: { title: "Error", subtitle: "Something went wrong" },
+  uploading: { title: "Preparing photo", subtitle: "Optimizing your image..." },
+  preparing: { title: "Getting ready", subtitle: "Loading product details..." },
+  generating: { title: "Creating your look", subtitle: "This usually takes under a minute..." },
+  complete: { title: "Your new look", subtitle: "Here is how it fits on you" },
+  error: { title: "Something went wrong", subtitle: "Please try again" },
 };
 
-// Sample user images for quick try
-const SAMPLE_MODELS = [
-  { id: "model-1", label: "Model 1", image: "/samples/model-front.jpg" },
-  { id: "model-2", label: "Model 2", image: "/samples/model-casual.jpg" },
-];
+const FLOW_STEPS = [
+  { id: "photo", label: "Photo" },
+  { id: "create", label: "Create" },
+  { id: "result", label: "Result" },
+] as const;
 
 export default function VirtualTryOn({ 
   isOpen, 
@@ -68,8 +74,51 @@ export default function VirtualTryOn({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const { user } = useAuth();
+
+  const clearProgressAnimation = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  }, []);
+
+  const startProgressAnimation = useCallback(() => {
+    clearProgressAnimation();
+    setProgress(8);
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((current) => (current < 88 ? current + 2 : current));
+    }, 500);
+  }, [clearProgressAnimation]);
+
+  useEffect(() => {
+    if (isOpen && selectedColor) {
+      setSelectedProductColor(selectedColor);
+    }
+  }, [isOpen, selectedColor]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      clearProgressAnimation();
+      setUserImage(null);
+      setTryOnResult(null);
+      setProcessingStage("idle");
+      setError(null);
+      setProgress(0);
+      setZoom(1);
+      setShowComparison(false);
+      setHistory([]);
+      setHistoryIndex(-1);
+    }
+  }, [isOpen, clearProgressAnimation]);
+
+  useEffect(() => () => clearProgressAnimation(), [clearProgressAnimation]);
 
   // Get current product image based on selected color
   const getProductImage = useCallback(() => {
@@ -90,14 +139,20 @@ export default function VirtualTryOn({
 
       setProcessingStage("uploading");
       setProgress(10);
-      
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setUserImage(reader.result as string);
-        setTryOnResult(null);
-        setError(null);
-        setProcessingStage("idle");
-        setProgress(0);
+      reader.onloadend = async () => {
+        try {
+          const compressed = await compressImageForTryOn(reader.result as string);
+          setUserImage(compressed);
+          setTryOnResult(null);
+          setError(null);
+          setProcessingStage("idle");
+          setProgress(0);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Failed to process image");
+          setProcessingStage("error");
+        }
       };
       reader.onerror = () => {
         setError("Failed to read image. Please try again.");
@@ -108,16 +163,15 @@ export default function VirtualTryOn({
   };
 
   const fetchProductImageAsBase64 = async (url: string): Promise<string> => {
-    // Check if it's a placeholder URL
     if (url.includes("placehold.co") || url.includes("placeholder") || url.includes("via.placeholder")) {
       throw new Error("This product uses a placeholder image. Virtual try-on requires a real product photo.");
     }
-    
-    // Use server-side proxy to avoid CORS issues
-    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-    
+
+    const fetchUrl =
+      url.startsWith("/") ? url : `/api/proxy-image?url=${encodeURIComponent(url)}`;
+
     try {
-      const response = await fetch(proxyUrl);
+      const response = await fetch(fetchUrl);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -165,6 +219,7 @@ export default function VirtualTryOn({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    clearProgressAnimation();
     setProcessingStage("idle");
     setProgress(0);
     setError(null);
@@ -172,56 +227,47 @@ export default function VirtualTryOn({
 
   const handleGenerateTryOn = async () => {
     if (!userImage || !product) return;
-    
-    // Cancel any existing request
+
+    if (!user) {
+      setError("Sign in to create your try-on preview.");
+      return;
+    }
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
-    // Create new abort controller
+
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
-    
+
     setError(null);
     setTryOnResult(null);
-    
-    // Simulated progress stages
-    const stages: { stage: ProcessingStage; progress: number; delay: number }[] = [
-      { stage: "analyzing", progress: 20, delay: 0 },
-      { stage: "generating", progress: 50, delay: 1500 },
-      { stage: "finalizing", progress: 80, delay: 3000 },
-    ];
-
-    // Start progress animation
-    for (const { stage, progress: prog, delay } of stages) {
-      setTimeout(() => {
-        if (!signal.aborted) {
-          setProcessingStage(stage);
-          setProgress(prog);
-        }
-      }, delay);
-    }
+    setProcessingStage("preparing");
+    startProgressAnimation();
 
     try {
       const productImageBase64 = await fetchProductImageAsBase64(getProductImage());
-      
+
       if (signal.aborted) return;
-      
-      // Get auth token for authenticated API call
+
       const { getSessionBearerToken } = await import("@/lib/session-token");
       const token = await getSessionBearerToken();
-      
+
       if (!token) {
+        clearProgressAnimation();
         setProcessingStage("error");
-        setError("Please sign in to use the virtual try-on feature.");
+        setProgress(0);
+        setError("Please sign in to use virtual try-on.");
         return;
       }
-      
+
+      setProcessingStage("generating");
+
       const response = await fetch("/api/try-on", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userImage,
@@ -233,28 +279,38 @@ export default function VirtualTryOn({
         signal,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+
+      if (signal.aborted) return;
+
+      clearProgressAnimation();
+
+      if (!response.ok) {
+        setProcessingStage("error");
+        setProgress(0);
+        setError(data.error || "Could not create your look. Please try again.");
+        return;
+      }
 
       if (data.success && data.image) {
         setProgress(100);
         setProcessingStage("complete");
         setTryOnResult(data.image);
-        
-        // Add to history
-        setHistory(prev => [...prev, data.image]);
-        setHistoryIndex(prev => prev + 1);
+        setHistory((prev) => [...prev, data.image]);
+        setHistoryIndex((prev) => prev + 1);
       } else {
         setProcessingStage("error");
-        setError(data.error || "Failed to generate try-on image. Please try again.");
+        setProgress(0);
+        setError(data.error || "Could not create your look. Please try again.");
       }
     } catch (err) {
-      // Don't show error if request was cancelled
       if (err instanceof Error && err.name === "AbortError") {
         return;
       }
       console.error(err);
+      clearProgressAnimation();
       setProcessingStage("error");
-      // Show specific error message if available
+      setProgress(0);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -298,6 +354,7 @@ export default function VirtualTryOn({
   };
 
   const resetTryOn = () => {
+    clearProgressAnimation();
     setUserImage(null);
     setTryOnResult(null);
     setProcessingStage("idle");
@@ -308,18 +365,18 @@ export default function VirtualTryOn({
   };
 
   const navigateHistory = (direction: "prev" | "next") => {
-    if (direction === "prev" && historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setTryOnResult(history[historyIndex - 1]);
-    } else if (direction === "next" && historyIndex < history.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      setTryOnResult(history[historyIndex + 1]);
-    }
+    setHistoryIndex((current) => {
+      const nextIndex = direction === "prev" ? current - 1 : current + 1;
+      if (nextIndex < 0 || nextIndex >= history.length) return current;
+      setTryOnResult(history[nextIndex]);
+      return nextIndex;
+    });
   };
 
   if (!isOpen) return null;
 
-  const isProcessing = ["uploading", "analyzing", "generating", "finalizing"].includes(processingStage);
+  const isProcessing = ["uploading", "preparing", "generating"].includes(processingStage);
+  const activeFlowStep = tryOnResult ? 2 : userImage || isProcessing ? 1 : 0;
 
   return (
     <AnimatePresence>
@@ -345,13 +402,8 @@ export default function VirtualTryOn({
                 <MagicWand className="size-6" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
-                  Virtual Try-On
-                  <span className="px-2.5 py-1 bg-gray-950 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-                    AI Magic
-                  </span>
-                </h2>
-                <p className="text-sm text-gray-500">See yourself in this style instantly</p>
+                <h2 className="text-xl font-semibold tracking-tight">Virtual Try-On</h2>
+                <p className="text-sm text-gray-500">See yourself in this style before you buy</p>
               </div>
             </div>
             <button aria-label="x" type="button" onClick={onClose}
@@ -389,6 +441,7 @@ export default function VirtualTryOn({
                           {product.colors.map((color) => (
                             <button type="button" key={color.name}
                               onClick={() => setSelectedProductColor(color.name)}
+                              disabled={isProcessing}
                               aria-label={`Try color ${color.name}`}
                               className={`size-7 rounded-full border-2 transition-all shadow-sm ${
                                 selectedProductColor === color.name
@@ -409,8 +462,57 @@ export default function VirtualTryOn({
               {/* Upload Section */}
               <div className="flex-1 p-5 overflow-y-auto">
                 <div className="space-y-5">
+                  {/* Flow steps */}
+                  <div className="flex items-center gap-2" aria-label="Try-on progress">
+                    {FLOW_STEPS.map((step, index) => (
+                      <div key={step.id} className="flex flex-1 items-center gap-2">
+                        <div
+                          className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                            index <= activeFlowStep
+                              ? "bg-gray-950 text-white"
+                              : "bg-gray-200 text-gray-500"
+                          }`}
+                        >
+                          {index < activeFlowStep ? (
+                            <CheckCircle className="size-4" weight="fill" />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${
+                            index <= activeFlowStep ? "text-gray-900" : "text-gray-400"
+                          }`}
+                        >
+                          {step.label}
+                        </span>
+                        {index < FLOW_STEPS.length - 1 && (
+                          <div
+                            className={`mx-1 h-px flex-1 ${
+                              index < activeFlowStep ? "bg-gray-900" : "bg-gray-200"
+                            }`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {!user && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
+                      <p className="text-sm text-gray-600 mb-3">
+                        Sign in to upload your photo and preview this item on you.
+                      </p>
+                      <Link
+                        href="/login"
+                        className="inline-flex items-center justify-center rounded-xl bg-gray-950 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition"
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Photo Upload Area */}
-                  <fieldset>
+                  <fieldset disabled={!user || isProcessing}>
                     <legend className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                       <User className="size-4" />
                       Your Photo
@@ -422,11 +524,17 @@ export default function VirtualTryOn({
                           : "border-dashed border-gray-300 hover:border-black bg-white hover:bg-gray-50"
                       }`}
                     >
-                      {!userImage ? (
+                      {!user ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                          <User className="size-10 text-gray-300 mb-3" />
+                          <p className="text-sm text-gray-500">Sign in to add your photo</p>
+                        </div>
+                      ) : !userImage ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                           <div className="flex gap-4 mb-5">
                             <button type="button" onClick={() => fileInputRef.current?.click()}
-                              className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group"
+                              disabled={isProcessing}
+                              className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group disabled:opacity-50 disabled:pointer-events-none"
                             >
                               <div className="size-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
                                 <ImageSquare className="size-6 text-gray-700" />
@@ -434,7 +542,8 @@ export default function VirtualTryOn({
                               <span className="text-sm font-medium text-gray-700">Gallery</span>
                             </button>
                             <button type="button" onClick={() => cameraInputRef.current?.click()}
-                              className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group"
+                              disabled={isProcessing}
+                              className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group disabled:opacity-50 disabled:pointer-events-none"
                             >
                               <div className="size-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
                                 <Camera className="size-6 text-gray-700" />
@@ -538,42 +647,38 @@ export default function VirtualTryOn({
 
               {/* Generate Button */}
               <div className="p-5 border-t border-gray-100 bg-white">
-                {!user ? (
-                  <div className="text-center py-2">
-                    <p className="text-sm text-gray-600 mb-2">Sign in to use Virtual Try-On</p>
-                    <Link
-                      href="/login"
-                      className="inline-block px-6 py-3 bg-gray-950 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition"
-                    >
-                      Sign In
-                    </Link>
-                  </div>
-                ) : (
-                  <button type="button" onClick={handleGenerateTryOn}
-                    disabled={!userImage || isProcessing}
-                    className={`w-full py-4 text-sm tracking-wider font-semibold transition-all flex items-center justify-center gap-3 rounded-xl ${
-                      isProcessing
-                        ? "bg-gray-100 text-gray-500"
-                        : userImage
+                <button
+                  type="button"
+                  onClick={handleGenerateTryOn}
+                  disabled={!user || !userImage || isProcessing}
+                  className={`w-full py-4 text-sm tracking-wider font-semibold transition-all flex items-center justify-center gap-3 rounded-xl ${
+                    isProcessing
+                      ? "bg-gray-100 text-gray-500"
+                      : user && userImage
                         ? "bg-gray-950 text-white hover:bg-gray-800 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}>
-                    {isProcessing ? (
-                      <>
-                        <SpinnerGap className="size-5 animate-spin" />
-                        {PROCESSING_MESSAGES[processingStage].title}
-                      </>
-                    ) : (
-                      <>
-                        <MagicWand className="size-5" />
-                        Try It On
-                      </>
-                    )}
-                  </button>
-                )}
-                {user && !userImage && (
+                  }`}
+                >
+                  {isProcessing ? (
+                    <>
+                      <SpinnerGap className="size-5 animate-spin" />
+                      {PROCESSING_MESSAGES[processingStage].title}
+                    </>
+                  ) : (
+                    <>
+                      <MagicWand className="size-5" />
+                      {tryOnResult ? "Regenerate Look" : "Create My Look"}
+                    </>
+                  )}
+                </button>
+                {user && !userImage && !isProcessing && (
                   <p className="text-xs text-gray-400 text-center mt-2">
-                    Upload a photo to see the magic ✨
+                    Step 1: upload a full-body photo to continue
+                  </p>
+                )}
+                {user && userImage && !tryOnResult && !isProcessing && (
+                  <p className="text-xs text-gray-400 text-center mt-2">
+                    Step 2: create your preview — usually under a minute
                   </p>
                 )}
               </div>
@@ -740,7 +845,7 @@ export default function VirtualTryOn({
                         {/* Success Badge */}
                         <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg">
                           <CheckCircle className="size-4" weight="fill" />
-                          AI Generated
+                          Your preview
                         </div>
                         {/* Action Buttons on Image */}
                         <div className="absolute bottom-5 left-5 right-5 flex gap-3">
@@ -827,29 +932,6 @@ export default function VirtualTryOn({
                           </p>
                         </div>
 
-                        {/* Progress Steps */}
-                        <div className="flex justify-center gap-3">
-                          {["analyzing", "generating", "finalizing"].map((stage, i) => (
-                            <div
-                              key={stage}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                                ["analyzing", "generating", "finalizing"].indexOf(processingStage) >= i
-                                  ? "bg-gray-900 text-white"
-                                  : "bg-gray-100 text-gray-400"
-                              }`}
-                            >
-                              {["analyzing", "generating", "finalizing"].indexOf(processingStage) > i ? (
-                                <CheckCircle className="size-3.5" weight="fill" />
-                              ) : ["analyzing", "generating", "finalizing"].indexOf(processingStage) === i ? (
-                                <SpinnerGap className="size-3.5 animate-spin" />
-                              ) : (
-                                <span className="size-3.5 rounded-full bg-gray-300" />
-                              )}
-                              {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                            </div>
-                          ))}
-                        </div>
-                        
                         {/* Cancel Button */}
                         <button aria-label="x" type="button" onClick={handleCancelTryOn}
                           className="mt-4 px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-2 mx-auto">
@@ -877,12 +959,10 @@ export default function VirtualTryOn({
                             See yourself in this look
                           </p>
                           <p className="text-sm text-gray-500 mt-2">
-                            Upload a photo and let AI work its magic
+                            {user
+                              ? "Upload a photo on the left, then create your preview"
+                              : "Sign in and upload a photo to get started"}
                           </p>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                          <Sparkle className="size-4" />
-                          Powered by AI Vision Technology
                         </div>
                       </div>
                     )}

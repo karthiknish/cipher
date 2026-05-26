@@ -1,42 +1,105 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
-import { rateLimitedResponse, badRequestResponse, requireAuth, unauthorizedResponse, validateRequiredFields, validateRequestSize, parseJsonBody, internalServerErrorResponse, publicErrorMessage } from "@/lib/api-auth";
+import {
+  rateLimitedResponse,
+  badRequestResponse,
+  requireAuth,
+  unauthorizedResponse,
+  validateRequiredFields,
+  validateRequestSize,
+  parseJsonBody,
+  internalServerErrorResponse,
+  publicErrorMessage,
+} from "@/lib/api-auth";
 import { generateTryOnPrompt, detectGarmentType, detectGender, Gender } from "@/lib/tryon-prompts/index";
-import { genAI, MODELS } from "@/lib/gemini";
+import { generateTryOnImage, TRY_ON_MODEL } from "@/lib/gemini";
 
-// Nano Banana Pro (Gemini 3 Pro Image Preview) for advanced image generation/editing
 // https://ai.google.dev/gemini-api/docs/image-generation
-const MODEL = MODELS.NANO_BANANA_PRO;
+const MODEL = TRY_ON_MODEL;
 
-const DEFAULT_ASPECT_RATIO = "3:4" as const;
-const DEFAULT_IMAGE_SIZE = "2K" as const;
-
-// Maximum image size (2MB)
+// Maximum decoded image size (2MB)
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+
+function isValidImageFormat(dataUrl: string): boolean {
+  if (!dataUrl.startsWith("data:image/")) return false;
+  if (dataUrl.startsWith("data:image/svg")) return false;
+  const supportedFormats = ["data:image/jpeg", "data:image/png", "data:image/webp", "data:image/gif"];
+  return supportedFormats.some((format) => dataUrl.startsWith(format));
+}
+
+function isPlaceholderImage(dataUrl: string): boolean {
+  if (dataUrl.includes("placehold")) return true;
+  if (dataUrl.startsWith("data:image/svg")) return true;
+  if (dataUrl.includes("placeholder")) return true;
+  return false;
+}
+
+function estimateDecodedBytes(base64DataUrl: string): number {
+  return (base64DataUrl.length * 3) / 4;
+}
+
+function mapGeminiError(errorMessage: string): NextResponse | null {
+  if (errorMessage.includes("SAFETY") || errorMessage.includes("safety")) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "The image could not be generated due to content guidelines. Please try a different photo with appropriate attire.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (errorMessage.includes("RATE_LIMIT") || errorMessage.includes("429")) {
+    return NextResponse.json(
+      { success: false, error: "Too many requests. Please wait 30 seconds and try again." },
+      { status: 429 }
+    );
+  }
+
+  if (errorMessage.includes("INVALID_ARGUMENT") || errorMessage.includes("400")) {
+    return NextResponse.json(
+      { success: false, error: "Invalid image format. Please use a clear JPEG or PNG photo." },
+      { status: 400 }
+    );
+  }
+
+  if (errorMessage.includes("PERMISSION_DENIED") || errorMessage.includes("403")) {
+    return NextResponse.json(
+      { success: false, error: "API access denied. Please check your Gemini API key configuration." },
+      { status: 403 }
+    );
+  }
+
+  if (errorMessage.includes("NOT_FOUND") || errorMessage.includes("404")) {
+    return NextResponse.json(
+      { success: false, error: "Try-on is temporarily unavailable. Please try again later." },
+      { status: 503 }
+    );
+  }
+
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting - try-on is expensive, so stricter limits
     const clientId = getClientIdentifier(request);
     const rateLimit = await checkRateLimit(clientId, RATE_LIMITS.TRY_ON);
-    
+
     if (!rateLimit.success) {
       return rateLimitedResponse(rateLimit.retryAfterSec!, rateLimitHeaders(rateLimit));
     }
 
-    // Require authentication for try-on (costs money)
     const authResult = await requireAuth(request);
     if (!authResult) {
       return unauthorizedResponse("Please sign in to use the virtual try-on feature");
     }
 
-    // Basic request size guard (base64 payloads can be large)
     const sizeError = await validateRequestSize(request, 8 * 1024 * 1024);
     if (sizeError) {
       return badRequestResponse(sizeError);
     }
 
-    // Validate API key
     if (!process.env.GEMINI_API_KEY) {
       return internalServerErrorResponse("AI service not configured");
     }
@@ -54,7 +117,6 @@ export async function POST(request: NextRequest) {
     const body = parsed.data;
     const { userImage, productImage, productName, productCategory, colorVariant, gender } = body;
 
-    // Validate required fields
     const fieldError = validateRequiredFields(body, ["userImage", "productImage", "productName"]);
     if (fieldError) {
       return badRequestResponse(fieldError);
@@ -68,35 +130,13 @@ export async function POST(request: NextRequest) {
     const colorVariantStr = typeof colorVariant === "string" ? colorVariant : undefined;
     const genderStr = typeof gender === "string" ? (gender as Gender) : undefined;
 
-    // Validate image size (base64 encoded images are ~1.37x larger)
-    const userImageSize = (userImage.length * 3) / 4;
-    const productImageSize = (productImage.length * 3) / 4;
-    
-    if (userImageSize > MAX_IMAGE_SIZE) {
+    if (estimateDecodedBytes(userImage) > MAX_IMAGE_SIZE) {
       return badRequestResponse("User image too large. Please use an image under 2MB.");
     }
-    
-    if (productImageSize > MAX_IMAGE_SIZE) {
+
+    if (estimateDecodedBytes(productImage) > MAX_IMAGE_SIZE) {
       return badRequestResponse("Product image too large. Please use an image under 2MB.");
     }
-
-    // Validate image formats - Gemini only supports JPEG, PNG, WebP, GIF (not SVG)
-    const isValidImageFormat = (dataUrl: string): boolean => {
-      if (!dataUrl.startsWith("data:image/")) return false;
-      // SVG images are not supported by Gemini
-      if (dataUrl.startsWith("data:image/svg")) return false;
-      // Check for supported formats
-      const supportedFormats = ["data:image/jpeg", "data:image/png", "data:image/webp", "data:image/gif"];
-      return supportedFormats.some(format => dataUrl.startsWith(format));
-    };
-
-    const isPlaceholderImage = (dataUrl: string): boolean => {
-      // Check for common placeholder patterns
-      if (dataUrl.includes("placehold")) return true;
-      if (dataUrl.startsWith("data:image/svg")) return true;
-      if (dataUrl.includes("placeholder")) return true;
-      return false;
-    };
 
     if (!isValidImageFormat(userImage)) {
       return NextResponse.json(
@@ -107,142 +147,61 @@ export async function POST(request: NextRequest) {
 
     if (!isValidImageFormat(productImage) || isPlaceholderImage(productImage)) {
       return NextResponse.json(
-        { success: false, error: "This product doesn't have a valid image for virtual try-on. Please choose a product with a real photo (not a placeholder)." },
+        {
+          success: false,
+          error:
+            "This product doesn't have a valid image for virtual try-on. Please choose a product with a real photo (not a placeholder).",
+        },
         { status: 400 }
       );
     }
 
-    // Generate the appropriate prompt based on garment type and gender
     const detectedGender = genderStr || detectGender(productName, productCategoryStr);
     const prompt = generateTryOnPrompt(productName, productCategoryStr, colorVariantStr, detectedGender);
     const garmentType = detectGarmentType(productName, productCategoryStr);
 
-    // Extract base64 data from data URLs
-    const userImageData = userImage.replace(/^data:image\/\w+;base64,/, "");
-    const productImageData = productImage.replace(/^data:image\/\w+;base64,/, "");
-
-    // Determine image MIME type
-    const getUserMimeType = (dataUrl: string): string => {
-      const match = dataUrl.match(/^data:(image\/\w+);base64,/);
-      return match ? match[1] : "image/jpeg";
-    };
-
-    const userMimeType = getUserMimeType(userImage);
-    const productMimeType = getUserMimeType(productImage);
-
-    // Call Gemini API with both images
-    const response = await genAI.models.generateContent({
+    const result = await generateTryOnImage({
+      prompt,
+      userImageBase64: userImage,
+      productImageBase64: productImage,
       model: MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                data: userImageData,
-                mimeType: userMimeType,
-              },
-            },
-            {
-              inlineData: {
-                data: productImageData,
-                mimeType: productMimeType,
-              },
-            },
-          ],
-        },
-      ],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio: DEFAULT_ASPECT_RATIO,
-          imageSize: DEFAULT_IMAGE_SIZE,
-        },
-      },
+      aspectRatio: "3:4",
+      resolution: "1K",
     });
 
-    // Extract the generated image from response
-    const result = response.candidates?.[0]?.content;
-    
-    if (!result?.parts) {
+    if (!result.success || !result.imageBase64) {
+      const mapped = result.error ? mapGeminiError(result.error) : null;
+      if (mapped) return mapped;
+
       return NextResponse.json(
-        { success: false, error: "No response from AI model. Please try again." },
+        {
+          success: false,
+          error:
+            result.error ??
+            result.text ??
+            "We couldn't create your look with this photo. Try a clearer full-body shot with good lighting.",
+        },
         { status: 500 }
       );
     }
 
-    // Find the image in the response parts
-    for (const part of result.parts) {
-      if (part.inlineData?.data) {
-        const generatedImage = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
-        
-        return NextResponse.json({
-          success: true,
-          image: generatedImage,
-          model: MODEL,
-          metadata: {
-            productName,
-            productCategory,
-            colorVariant,
-            garmentType,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    // If no image found, return text response if available
-    const textResponse = result.parts.find(p => p.text)?.text;
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: textResponse || "No image was generated. The AI model may have declined the request. Please try with a different photo.",
+    return NextResponse.json({
+      success: true,
+      image: result.imageBase64,
+      metadata: {
+        productName,
+        productCategory,
+        colorVariant,
+        garmentType,
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
-    );
-
+    });
   } catch (error) {
     console.error("Virtual Try-On API Error:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    
-    // Check for specific API errors and provide user-friendly messages
-    if (errorMessage.includes("SAFETY") || errorMessage.includes("safety")) {
-      return NextResponse.json(
-        { success: false, error: "The image could not be generated due to content guidelines. Please try a different photo with appropriate attire." },
-        { status: 400 }
-      );
-    }
-    
-    if (errorMessage.includes("RATE_LIMIT") || errorMessage.includes("429")) {
-      return NextResponse.json(
-        { success: false, error: "Too many requests. Please wait 30 seconds and try again." },
-        { status: 429 }
-      );
-    }
-
-    if (errorMessage.includes("INVALID_ARGUMENT") || errorMessage.includes("400")) {
-      return NextResponse.json(
-        { success: false, error: "Invalid image format. Please use a clear JPEG or PNG photo." },
-        { status: 400 }
-      );
-    }
-
-    if (errorMessage.includes("PERMISSION_DENIED") || errorMessage.includes("403")) {
-      return NextResponse.json(
-        { success: false, error: "API access denied. Please check your Gemini API key configuration." },
-        { status: 403 }
-      );
-    }
-
-    if (errorMessage.includes("NOT_FOUND") || errorMessage.includes("404")) {
-      return NextResponse.json(
-        { success: false, error: "AI model not available. Please try again later." },
-        { status: 503 }
-      );
-    }
+    const mapped = mapGeminiError(errorMessage);
+    if (mapped) return mapped;
 
     return NextResponse.json(
       { success: false, error: publicErrorMessage(error, "Generation failed") },

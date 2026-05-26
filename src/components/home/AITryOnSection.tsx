@@ -14,7 +14,7 @@ const SHOWCASE_ITEMS = [
 const STEPS = [
   { icon: Upload, label: "Upload Photo", description: "Take or upload your image" },
   { icon: TShirt, label: "Select Item", description: "Choose any product" },
-  { icon: MagicWand, label: "AI Magic", description: "Get instant results" },
+  { icon: MagicWand, label: "See Your Look", description: "Preview in seconds" },
 ];
 
 export default function AITryOnSection() {
@@ -95,8 +95,8 @@ export default function AITryOnSection() {
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
-                <p className="text-3xl font-bold text-white">&lt;2s</p>
-                <p className="text-sm text-white/40">Processing</p>
+                <p className="text-3xl font-bold text-white">Fast</p>
+                <p className="text-sm text-white/40">Results</p>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
@@ -226,14 +226,6 @@ export default function AITryOnSection() {
               </motion.div>
             </div>
 
-            {/* Powered by badge */}
-            <div className="flex items-center justify-center gap-3 mt-8">
-              <span className="text-xs text-white/30 tracking-wider">POWERED BY</span>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <Sparkle className="size-4 text-white" weight="fill" />
-                <span className="text-sm font-medium">Gemini AI</span>
-              </div>
-            </div>
           </motion.div>
         </div>
       </div>

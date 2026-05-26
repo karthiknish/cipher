@@ -1,6 +1,6 @@
 # Cipher - Streetwear & Virtual Try-On
 
-Cipher is a premium streetwear e-commerce platform featuring a virtual try-on experience powered by **Gemini 3 Pro** (codenamed "Nano Banana Pro").
+Cipher is a premium streetwear e-commerce platform featuring a virtual try-on experience powered by **Gemini 3.1 Flash Image** (Nano Banana 2).
 
 ## Features
 
@@ -121,7 +121,7 @@ Cipher is a premium streetwear e-commerce platform featuring a virtual try-on ex
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
 - **Backend/Auth**: Firebase (Auth with Google OAuth, Firestore)
-- **AI Integration**: Google Gemini API (Gemini 2.0 Flash for Chatbot, Gemini 3 Pro for Try-On)
+- **AI Integration**: Google Gemini API (Gemini 2.0 Flash for Chatbot, Gemini 3.1 Flash Image for Try-On)
 
 ## Getting Started
 

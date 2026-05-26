@@ -41,6 +41,9 @@ export async function GET(request: NextRequest) {
     // Only allow certain domains for security
     const allowedDomains = [
       "convex.cloud",
+      "firebasestorage.googleapis.com",
+      "firebasestorage.app",
+      "storage.googleapis.com",
       "lh3.googleusercontent.com",
       "images.unsplash.com",
       "via.placeholder.com",
