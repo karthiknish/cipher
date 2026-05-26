@@ -99,8 +99,8 @@ export default function ActivityTicker() {
           <div className="bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden">
             <div className="flex items-center gap-3 p-3">
               {/* Activity Icon */}
-              <div className={`w-10 h-10 ${colorClass} rounded-full flex items-center justify-center flex-shrink-0`}>
-                <Icon className="w-5 h-5 text-white" weight="fill" />
+              <div className={`size-10 ${colorClass} rounded-full flex items-center justify-center flex-shrink-0`}>
+                <Icon className="size-5 text-white" weight="fill" />
               </div>
 
               {/* Content */}
@@ -122,24 +122,23 @@ export default function ActivityTicker() {
               {currentActivity.productImage && (
                 <Link 
                   href={`/shop/${currentActivity.productId}`}
-                  className="w-12 h-12 relative bg-gray-100 rounded flex-shrink-0 overflow-hidden"
+                  className="size-12 relative bg-gray-100 rounded flex-shrink-0 overflow-hidden"
                 >
                   <Image
                     src={currentActivity.productImage}
                     alt={currentActivity.productName}
                     fill
                     className="object-cover"
-                  />
+                   sizes="(max-width: 768px) 100vw, 50vw" />
                 </Link>
               )}
 
               {/* Dismiss Button */}
-              <button
-                onClick={() => setIsDismissed(true)}
+              <button type="button" onClick={() => setIsDismissed(true)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
                 aria-label="Dismiss"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="size-4 text-gray-400" />
               </button>
             </div>
 
@@ -149,9 +148,9 @@ export default function ActivityTicker() {
                 {recentActivities.slice(0, 5).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                    className={`size-1.5 rounded-full transition-colors ${
                       i === activityIndex % Math.min(recentActivities.length, 5) 
-                        ? "bg-black" 
+                        ? "bg-gray-950" 
                         : "bg-gray-200"
                     }`}
                   />

@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { createContext, use, useState, useCallback, ReactNode, useEffect, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 
 export interface ChallengeSubmission {
@@ -228,7 +228,7 @@ const StyleChallengeContext = createContext<StyleChallengeContextType>({
   shareSubmission: () => { },
 });
 
-export const useStyleChallenges = () => useContext(StyleChallengeContext);
+export const useStyleChallenges = () => use(StyleChallengeContext);
 
 export const StyleChallengeProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -364,8 +364,8 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
   const getTopSubmissions = useCallback((challengeId: string, limit = 10): ChallengeSubmission[] => {
     const challenge = challenges.find(c => c.id === challengeId);
     if (!challenge) return [];
-    return [...challenge.submissions]
-      .sort((a, b) => b.votes - a.votes)
+    return challenge.submissions
+      .toSorted((a, b) => b.votes - a.votes)
       .slice(0, limit);
   }, [challenges]);
 
@@ -424,7 +424,7 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
     let currentRank: number | undefined;
     const activeChallenge = challenges.find(c => c.status === "active" || c.status === "voting");
     if (activeChallenge) {
-      const ranked = [...activeChallenge.submissions].sort((a, b) => b.votes - a.votes);
+      const ranked = activeChallenge.submissions.toSorted((a, b) => b.votes - a.votes);
       const userRankIndex = ranked.findIndex(s => s.userId === user.uid);
       if (userRankIndex >= 0) {
         currentRank = userRankIndex + 1;
@@ -446,8 +446,8 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
     const challenge = challenges.find(c => c.id === challengeId);
     if (!challenge) return [];
 
-    return [...challenge.submissions]
-      .sort((a, b) => b.votes - a.votes)
+    return challenge.submissions
+      .toSorted((a, b) => b.votes - a.votes)
       .map((submission, index) => ({
         submission,
         rank: index + 1,
@@ -494,8 +494,8 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
     }
   }, [challenges]);
 
-  return (
-    <StyleChallengeContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       challenges,
       loading,
       getActiveChallenge,
@@ -511,7 +511,12 @@ export const StyleChallengeProvider = ({ children }: { children: ReactNode }) =>
       getUserStats,
       getLeaderboard,
       shareSubmission,
-    }}>
+    }),
+    [challenges, getActiveChallenge, getChallengeById, getLeaderboard, getPastChallenges, getTopSubmissions, getUpcomingChallenges, getUserStats, getUserSubmission, hasUserSubmitted, hasUserVoted, loading, shareSubmission, submitEntry, voteForSubmission]
+  );
+
+  return (
+    <StyleChallengeContext.Provider value={contextValue}>
       {children}
     </StyleChallengeContext.Provider>
   );

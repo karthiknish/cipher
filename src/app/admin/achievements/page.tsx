@@ -28,7 +28,7 @@ function AchievementsPageContent() {
   const { user, loading: authLoading, userRole } = useAuth();
   const { badges, getLeaderboard } = useAchievements();
   const toast = useToast();
-  const router = useRouter();
+  const { push } = useRouter();
   
   const [showModal, setShowModal] = useState(false);
   const [editingBadge, setEditingBadge] = useState<Badge | null>(null);
@@ -39,9 +39,9 @@ function AchievementsPageContent() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   const categories = ["all", "shopping", "engagement", "social", "loyalty", "creator", "special"];
   const rarities = ["all", "common", "rare", "epic", "legendary"];
@@ -60,13 +60,13 @@ function AchievementsPageContent() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "shopping": return <ShoppingBag className="w-4 h-4" />;
-      case "engagement": return <ChatCircle className="w-4 h-4" />;
-      case "social": return <Heart className="w-4 h-4" />;
-      case "loyalty": return <Crown className="w-4 h-4" />;
-      case "creator": return <Sparkle className="w-4 h-4" />;
-      case "special": return <Star className="w-4 h-4" />;
-      default: return <Medal className="w-4 h-4" />;
+      case "shopping": return <ShoppingBag className="size-4" />;
+      case "engagement": return <ChatCircle className="size-4" />;
+      case "social": return <Heart className="size-4" />;
+      case "loyalty": return <Crown className="size-4" />;
+      case "creator": return <Sparkle className="size-4" />;
+      case "special": return <Star className="size-4" />;
+      default: return <Medal className="size-4" />;
     }
   };
 
@@ -83,7 +83,7 @@ function AchievementsPageContent() {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -91,16 +91,15 @@ function AchievementsPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -126,11 +125,10 @@ function AchievementsPageContent() {
       title="Achievements & Badges" 
       activeTab="achievements"
       actions={
-        <button
-          onClick={() => setShowModal(true)}
+        <button aria-label="plus" type="button" onClick={() => setShowModal(true)}
           className="flex items-center gap-2 bg-white text-black px-4 py-2 text-xs tracking-wider hover:bg-gray-100 transition"
         >
-          <Plus className="w-4 h-4" /> CREATE BADGE
+          <Plus className="size-4" /> CREATE BADGE
         </button>
       }
     >
@@ -164,12 +162,11 @@ function AchievementsPageContent() {
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Category:</span>
           {categories.map((cat) => (
-            <button
-              key={cat}
+            <button type="button" key={cat}
               onClick={() => setFilterCategory(cat)}
               className={`px-3 py-1 text-xs ${
                 filterCategory === cat
-                  ? "bg-black text-white"
+                  ? "bg-gray-950 text-white"
                   : "bg-gray-100 hover:bg-gray-200"
               }`}
             >
@@ -180,12 +177,11 @@ function AchievementsPageContent() {
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 uppercase tracking-wider">Rarity:</span>
           {rarities.map((rarity) => (
-            <button
-              key={rarity}
+            <button type="button" key={rarity}
               onClick={() => setFilterRarity(rarity)}
               className={`px-3 py-1 text-xs ${
                 filterRarity === rarity
-                  ? "bg-black text-white"
+                  ? "bg-gray-950 text-white"
                   : "bg-gray-100 hover:bg-gray-200"
               }`}
             >
@@ -219,22 +215,20 @@ function AchievementsPageContent() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
-              <button
-                onClick={() => {
+              <button type="button" onClick={() => {
                   setEditingBadge(badge);
                   setShowModal(true);
                 }}
                 className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                 title="Edit"
               >
-                <Pencil className="w-4 h-4" />
+                <Pencil className="size-4" />
               </button>
-              <button
-                onClick={() => handleDelete(badge.id)}
+              <button type="button" onClick={() => handleDelete(badge.id)}
                 className="p-2 hover:bg-gray-100 text-gray-500 hover:text-red-500 transition"
                 title="Delete"
               >
-                <Trash className="w-4 h-4" />
+                <Trash className="size-4" />
               </button>
             </div>
           </div>
@@ -243,7 +237,7 @@ function AchievementsPageContent() {
 
       {filteredBadges.length === 0 && (
         <div className="text-center py-12 bg-gray-50 border border-gray-100">
-          <Medal className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <Medal className="size-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No badges found</p>
         </div>
       )}
@@ -265,7 +259,7 @@ function AchievementsPageContent() {
               {getLeaderboard().slice(0, 10).map((entry, index) => (
                 <tr key={entry.userId} className="hover:bg-gray-50 transition">
                   <td className="py-3 px-4">
-                    <span className={`w-6 h-6 inline-flex items-center justify-center text-sm font-bold ${
+                    <span className={`size-6 inline-flex items-center justify-center text-sm font-bold ${
                       index === 0 ? "bg-amber-100 text-amber-700" :
                       index === 1 ? "bg-gray-200 text-gray-700" :
                       index === 2 ? "bg-orange-100 text-orange-700" :
@@ -276,8 +270,8 @@ function AchievementsPageContent() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="relative w-8 h-8 bg-gray-100 flex items-center justify-center overflow-hidden">
-                        <Users className="w-4 h-4 text-gray-400" />
+                      <div className="relative size-8 bg-gray-100 flex items-center justify-center overflow-hidden">
+                        <Users className="size-4 text-gray-400" />
                       </div>
                       <span className="font-medium text-sm">{entry.userName}</span>
                     </div>
@@ -297,20 +291,19 @@ function AchievementsPageContent() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
               <h2 className="text-lg font-bold">
                 {editingBadge ? "Edit Badge" : "Create New Badge"}
               </h2>
-              <button 
-                onClick={() => {
+              <button type="button" onClick={() => {
                   setShowModal(false);
                   setEditingBadge(null);
                 }}
                 className="p-2 hover:bg-gray-100 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="p-6">
@@ -319,13 +312,12 @@ function AchievementsPageContent() {
                 <br />
                 This is a placeholder for the full implementation.
               </p>
-              <button
-                onClick={() => {
+              <button type="button" onClick={() => {
                   toast.success(editingBadge ? "Badge updated!" : "Badge created!");
                   setShowModal(false);
                   setEditingBadge(null);
                 }}
-                className="w-full bg-black text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
+                className="w-full bg-gray-950 text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
               >
                 {editingBadge ? "UPDATE BADGE" : "CREATE BADGE"}
               </button>
@@ -340,7 +332,7 @@ function AchievementsPageContent() {
 function AchievementsPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

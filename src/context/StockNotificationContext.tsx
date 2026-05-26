@@ -1,8 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, doc, getDoc, setDoc, collection } from "@/lib/firebase";
-import { onSnapshot, query, where, getDocs } from "firebase/firestore";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface StockNotification {
   id: string;
@@ -54,10 +54,15 @@ const StockNotificationContext = createContext<StockNotificationContextType>({
   loading: true,
 });
 
-export const useStockNotification = () => useContext(StockNotificationContext);
+export const useStockNotification = () => use(StockNotificationContext);
 
 export const StockNotificationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const convexSubs = useQuery(
+    api.userExtras.getStockNotifications,
+    user ? {} : "skip"
+  );
+  const setSubsMut = useMutation(api.userExtras.setStockNotifications);
   const [subscriptions, setSubscriptions] = useState<StockNotification[]>([]);
   const [alerts, setAlerts] = useState<BackInStockAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,18 +84,12 @@ export const StockNotificationProvider = ({ children }: { children: ReactNode })
       }
       setLoading(false);
 
-      // Try Firebase in background (non-blocking)
-      if (user) {
-        try {
-          const userSubsDoc = await getDoc(doc(db, "stockNotifications", user.uid));
-          if (userSubsDoc.exists()) {
-            const subs = userSubsDoc.data().subscriptions || [];
-            setSubscriptions(subs);
-            localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(subs));
-          }
-        } catch {
-          // Silently fail
-        }
+      if (user && convexSubs !== undefined && convexSubs.length > 0) {
+        setSubscriptions(convexSubs as StockNotification[]);
+        localStorage.setItem(
+          `${STORAGE_KEY}_${user.uid}`,
+          JSON.stringify(convexSubs)
+        );
       }
     };
 
@@ -107,13 +106,10 @@ export const StockNotificationProvider = ({ children }: { children: ReactNode })
       localStorage.setItem(storageKey, JSON.stringify(subscriptions));
     }
 
-    // Sync to Firebase in background
     if (user) {
-      setDoc(doc(db, "stockNotifications", user.uid), { subscriptions }).catch(() => {
-        // Silently fail
-      });
+      setSubsMut({ subscriptions }).catch(() => {});
     }
-  }, [subscriptions, user, loading]);
+  }, [subscriptions, user, loading, setSubsMut]);
 
   // Simulate checking for back-in-stock products (in real app, this would be server-side)
   useEffect(() => {
@@ -216,9 +212,8 @@ export const StockNotificationProvider = ({ children }: { children: ReactNode })
     setAlerts(prev => prev.filter(alert => alert.productId !== productId));
   }, []);
 
-  return (
-    <StockNotificationContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         subscriptions,
         alerts,
         subscribeToStock,
@@ -226,8 +221,12 @@ export const StockNotificationProvider = ({ children }: { children: ReactNode })
         isSubscribed,
         dismissAlert,
         loading,
-      }}
-    >
+      }),
+    [alerts, dismissAlert, isSubscribed, loading, subscribeToStock, subscriptions, unsubscribeFromStock]
+  );
+
+  return (
+    <StockNotificationContext.Provider value={contextValue}>
       {children}
     </StockNotificationContext.Provider>
   );

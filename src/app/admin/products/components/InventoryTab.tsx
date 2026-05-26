@@ -8,8 +8,8 @@ export function InventoryTab({ formData, setFormData }: InventoryTabProps) {
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-          <Package className="w-5 h-5 text-white" />
+        <div className="size-10 bg-gray-950 rounded-lg flex items-center justify-center">
+          <Package className="size-5 text-white" />
         </div>
         <div>
           <h2 className="text-lg font-medium">Inventory</h2>
@@ -20,12 +20,12 @@ export function InventoryTab({ formData, setFormData }: InventoryTabProps) {
       <div className="grid grid-cols-2 gap-8">
         <div className="space-y-6">
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="InventoryTab-field-15" className="block text-xs tracking-wider text-gray-500 mb-2">
               SKU (Stock Keeping Unit)
             </label>
             <div className="relative">
-              <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
+              <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <input aria-label="SKU (Stock Keeping Unit)" id="InventoryTab-field-15"
                 type="text"
                 value={formData.sku || ""}
                 onChange={(e) =>
@@ -44,12 +44,12 @@ export function InventoryTab({ formData, setFormData }: InventoryTabProps) {
           </div>
 
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="InventoryTab-field-16" className="block text-xs tracking-wider text-gray-500 mb-2">
               WEIGHT (grams)
             </label>
             <div className="relative">
-              <Scales className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
+              <Scales className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <input aria-label="WEIGHT (grams)" id="InventoryTab-field-16"
                 type="number"
                 value={formData.weight || ""}
                 onChange={(e) =>
@@ -72,7 +72,7 @@ export function InventoryTab({ formData, setFormData }: InventoryTabProps) {
         {/* Stock Summary */}
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4" />
+            <Package className="size-4" />
             Stock Summary
           </h3>
 

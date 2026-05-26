@@ -85,19 +85,19 @@ export default function TestimonialsSection() {
               exit="exit"
               className="bg-white p-8 md:p-12 rounded-2xl shadow-sm"
             >
-              <Quotes className="w-12 h-12 text-gray-200 mb-6" weight="fill" />
+              <Quotes className="size-12 text-gray-200 mb-6" weight="fill" />
               <p className="text-xl md:text-2xl font-light leading-relaxed mb-8">
                 &ldquo;{TESTIMONIALS[activeIndex].text}&rdquo;
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                  <div className="relative size-12 rounded-full overflow-hidden bg-gray-200">
                     <Image
                       src={TESTIMONIALS[activeIndex].avatar}
                       alt={TESTIMONIALS[activeIndex].name}
                       fill
                       className="object-cover"
-                    />
+                     sizes="(max-width: 768px) 100vw, 50vw" />
                   </div>
                   <div>
                     <p className="font-medium">{TESTIMONIALS[activeIndex].name}</p>
@@ -105,8 +105,8 @@ export default function TestimonialsSection() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {[...Array(TESTIMONIALS[activeIndex].rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400" weight="fill" />
+                  {Array.from({ length: TESTIMONIALS[activeIndex].rating }, (_, i) => i + 1).map((star) => (
+                    <Star key={`${TESTIMONIALS[activeIndex].id}-star-${star}`} className="size-4 text-yellow-400" weight="fill" />
                   ))}
                 </div>
               </div>
@@ -115,12 +115,12 @@ export default function TestimonialsSection() {
 
           {/* Navigation Dots */}
           <div className="flex justify-center gap-2 mt-8">
-            {TESTIMONIALS.map((_, index) => (
-              <button
-                key={index}
+            {TESTIMONIALS.map((testimonial, index) => (
+              <button type="button" key={testimonial.id}
+                aria-label={`Go to testimonial ${index + 1}`}
                 onClick={() => setActiveIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === activeIndex ? "w-8 bg-black" : "bg-gray-300"
+                className={`size-2 rounded-full transition-all ${
+                  index === activeIndex ? "w-8 bg-gray-950" : "bg-gray-300"
                 }`}
               />
             ))}

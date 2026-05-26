@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { useReviews, Review } from "@/context/ReviewContext";
 import { 
@@ -16,7 +16,7 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((star) => (
         <Star 
           key={star} 
-          className={`w-4 h-4 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} 
+          className={`size-4 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} 
         />
       ))}
     </div>
@@ -69,14 +69,15 @@ function ReviewDetailModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+      role="presentation"
     >
+      <button type="button" aria-label="Close review details" className="absolute inset-0" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="relative z-10 bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -94,19 +95,19 @@ function ReviewDetailModal({
                 </span>
                 {review.verifiedPurchase && (
                   <span className="flex items-center gap-1 text-xs text-emerald-600">
-                    <CheckCircle weight="fill" className="w-3 h-3" /> Verified
+                    <CheckCircle weight="fill" className="size-3" /> Verified
                   </span>
                 )}
                 {review.featured && (
                   <span className="flex items-center gap-1 text-xs text-violet-600">
-                    <Star weight="fill" className="w-3 h-3" /> Featured
+                    <Star weight="fill" className="size-3" /> Featured
                   </span>
                 )}
               </div>
               <h3 className="text-lg font-medium">{review.title}</h3>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -127,21 +128,21 @@ function ReviewDetailModal({
             <div>
               <p className="text-xs text-gray-500 mb-2">MEDIA ({allMedia.length})</p>
               <div className="flex gap-2 flex-wrap">
-                {allMedia.map((item, i) => (
-                  <button
-                    key={i}
+                {allMedia.map((item) => (
+                  <button type="button" key={item.url}
                     onClick={() => setLightboxMedia(item.url)}
-                    className="relative w-20 h-20 bg-gray-100 overflow-hidden group"
+                    aria-label={item.type === "video" ? "Open review video" : "Open review image"}
+                    className="relative size-20 bg-gray-100 overflow-hidden group"
                   >
                     {item.type === "video" ? (
                       <>
-                        <video src={item.url} className="w-full h-full object-cover" muted />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <Play weight="fill" className="w-6 h-6 text-white" />
+                        <video src={item.url} className="size-full object-cover" muted aria-label="Review video thumbnail" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-950/30">
+                          <Play weight="fill" className="size-6 text-white" />
                         </div>
                       </>
                     ) : (
-                      <Image src={item.url} alt="" fill className="object-cover" />
+                      <Image src={item.url} alt="" fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                     )}
                   </button>
                 ))}
@@ -159,11 +160,10 @@ function ReviewDetailModal({
           {review.adminReply ? (
             <div className="bg-gray-50 p-4 border-l-4 border-black">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-xs font-medium bg-black text-white px-2 py-0.5">
+                <span className="text-xs font-medium bg-gray-950 text-white px-2 py-0.5">
                   CIPHER TEAM REPLY
                 </span>
-                <button
-                  onClick={async () => {
+                <button type="button" onClick={async () => {
                     setIsSubmitting(true);
                     await onDeleteReply();
                     setIsSubmitting(false);
@@ -184,6 +184,7 @@ function ReviewDetailModal({
               {showReplyForm ? (
                 <div className="space-y-3">
                   <textarea
+                    aria-label="Admin reply"
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder="Write your reply..."
@@ -191,16 +192,13 @@ function ReviewDetailModal({
                     className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none resize-none"
                   />
                   <div className="flex gap-2">
-                    <button
-                      onClick={handleReply}
+                    <button aria-label="spinner gap" type="button" onClick={handleReply}
                       disabled={isSubmitting || !replyContent.trim()}
-                      className="px-4 py-2 bg-black text-white text-sm hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {isSubmitting ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
+                      className="px-4 py-2 bg-gray-950 text-white text-sm hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2">
+                      {isSubmitting ? <SpinnerGap className="size-4 animate-spin" /> : null}
                       Post Reply
                     </button>
-                    <button
-                      onClick={() => { setShowReplyForm(false); setReplyContent(""); }}
+                    <button type="button" onClick={() => { setShowReplyForm(false); setReplyContent(""); }}
                       className="px-4 py-2 border border-gray-200 text-sm hover:border-gray-400"
                     >
                       Cancel
@@ -208,11 +206,10 @@ function ReviewDetailModal({
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={() => setShowReplyForm(true)}
+                <button aria-label="chat circle" type="button" onClick={() => setShowReplyForm(true)}
                   className="flex items-center gap-2 text-sm text-gray-600 hover:text-black"
                 >
-                  <ChatCircle className="w-4 h-4" /> Add Reply
+                  <ChatCircle className="size-4" /> Add Reply
                 </button>
               )}
             </div>
@@ -222,8 +219,7 @@ function ReviewDetailModal({
         {/* Actions */}
         <div className="p-6 border-t border-gray-200 flex flex-wrap gap-3">
           {review.status !== "approved" && (
-            <button
-              onClick={async () => {
+            <button type="button" onClick={async () => {
                 setIsSubmitting(true);
                 await onModerate("approved");
                 setIsSubmitting(false);
@@ -231,12 +227,11 @@ function ReviewDetailModal({
               disabled={isSubmitting}
               className="px-4 py-2 bg-emerald-600 text-white text-sm hover:bg-emerald-700 flex items-center gap-2"
             >
-              <CheckCircle className="w-4 h-4" /> Approve
+              <CheckCircle className="size-4" /> Approve
             </button>
           )}
           {review.status !== "rejected" && (
-            <button
-              onClick={async () => {
+            <button type="button" onClick={async () => {
                 setIsSubmitting(true);
                 await onModerate("rejected");
                 setIsSubmitting(false);
@@ -244,11 +239,10 @@ function ReviewDetailModal({
               disabled={isSubmitting}
               className="px-4 py-2 bg-rose-600 text-white text-sm hover:bg-rose-700 flex items-center gap-2"
             >
-              <XCircle className="w-4 h-4" /> Reject
+              <XCircle className="size-4" /> Reject
             </button>
           )}
-          <button
-            onClick={async () => {
+          <button type="button" onClick={async () => {
               setIsSubmitting(true);
               await onFeature(!review.featured);
               setIsSubmitting(false);
@@ -260,11 +254,10 @@ function ReviewDetailModal({
                 : "border border-gray-200 hover:border-gray-400"
             }`}
           >
-            <Star className="w-4 h-4" weight={review.featured ? "fill" : "regular"} /> 
+            <Star className="size-4" weight={review.featured ? "fill" : "regular"} /> 
             {review.featured ? "Unfeature" : "Feature"}
           </button>
-          <button
-            onClick={async () => {
+          <button type="button" onClick={async () => {
               if (confirm("Are you sure you want to delete this review?")) {
                 setIsSubmitting(true);
                 await onDelete();
@@ -275,7 +268,7 @@ function ReviewDetailModal({
             disabled={isSubmitting}
             className="px-4 py-2 text-rose-600 border border-rose-200 text-sm hover:bg-rose-50 flex items-center gap-2"
           >
-            <Trash className="w-4 h-4" /> Delete
+            <Trash className="size-4" /> Delete
           </button>
         </div>
       </motion.div>
@@ -287,20 +280,20 @@ function ReviewDetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center"
-            onClick={() => setLightboxMedia(null)}
+            className="fixed inset-0 bg-gray-950/90 z-[60] flex items-center justify-center"
+            role="presentation"
           >
-            <button
-              onClick={() => setLightboxMedia(null)}
-              className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full"
+            <button type="button" aria-label="Close media preview" className="absolute inset-0" onClick={() => setLightboxMedia(null)} />
+            <button aria-label="x" type="button" onClick={() => setLightboxMedia(null)}
+              className="relative z-10 absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full"
             >
-              <X className="w-6 h-6" />
+              <X className="size-6" />
             </button>
             {lightboxMedia.includes(".mp4") || lightboxMedia.includes(".webm") ? (
-              <video src={lightboxMedia} controls autoPlay className="max-w-4xl max-h-[80vh]" />
+              <video src={lightboxMedia} controls autoPlay className="max-w-4xl max-h-[80vh]" aria-label="Review media preview" />
             ) : (
               <div className="relative w-full max-w-4xl h-[80vh]">
-                <Image src={lightboxMedia} alt="" fill className="object-contain" />
+                <Image src={lightboxMedia} alt="" fill className="object-contain"  sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
             )}
           </motion.div>
@@ -330,14 +323,14 @@ export function ReviewsTab() {
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<"recent" | "rating" | "helpful">("recent");
 
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     const data = await getAllReviews();
     setReviews(data);
-  };
+  }, [getAllReviews]);
 
   useEffect(() => {
     loadReviews();
-  }, []);
+  }, [loadReviews]);
 
   useEffect(() => {
     let result = [...reviews];
@@ -451,7 +444,7 @@ export function ReviewsTab() {
         <div className="bg-white p-4 rounded-xl border border-gray-200">
           <div className="flex items-center gap-1">
             <p className="text-3xl font-light">{stats.avgRating}</p>
-            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+            <Star className="size-5 text-yellow-400 fill-yellow-400" />
           </div>
           <p className="text-xs text-gray-500 tracking-wider">AVG RATING</p>
         </div>
@@ -462,8 +455,8 @@ export function ReviewsTab() {
         <div className="flex flex-wrap gap-4">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+            <input aria-label="Search reviews..."
               type="text"
               placeholder="Search reviews..."
               value={searchQuery}
@@ -515,11 +508,11 @@ export function ReviewsTab() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+            <SpinnerGap className="size-8 animate-spin text-gray-400" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            <Star className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <Star className="size-12 mx-auto mb-4 text-gray-300" />
             <p>No reviews found</p>
           </div>
         ) : (
@@ -527,13 +520,21 @@ export function ReviewsTab() {
             {filteredReviews.map((review) => (
               <div
                 key={review.id}
+                role="button"
+                tabIndex={0}
                 className="p-4 hover:bg-gray-50 cursor-pointer transition"
                 onClick={() => setSelectedReview(review)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedReview(review);
+                  }
+                }}
               >
                 <div className="flex items-start gap-4">
                   {/* Rating & Status */}
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-lg font-medium">
+                    <div className="size-10 bg-gray-100 rounded-full flex items-center justify-center text-lg font-medium">
                       {review.rating}
                     </div>
                     <StarRating rating={review.rating} />
@@ -551,10 +552,10 @@ export function ReviewsTab() {
                         {review.status || "approved"}
                       </span>
                       {review.verifiedPurchase && (
-                        <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <CheckCircle weight="fill" className="size-4 text-emerald-500 flex-shrink-0" />
                       )}
                       {review.featured && (
-                        <Star weight="fill" className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                        <Star weight="fill" className="size-4 text-violet-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">{review.comment}</p>
@@ -566,7 +567,7 @@ export function ReviewsTab() {
                         <>
                           <span>•</span>
                           <span className="flex items-center gap-1">
-                            <ImageIcon className="w-3 h-3" /> 
+                            <ImageIcon className="size-3" /> 
                             {(review.media?.length || 0) + (review.images?.length || 0)} media
                           </span>
                         </>
@@ -575,7 +576,7 @@ export function ReviewsTab() {
                         <>
                           <span>•</span>
                           <span className="flex items-center gap-1 text-black">
-                            <ChatCircle className="w-3 h-3" /> Replied
+                            <ChatCircle className="size-3" /> Replied
                           </span>
                         </>
                       )}
@@ -584,11 +585,10 @@ export function ReviewsTab() {
 
                   {/* Quick Actions */}
                   <div className="flex items-center gap-2">
-                    <button 
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                    <button aria-label="eye" type="button" className="p-2 hover:bg-gray-100 rounded-lg"
                       onClick={(e) => { e.stopPropagation(); setSelectedReview(review); }}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="size-4" />
                     </button>
                   </div>
                 </div>

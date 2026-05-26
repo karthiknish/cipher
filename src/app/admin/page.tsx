@@ -40,7 +40,7 @@ function AdminPageContent() {
   const { inventory, getProductStock, initializeInventory, loading: inventoryLoading } = useInventory();
   const { getActiveFlashSales } = useDynamicPricing();
   const { applications } = useInfluencer();
-  const router = useRouter();
+  const { push } = useRouter();
 
   const isAdmin = userRole?.isAdmin ?? false;
 
@@ -92,14 +92,14 @@ function AdminPageContent() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   if (authLoading || productsLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -107,17 +107,16 @@ function AdminPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel. 
           Please contact an administrator if you believe this is an error.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -238,12 +237,12 @@ function AdminPageContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-black text-white">
+      <header className="bg-gray-950 text-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <SquaresFour className="w-8 h-8" />
+                <SquaresFour className="size-8" />
                 <h1 className="text-3xl md:text-4xl font-light tracking-tight">ADMIN PANEL</h1>
               </div>
               <p className="text-white/60">Manage your store</p>
@@ -252,7 +251,7 @@ function AdminPageContent() {
               href="/admin/design-voting"
               className="hidden md:flex items-center gap-2 border border-white/30 px-4 py-2 text-xs tracking-wider hover:bg-white/10 transition"
             >
-              <Crown className="w-4 h-4" />
+              <Crown className="size-4" />
               DESIGN VOTING
             </Link>
           </div>
@@ -263,22 +262,22 @@ function AdminPageContent() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <Package className="w-5 h-5 text-gray-400 mb-2" />
+            <Package className="size-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{products.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">PRODUCTS</p>
           </div>
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <Tag className="w-5 h-5 text-gray-400 mb-2" />
+            <Tag className="size-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{CATEGORIES.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">CATEGORIES</p>
           </div>
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <ShoppingBag className="w-5 h-5 text-gray-400 mb-2" />
+            <ShoppingBag className="size-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">{allOrders.length}</p>
             <p className="text-xs text-gray-500 tracking-wider">TOTAL ORDERS</p>
           </div>
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <CurrencyDollar className="w-5 h-5 text-gray-400 mb-2" />
+            <CurrencyDollar className="size-5 text-gray-400 mb-2" />
             <p className="text-2xl font-medium">
               ${stats.totalRevenue.toFixed(0)}
             </p>
@@ -294,8 +293,8 @@ function AdminPageContent() {
                 href="/admin/orders"
                 className="bg-orange-50 border border-orange-200 p-4 rounded-lg flex items-center gap-4 hover:border-orange-400 transition"
               >
-                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                  <TrendUp className="w-5 h-5 text-orange-600" />
+                <div className="size-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <TrendUp className="size-5 text-orange-600" />
                 </div>
                 <div>
                   <p className="font-medium text-orange-900">{stats.pendingOrders} Pending Orders</p>
@@ -308,8 +307,8 @@ function AdminPageContent() {
                 href="/admin/inventory"
                 className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-center gap-4 hover:border-amber-400 transition"
               >
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Warning className="w-5 h-5 text-amber-600" />
+                <div className="size-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Warning className="size-5 text-amber-600" />
                 </div>
                 <div>
                   <p className="font-medium text-amber-900">{stats.lowStockCount} Low Stock Items</p>
@@ -322,8 +321,8 @@ function AdminPageContent() {
                 href="/admin/abandoned"
                 className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-center gap-4 hover:border-red-400 transition"
               >
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <ShoppingCart className="w-5 h-5 text-red-600" />
+                <div className="size-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <ShoppingCart className="size-5 text-red-600" />
                 </div>
                 <div>
                   <p className="font-medium text-red-900">{abandonedCarts.length} Abandoned Carts</p>
@@ -345,8 +344,8 @@ function AdminPageContent() {
                 className="bg-white border border-gray-200 p-6 rounded-lg hover:border-black hover:shadow-lg transition group"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 ${item.color} rounded-lg flex items-center justify-center`}>
-                    <Icon className="w-6 h-6" />
+                  <div className={`size-12 ${item.color} rounded-lg flex items-center justify-center`}>
+                    <Icon className="size-6" />
                   </div>
                   {item.badge && (
                     <span className={`${item.badgeColor || "bg-gray-500"} text-white text-xs px-2 py-1 rounded-full`}>
@@ -358,7 +357,7 @@ function AdminPageContent() {
                 <p className="text-sm text-gray-500 mb-4">{item.description}</p>
                 <div className="flex items-center gap-1 text-sm text-gray-400 group-hover:text-black transition">
                   <span>View</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  <ArrowRight className="size-4 group-hover:translate-x-1 transition" />
                 </div>
               </Link>
             );
@@ -372,7 +371,7 @@ function AdminPageContent() {
 function AdminPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

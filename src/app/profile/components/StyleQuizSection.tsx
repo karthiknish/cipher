@@ -60,7 +60,7 @@ export default function StyleQuizSection() {
         {STYLE_QUESTIONS.map((_, i) => (
           <div 
             key={i} 
-            className={`flex-1 h-1 ${i <= quizStep ? "bg-black" : "bg-gray-200"}`}
+            className={`flex-1 h-1 ${i <= quizStep ? "bg-gray-950" : "bg-gray-200"}`}
           />
         ))}
       </div>
@@ -80,12 +80,11 @@ export default function StyleQuizSection() {
           
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             {currentQuestion.options.map((option) => (
-              <button
-                key={option}
+              <button type="button" key={option}
                 onClick={() => handleQuizAnswer(currentQuestion.id, option)}
                 className={`p-4 border transition-all ${
                   quizAnswers[currentQuestion.id] === option
-                    ? "border-black bg-black text-white"
+                    ? "border-black bg-gray-950 text-white"
                     : "border-gray-200 hover:border-black"
                 }`}
               >

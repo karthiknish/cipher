@@ -73,9 +73,9 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/60 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -87,14 +87,14 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
           <h2 className="text-xl font-light tracking-tight">
             {editAddress ? "EDIT ADDRESS" : "ADD ADDRESS"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100">
-            <X className="w-5 h-5" />
+          <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100">
+            <X className="size-5" />
           </button>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <input aria-label="First Name"
               type="text"
               placeholder="First Name"
               value={formData.firstName}
@@ -102,7 +102,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
               required
               className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none"
             />
-            <input
+            <input aria-label="Last Name"
               type="text"
               placeholder="Last Name"
               value={formData.lastName}
@@ -111,7 +111,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
               className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none"
             />
           </div>
-          <input
+          <input aria-label="Street Address"
             type="text"
             placeholder="Street Address"
             value={formData.street}
@@ -120,7 +120,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
             className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none"
           />
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <input aria-label="City"
               type="text"
               placeholder="City"
               value={formData.city}
@@ -128,7 +128,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
               required
               className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none"
             />
-            <input
+            <input aria-label="State"
               type="text"
               placeholder="State"
               value={formData.state}
@@ -138,7 +138,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <input
+            <input aria-label="ZIP Code"
               type="text"
               placeholder="ZIP Code"
               value={formData.zip}
@@ -156,7 +156,7 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
               <option>United Kingdom</option>
             </select>
           </div>
-          <input
+          <input aria-label="Phone Number"
             type="tel"
             placeholder="Phone Number"
             value={formData.phone}
@@ -176,17 +176,17 @@ export default function AddressFormModal({ isOpen, onClose, editAddress }: Addre
             </select>
           </div>
           <label className="flex items-center gap-2">
-            <input
+            <input aria-label="Set as default address" id="AddressFormModal-field-34"
               type="checkbox"
               checked={formData.isDefault}
               onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
               className="accent-black"
             />
-            <span className="text-sm">Set as default address</span>
+            <span>Set as default address</span>
           </label>
           <button
             type="submit"
-            className="w-full bg-black text-white py-3 text-sm tracking-wider hover:bg-gray-800"
+            className="w-full bg-gray-950 text-white py-3 text-sm tracking-wider hover:bg-gray-800"
           >
             {editAddress ? "UPDATE ADDRESS" : "SAVE ADDRESS"}
           </button>

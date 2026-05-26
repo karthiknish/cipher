@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "@/lib/motion";
 import NextImage from "next/image";
 import { useAuth } from "@/context/AuthContext";
@@ -207,7 +208,8 @@ export default function VirtualTryOn({
       if (signal.aborted) return;
       
       // Get auth token for authenticated API call
-      const token = await user?.getIdToken();
+      const { getSessionBearerToken } = await import("@/lib/session-token");
+      const token = await getSessionBearerToken();
       
       if (!token) {
         setProcessingStage("error");
@@ -325,9 +327,9 @@ export default function VirtualTryOn({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 md:p-4"
-        onClick={onClose}
-      >
+        className="fixed inset-0 bg-gray-950/90 backdrop-blur-md z-50 flex items-center justify-center p-2 md:p-4"
+        role="presentation"
+      ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -339,24 +341,22 @@ export default function VirtualTryOn({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded-xl shadow-lg">
-                <MagicWand className="w-6 h-6" />
+              <div className="size-12 bg-gray-950 text-white flex items-center justify-center rounded-xl shadow-lg">
+                <MagicWand className="size-6" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
                   Virtual Try-On
-                  <span className="px-2.5 py-1 bg-black text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  <span className="px-2.5 py-1 bg-gray-950 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
                     AI Magic
                   </span>
                 </h2>
                 <p className="text-sm text-gray-500">See yourself in this style instantly</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 hover:bg-gray-100 rounded-full transition"
-            >
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose}
+              className="p-2.5 hover:bg-gray-100 rounded-full transition">
+              <X className="size-5" />
             </button>
           </div>
 
@@ -374,7 +374,7 @@ export default function VirtualTryOn({
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-950/20 to-transparent" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-400 tracking-wider uppercase">{product.category}</p>
@@ -387,10 +387,10 @@ export default function VirtualTryOn({
                         <p className="text-xs text-gray-400 mb-1.5">Try different colors</p>
                         <div className="flex gap-2">
                           {product.colors.map((color) => (
-                            <button
-                              key={color.name}
+                            <button type="button" key={color.name}
                               onClick={() => setSelectedProductColor(color.name)}
-                              className={`w-7 h-7 rounded-full border-2 transition-all shadow-sm ${
+                              aria-label={`Try color ${color.name}`}
+                              className={`size-7 rounded-full border-2 transition-all shadow-sm ${
                                 selectedProductColor === color.name
                                   ? "border-black ring-2 ring-gray-300 scale-110"
                                   : "border-white hover:scale-105"
@@ -410,11 +410,11 @@ export default function VirtualTryOn({
               <div className="flex-1 p-5 overflow-y-auto">
                 <div className="space-y-5">
                   {/* Photo Upload Area */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                  <fieldset>
+                    <legend className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                      <User className="size-4" />
                       Your Photo
-                    </label>
+                    </legend>
                     <div
                       className={`relative aspect-[3/4] border-2 rounded-xl overflow-hidden transition-all ${
                         userImage
@@ -425,21 +425,19 @@ export default function VirtualTryOn({
                       {!userImage ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                           <div className="flex gap-4 mb-5">
-                            <button
-                              onClick={() => fileInputRef.current?.click()}
+                            <button type="button" onClick={() => fileInputRef.current?.click()}
                               className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group"
                             >
-                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
-                                <ImageSquare className="w-6 h-6 text-gray-700" />
+                              <div className="size-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
+                                <ImageSquare className="size-6 text-gray-700" />
                               </div>
                               <span className="text-sm font-medium text-gray-700">Gallery</span>
                             </button>
-                            <button
-                              onClick={() => cameraInputRef.current?.click()}
+                            <button type="button" onClick={() => cameraInputRef.current?.click()}
                               className="flex flex-col items-center gap-3 p-5 bg-gray-50 border border-gray-200 rounded-xl hover:border-black hover:shadow-lg transition-all group"
                             >
-                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
-                                <Camera className="w-6 h-6 text-gray-700" />
+                              <div className="size-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition">
+                                <Camera className="size-6 text-gray-700" />
                               </div>
                               <span className="text-sm font-medium text-gray-700">Camera</span>
                             </button>
@@ -455,6 +453,7 @@ export default function VirtualTryOn({
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
+                            aria-label="Upload photo from gallery"
                             onChange={handleImageUpload}
                             className="hidden"
                           />
@@ -463,58 +462,56 @@ export default function VirtualTryOn({
                             type="file"
                             accept="image/*"
                             capture="environment"
+                            aria-label="Take photo with camera"
                             onChange={handleImageUpload}
                             className="hidden"
                           />
                         </div>
                       ) : (
-                        <div className="relative w-full h-full group">
+                        <div className="relative size-full group">
                           <NextImage
                             src={userImage}
                             alt="Your photo"
                             fill
                             className="object-contain"
                           />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                          <button
-                            onClick={resetTryOn}
-                            className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition opacity-0 group-hover:opacity-100"
-                          >
-                            <X className="w-4 h-4" />
+                          <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/10 transition-colors" />
+                          <button aria-label="x" type="button" onClick={resetTryOn}
+                            className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition opacity-0 group-hover:opacity-100">
+                            <X className="size-4" />
                           </button>
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
+                          <button aria-label="arrows clockwise" type="button" onClick={() => fileInputRef.current?.click()}
                             className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg hover:bg-white transition text-xs font-medium flex items-center gap-2 opacity-0 group-hover:opacity-100"
                           >
-                            <ArrowsClockwise className="w-4 h-4" /> Change Photo
+                            <ArrowsClockwise className="size-4" /> Change Photo
                           </button>
                           <div className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-lg">
-                            <CheckCircle className="w-4 h-4" weight="fill" /> Photo ready
+                            <CheckCircle className="size-4" weight="fill" /> Photo ready
                           </div>
                         </div>
                       )}
                     </div>
-                  </div>
+                  </fieldset>
 
                   {/* Tips */}
                   <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Sparkle className="w-4 h-4 text-amber-600" weight="fill" />
+                      <div className="size-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Sparkle className="size-4 text-amber-600" weight="fill" />
                       </div>
                       <div className="text-sm">
                         <p className="font-medium text-amber-800 mb-2">Pro Tips for Best Results</p>
                         <ul className="space-y-1 text-amber-700 text-xs">
                           <li className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-amber-500 rounded-full" />
+                            <span className="size-1 bg-amber-500 rounded-full" />
                             Stand straight with arms slightly away
                           </li>
                           <li className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-amber-500 rounded-full" />
+                            <span className="size-1 bg-amber-500 rounded-full" />
                             Use natural daylight when possible
                           </li>
                           <li className="flex items-center gap-2">
-                            <span className="w-1 h-1 bg-amber-500 rounded-full" />
+                            <span className="size-1 bg-amber-500 rounded-full" />
                             Plain background works magic
                           </li>
                         </ul>
@@ -529,7 +526,7 @@ export default function VirtualTryOn({
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
                     >
-                      <WarningCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" weight="fill" />
+                      <WarningCircle className="size-5 text-red-500 flex-shrink-0 mt-0.5" weight="fill" />
                       <div>
                         <p className="text-sm font-medium text-red-700">Oops!</p>
                         <p className="text-xs text-red-600 mt-0.5">{error}</p>
@@ -544,33 +541,31 @@ export default function VirtualTryOn({
                 {!user ? (
                   <div className="text-center py-2">
                     <p className="text-sm text-gray-600 mb-2">Sign in to use Virtual Try-On</p>
-                    <a
+                    <Link
                       href="/login"
-                      className="inline-block px-6 py-3 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition"
+                      className="inline-block px-6 py-3 bg-gray-950 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition"
                     >
                       Sign In
-                    </a>
+                    </Link>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleGenerateTryOn}
+                  <button type="button" onClick={handleGenerateTryOn}
                     disabled={!userImage || isProcessing}
                     className={`w-full py-4 text-sm tracking-wider font-semibold transition-all flex items-center justify-center gap-3 rounded-xl ${
                       isProcessing
                         ? "bg-gray-100 text-gray-500"
                         : userImage
-                        ? "bg-black text-white hover:bg-gray-800 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                        ? "bg-gray-950 text-white hover:bg-gray-800 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
-                  >
+                    }`}>
                     {isProcessing ? (
                       <>
-                        <SpinnerGap className="w-5 h-5 animate-spin" />
+                        <SpinnerGap className="size-5 animate-spin" />
                         {PROCESSING_MESSAGES[processingStage].title}
                       </>
                     ) : (
                       <>
-                        <MagicWand className="w-5 h-5" />
+                        <MagicWand className="size-5" />
                         Try It On
                       </>
                     )}
@@ -593,49 +588,44 @@ export default function VirtualTryOn({
                     {/* History Navigation */}
                     {history.length > 1 && (
                       <div className="flex items-center gap-1.5 mr-3 bg-gray-100 rounded-full px-2 py-1">
-                        <button
-                          onClick={() => navigateHistory("prev")}
+                        <button type="button" onClick={() => navigateHistory("prev")}
                           disabled={historyIndex <= 0}
                           className="p-1.5 hover:bg-white rounded-full disabled:opacity-30 transition"
                         >
-                          <CaretLeft className="w-4 h-4" />
+                          <CaretLeft className="size-4" />
                         </button>
                         <span className="text-xs font-medium text-gray-600 min-w-[40px] text-center">
                           {historyIndex + 1} / {history.length}
                         </span>
-                        <button
-                          onClick={() => navigateHistory("next")}
+                        <button type="button" onClick={() => navigateHistory("next")}
                           disabled={historyIndex >= history.length - 1}
                           className="p-1.5 hover:bg-white rounded-full disabled:opacity-30 transition"
                         >
-                          <CaretRight className="w-4 h-4" />
+                          <CaretRight className="size-4" />
                         </button>
                       </div>
                     )}
                     
                     {/* Zoom Controls */}
                     <div className="flex items-center gap-1 bg-gray-100 rounded-full px-2 py-1">
-                      <button
-                        onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
+                      <button aria-label="magnifying glass minus" type="button" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
                         className="p-1.5 hover:bg-white rounded-full transition"
                       >
-                        <MagnifyingGlassMinus className="w-4 h-4" />
+                        <MagnifyingGlassMinus className="size-4" />
                       </button>
                       <span className="text-xs font-medium text-gray-600 w-12 text-center">
                         {Math.round(zoom * 100)}%
                       </span>
-                      <button
-                        onClick={() => setZoom(z => Math.min(2, z + 0.25))}
+                      <button aria-label="magnifying glass plus" type="button" onClick={() => setZoom(z => Math.min(2, z + 0.25))}
                         className="p-1.5 hover:bg-white rounded-full transition"
                       >
-                        <MagnifyingGlassPlus className="w-4 h-4" />
+                        <MagnifyingGlassPlus className="size-4" />
                       </button>
-                      <button
-                        onClick={() => setZoom(1)}
+                      <button type="button" onClick={() => setZoom(1)}
                         className="p-1.5 hover:bg-white rounded-full transition"
                         title="Reset zoom"
                       >
-                        <ArrowsOut className="w-4 h-4" />
+                        <ArrowsOut className="size-4" />
                       </button>
                     </div>
                   </div>
@@ -643,33 +633,28 @@ export default function VirtualTryOn({
                   <div className="flex items-center gap-2">
                     {/* Comparison Toggle */}
                     {userImage && (
-                      <button
-                        onClick={() => setShowComparison(!showComparison)}
+                      <button type="button" onClick={() => setShowComparison(!showComparison)}
                         className={`px-4 py-2 text-xs font-semibold rounded-full transition flex items-center gap-2 ${
                           showComparison
-                            ? "bg-black text-white"
+                            ? "bg-gray-950 text-white"
                             : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                         }`}
                       >
-                        <SlidersHorizontal className="w-4 h-4" />
+                        <SlidersHorizontal className="size-4" />
                         Compare
                       </button>
                     )}
                     
                     {/* Actions */}
-                    <button
-                      onClick={handleShare}
+                    <button aria-label="share network" type="button" onClick={handleShare}
                       className="p-2.5 hover:bg-gray-100 rounded-full transition"
-                      title="Share"
-                    >
-                      <ShareNetwork className="w-5 h-5" />
+                      title="Share">
+                      <ShareNetwork className="size-5" />
                     </button>
-                    <button
-                      onClick={handleDownload}
+                    <button aria-label="download simple" type="button" onClick={handleDownload}
                       className="p-2.5 hover:bg-gray-100 rounded-full transition"
-                      title="Download"
-                    >
-                      <DownloadSimple className="w-5 h-5" />
+                      title="Download">
+                      <DownloadSimple className="size-5" />
                     </button>
                   </div>
                 </div>
@@ -678,7 +663,7 @@ export default function VirtualTryOn({
               {/* Result Display */}
               <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
                 {tryOnResult ? (
-                  <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="relative size-full flex items-center justify-center">
                     {showComparison && userImage ? (
                       // Before/After Comparison Slider
                       <div className="relative w-full max-w-lg aspect-[3/4] overflow-hidden rounded-2xl shadow-2xl">
@@ -708,16 +693,16 @@ export default function VirtualTryOn({
                           className="absolute top-0 bottom-0 w-1 bg-white shadow-xl cursor-ew-resize"
                           style={{ left: `${comparisonPosition}%` }}
                         >
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center border-2 border-black">
-                            <CaretLeft className="w-3 h-3 -mr-0.5 text-black" />
-                            <CaretRight className="w-3 h-3 -ml-0.5 text-black" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-10 bg-white rounded-full shadow-xl flex items-center justify-center border-2 border-black">
+                            <CaretLeft className="size-3 -mr-0.5 text-black" />
+                            <CaretRight className="size-3 -ml-0.5 text-black" />
                           </div>
                         </div>
                         {/* Labels */}
-                        <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/70 text-white text-xs font-medium rounded-full backdrop-blur-sm">
+                        <div className="absolute top-4 left-4 px-3 py-1.5 bg-gray-950/70 text-white text-xs font-medium rounded-full backdrop-blur-sm">
                           Before
                         </div>
-                        <div className="absolute top-4 right-4 px-3 py-1.5 bg-black text-white text-xs font-medium rounded-full">
+                        <div className="absolute top-4 right-4 px-3 py-1.5 bg-gray-950 text-white text-xs font-medium rounded-full">
                           After ✨
                         </div>
                         {/* Slider Input */}
@@ -725,9 +710,10 @@ export default function VirtualTryOn({
                           type="range"
                           min="0"
                           max="100"
+                          aria-label="Before and after comparison slider"
                           value={comparisonPosition}
                           onChange={(e) => setComparisonPosition(Number(e.target.value))}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
+                          className="absolute inset-0 size-full opacity-0 cursor-ew-resize"
                         />
                       </div>
                     ) : (
@@ -753,23 +739,19 @@ export default function VirtualTryOn({
                         </div>
                         {/* Success Badge */}
                         <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1.5 shadow-lg">
-                          <CheckCircle className="w-4 h-4" weight="fill" />
+                          <CheckCircle className="size-4" weight="fill" />
                           AI Generated
                         </div>
                         {/* Action Buttons on Image */}
                         <div className="absolute bottom-5 left-5 right-5 flex gap-3">
-                          <button
-                            onClick={onAddToCart}
-                            className="flex-1 bg-black text-white py-3.5 text-sm font-semibold rounded-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 shadow-lg"
-                          >
-                            <ShoppingBag className="w-5 h-5" />
+                          <button aria-label="shopping bag" type="button" onClick={onAddToCart}
+                            className="flex-1 bg-gray-950 text-white py-3.5 text-sm font-semibold rounded-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 shadow-lg">
+                            <ShoppingBag className="size-5" />
                             Add to Bag
                           </button>
-                          <button
-                            onClick={onAddToWishlist}
-                            className="p-3.5 bg-white border border-gray-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition shadow-lg group"
-                          >
-                            <Heart className="w-5 h-5 group-hover:text-red-500" />
+                          <button aria-label="heart" type="button" onClick={onAddToWishlist}
+                            className="p-3.5 bg-white border border-gray-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition shadow-lg group">
+                            <Heart className="size-5 group-hover:text-red-500" />
                           </button>
                         </div>
                       </motion.div>
@@ -785,7 +767,7 @@ export default function VirtualTryOn({
                         className="space-y-8"
                       >
                         {/* Animated Processing Indicator */}
-                        <div className="relative w-40 h-40 mx-auto">
+                        <div className="relative size-40 mx-auto">
                           {/* Outer ring animation */}
                           <motion.div
                             className="absolute inset-0 rounded-full border-4 border-gray-200"
@@ -793,12 +775,12 @@ export default function VirtualTryOn({
                             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                           >
                             <div 
-                              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full"
+                              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 size-3 bg-gray-950 rounded-full"
                             />
                           </motion.div>
                           
                           {/* Progress circle */}
-                          <svg className="absolute inset-0 w-full h-full -rotate-90">
+                          <svg className="absolute inset-0 size-full -rotate-90">
                             <circle
                               cx="80"
                               cy="80"
@@ -857,11 +839,11 @@ export default function VirtualTryOn({
                               }`}
                             >
                               {["analyzing", "generating", "finalizing"].indexOf(processingStage) > i ? (
-                                <CheckCircle className="w-3.5 h-3.5" weight="fill" />
+                                <CheckCircle className="size-3.5" weight="fill" />
                               ) : ["analyzing", "generating", "finalizing"].indexOf(processingStage) === i ? (
-                                <SpinnerGap className="w-3.5 h-3.5 animate-spin" />
+                                <SpinnerGap className="size-3.5 animate-spin" />
                               ) : (
-                                <span className="w-3.5 h-3.5 rounded-full bg-gray-300" />
+                                <span className="size-3.5 rounded-full bg-gray-300" />
                               )}
                               {stage.charAt(0).toUpperCase() + stage.slice(1)}
                             </div>
@@ -869,27 +851,25 @@ export default function VirtualTryOn({
                         </div>
                         
                         {/* Cancel Button */}
-                        <button
-                          onClick={handleCancelTryOn}
-                          className="mt-4 px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-2 mx-auto"
-                        >
-                          <X className="w-4 h-4" />
+                        <button aria-label="x" type="button" onClick={handleCancelTryOn}
+                          className="mt-4 px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition flex items-center gap-2 mx-auto">
+                          <X className="size-4" />
                           Cancel
                         </button>
                       </motion.div>
                     ) : (
                       <div className="space-y-6">
-                        <div className="w-32 h-32 mx-auto relative">
+                        <div className="size-32 mx-auto relative">
                           <div className="absolute inset-0 bg-gray-100 rounded-full" />
                           <div className="absolute inset-3 bg-white rounded-full flex items-center justify-center shadow-inner">
-                            <TShirt className="w-12 h-12 text-gray-400" />
+                            <TShirt className="size-12 text-gray-400" />
                           </div>
                           <motion.div
-                            className="absolute -top-1 -right-1 w-8 h-8 bg-black rounded-full flex items-center justify-center shadow-lg"
+                            className="absolute -top-1 -right-1 size-8 bg-gray-950 rounded-full flex items-center justify-center shadow-lg"
                             animate={{ scale: [1, 1.1, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           >
-                            <Sparkle className="w-4 h-4 text-white" weight="fill" />
+                            <Sparkle className="size-4 text-white" weight="fill" />
                           </motion.div>
                         </div>
                         <div>
@@ -901,7 +881,7 @@ export default function VirtualTryOn({
                           </p>
                         </div>
                         <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                          <Sparkle className="w-4 h-4" />
+                          <Sparkle className="size-4" />
                           Powered by AI Vision Technology
                         </div>
                       </div>
@@ -914,19 +894,15 @@ export default function VirtualTryOn({
               {tryOnResult && (
                 <div className="px-6 pb-6">
                   <div className="flex items-center justify-center gap-4">
-                    <button
-                      onClick={resetTryOn}
-                      className="px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition flex items-center gap-2"
-                    >
-                      <ArrowsClockwise className="w-4 h-4" />
+                    <button aria-label="arrows clockwise" type="button" onClick={resetTryOn}
+                      className="px-6 py-2.5 text-sm font-medium border border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition flex items-center gap-2">
+                      <ArrowsClockwise className="size-4" />
                       Try Another Photo
                     </button>
-                    <button
-                      onClick={handleGenerateTryOn}
+                    <button aria-label="magic wand" type="button" onClick={handleGenerateTryOn}
                       disabled={isProcessing}
-                      className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-xl hover:bg-gray-800 hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <MagicWand className="w-4 h-4" />
+                      className="px-6 py-2.5 text-sm font-medium bg-gray-950 text-white rounded-xl hover:bg-gray-800 hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50">
+                      <MagicWand className="size-4" />
                       Regenerate
                     </button>
                   </div>

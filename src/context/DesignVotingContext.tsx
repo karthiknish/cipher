@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { db, auth } from "@/lib/firebase";
-import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, increment, arrayUnion, arrayRemove, where, getDocs } from "firebase/firestore";
+import { createContext, use, useEffect, useState, ReactNode, useMemo } from "react";
+import { useAuth } from "./AuthContext";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface DesignOption {
   id: string;
@@ -9,7 +10,7 @@ export interface DesignOption {
   title: string;
   description?: string;
   votes: number;
-  voters: string[]; // user IDs who voted
+  voters: string[];
 }
 
 export interface DesignContest {
@@ -31,7 +32,9 @@ interface DesignVotingContextType {
   contests: DesignContest[];
   activeContests: DesignContest[];
   loading: boolean;
-  createContest: (contest: Omit<DesignContest, "id" | "createdAt" | "totalVotes" | "winner">) => Promise<string | null>;
+  createContest: (
+    contest: Omit<DesignContest, "id" | "createdAt" | "totalVotes" | "winner">
+  ) => Promise<string | null>;
   updateContest: (id: string, updates: Partial<DesignContest>) => Promise<boolean>;
   deleteContest: (id: string) => Promise<boolean>;
   vote: (contestId: string, choice: "A" | "B") => Promise<boolean>;
@@ -40,199 +43,136 @@ interface DesignVotingContextType {
   getContestStats: (id: string) => { percentA: number; percentB: number; total: number };
 }
 
-const DesignVotingContext = createContext<DesignVotingContextType | undefined>(undefined);
+const DesignVotingContext = createContext<DesignVotingContextType | undefined>(
+  undefined
+);
 
 export function DesignVotingProvider({ children }: { children: ReactNode }) {
-  const [contests, setContests] = useState<DesignContest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const convexContests = useQuery(api.designContests.list);
+  const createMut = useMutation(api.designContests.create);
+  const updateMut = useMutation(api.designContests.update);
+  const removeMut = useMutation(api.designContests.remove);
+  const voteMut = useMutation(api.designContests.vote);
+  const closeMut = useMutation(api.designContests.close);
+
   const [userVotes, setUserVotes] = useState<Record<string, "A" | "B">>({});
 
-  // Subscribe to contests collection
-  useEffect(() => {
-    const q = query(collection(db, "designContests"), orderBy("createdAt", "desc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const contestData: DesignContest[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        contestData.push({
-          id: doc.id,
-          title: data.title,
-          description: data.description,
-          designA: data.designA,
-          designB: data.designB,
-          status: data.status,
-          startDate: data.startDate?.toDate() || new Date(),
-          endDate: data.endDate?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          createdBy: data.createdBy,
-          totalVotes: data.totalVotes || 0,
-          winner: data.winner,
-        });
-      });
-      setContests(contestData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching design contests:", error);
-      setLoading(false);
-    });
+  const contests: DesignContest[] = (convexContests ?? []).map((c) => ({
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    designA: c.designA as DesignContest["designA"],
+    designB: c.designB as DesignContest["designB"],
+    status: c.status as DesignContest["status"],
+    startDate: new Date(c.startDate),
+    endDate: new Date(c.endDate),
+    createdAt: new Date(c.createdAt),
+    createdBy: c.createdBy,
+    totalVotes: c.totalVotes,
+    winner: c.winner as DesignContest["winner"],
+  }));
 
-    return () => unsubscribe();
-  }, []);
+  const loading = convexContests === undefined;
 
-  // Load user votes from localStorage and Firebase
   useEffect(() => {
-    const userId = auth.currentUser?.uid;
+    const userId = user?.uid;
     if (!userId) return;
-
-    // Load from localStorage first
     const stored = localStorage.getItem(`cipher-design-votes-${userId}`);
-    if (stored) {
-      setUserVotes(JSON.parse(stored));
+    if (stored) setUserVotes(JSON.parse(stored));
+    const votesMap: Record<string, "A" | "B"> = {};
+    for (const contest of contests) {
+      const aVoters = new Set(contest.designA.voters ?? []);
+      const bVoters = new Set(contest.designB.voters ?? []);
+      if (aVoters.has(userId)) votesMap[contest.id] = "A";
+      else if (bVoters.has(userId)) votesMap[contest.id] = "B";
     }
-
-    // Also sync with Firebase for the active contests
-    const syncVotes = async () => {
-      const votesMap: Record<string, "A" | "B"> = {};
-      for (const contest of contests) {
-        if (contest.designA.voters?.includes(userId)) {
-          votesMap[contest.id] = "A";
-        } else if (contest.designB.voters?.includes(userId)) {
-          votesMap[contest.id] = "B";
-        }
-      }
-      if (Object.keys(votesMap).length > 0) {
-        setUserVotes(prev => ({ ...prev, ...votesMap }));
-        localStorage.setItem(`cipher-design-votes-${userId}`, JSON.stringify({ ...userVotes, ...votesMap }));
-      }
-    };
-    
-    if (contests.length > 0) {
-      syncVotes();
+    if (Object.keys(votesMap).length > 0) {
+      setUserVotes((prev) => ({ ...prev, ...votesMap }));
     }
-  }, [auth.currentUser?.uid, contests.length]);
+  }, [user?.uid, contests]);
 
-  const activeContests = contests.filter(c => c.status === "active");
+  const activeContests = contests.filter((c) => c.status === "active");
 
-  const createContest = async (contestData: Omit<DesignContest, "id" | "createdAt" | "totalVotes" | "winner">): Promise<string | null> => {
+  const createContest = async (
+    contestData: Omit<DesignContest, "id" | "createdAt" | "totalVotes" | "winner">
+  ): Promise<string | null> => {
     try {
-      const docRef = await addDoc(collection(db, "designContests"), {
-        ...contestData,
+      return await createMut({
+        title: contestData.title,
+        description: contestData.description,
         designA: { ...contestData.designA, votes: 0, voters: [] },
         designB: { ...contestData.designB, votes: 0, voters: [] },
-        createdAt: serverTimestamp(),
-        totalVotes: 0,
+        status: contestData.status,
+        startDate: contestData.startDate.getTime(),
+        endDate: contestData.endDate.getTime(),
+        createdBy: contestData.createdBy,
       });
-      return docRef.id;
-    } catch (error) {
-      console.error("Error creating contest:", error);
+    } catch {
       return null;
     }
   };
 
-  const updateContest = async (id: string, updates: Partial<DesignContest>): Promise<boolean> => {
+  const updateContest = async (
+    id: string,
+    updates: Partial<DesignContest>
+  ): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "designContests", id), updates);
+      const patch: Record<string, unknown> = { ...updates };
+      if (updates.startDate) patch.startDate = updates.startDate.getTime();
+      if (updates.endDate) patch.endDate = updates.endDate.getTime();
+      await updateMut({ id, patch });
       return true;
-    } catch (error) {
-      console.error("Error updating contest:", error);
+    } catch {
       return false;
     }
   };
 
   const deleteContest = async (id: string): Promise<boolean> => {
     try {
-      await deleteDoc(doc(db, "designContests", id));
+      await removeMut({ id });
       return true;
-    } catch (error) {
-      console.error("Error deleting contest:", error);
+    } catch {
       return false;
     }
   };
 
   const vote = async (contestId: string, choice: "A" | "B"): Promise<boolean> => {
-    const userId = auth.currentUser?.uid;
-    if (!userId) {
-      console.error("User must be logged in to vote");
-      return false;
-    }
-
-    const contest = contests.find(c => c.id === contestId);
-    if (!contest || contest.status !== "active") {
-      console.error("Contest not found or not active");
-      return false;
-    }
-
-    // Check if user already voted
-    const previousVote = getUserVote(contestId);
-    if (previousVote) {
-      console.error("User has already voted");
-      return false;
-    }
-
+    const userId = user?.uid;
+    if (!userId || getUserVote(contestId)) return false;
     try {
-      const contestRef = doc(db, "designContests", contestId);
-      
-      if (choice === "A") {
-        await updateDoc(contestRef, {
-          "designA.votes": increment(1),
-          "designA.voters": arrayUnion(userId),
-          totalVotes: increment(1),
-        });
-      } else {
-        await updateDoc(contestRef, {
-          "designB.votes": increment(1),
-          "designB.voters": arrayUnion(userId),
-          totalVotes: increment(1),
-        });
+      const ok = await voteMut({ contestId, choice });
+      if (ok) {
+        const newVotes = { ...userVotes, [contestId]: choice };
+        setUserVotes(newVotes);
+        localStorage.setItem(
+          `cipher-design-votes-${userId}`,
+          JSON.stringify(newVotes)
+        );
       }
-
-      // Save vote locally
-      const newVotes = { ...userVotes, [contestId]: choice };
-      setUserVotes(newVotes);
-      localStorage.setItem(`cipher-design-votes-${userId}`, JSON.stringify(newVotes));
-
-      return true;
-    } catch (error) {
-      console.error("Error voting:", error);
+      return ok;
+    } catch {
       return false;
     }
   };
 
-  const getUserVote = (contestId: string): "A" | "B" | null => {
-    return userVotes[contestId] || null;
-  };
+  const getUserVote = (contestId: string): "A" | "B" | null =>
+    userVotes[contestId] ?? null;
 
   const closeContest = async (id: string): Promise<boolean> => {
-    const contest = contests.find(c => c.id === id);
-    if (!contest) return false;
-
-    const votesA = contest.designA.votes;
-    const votesB = contest.designB.votes;
-    let winner: "A" | "B" | "tie" = "tie";
-    
-    if (votesA > votesB) winner = "A";
-    else if (votesB > votesA) winner = "B";
-
     try {
-      await updateDoc(doc(db, "designContests", id), {
-        status: "closed",
-        winner,
-      });
+      await closeMut({ id });
       return true;
-    } catch (error) {
-      console.error("Error closing contest:", error);
+    } catch {
       return false;
     }
   };
 
   const getContestStats = (id: string) => {
-    const contest = contests.find(c => c.id === id);
+    const contest = contests.find((c) => c.id === id);
     if (!contest) return { percentA: 0, percentB: 0, total: 0 };
-
     const total = contest.designA.votes + contest.designB.votes;
     if (total === 0) return { percentA: 50, percentB: 50, total: 0 };
-
     return {
       percentA: Math.round((contest.designA.votes / total) * 100),
       percentB: Math.round((contest.designB.votes / total) * 100),
@@ -240,26 +180,31 @@ export function DesignVotingProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const contextValue = useMemo(
+    () => ({
+        contests,
+        activeContests,
+        loading,
+        createContest,
+        updateContest,
+        deleteContest,
+        vote,
+        getUserVote,
+        closeContest,
+        getContestStats,
+      }),
+    [activeContests, closeContest, contests, createContest, deleteContest, getContestStats, getUserVote, loading, updateContest, vote]
+  );
+
   return (
-    <DesignVotingContext.Provider value={{
-      contests,
-      activeContests,
-      loading,
-      createContest,
-      updateContest,
-      deleteContest,
-      vote,
-      getUserVote,
-      closeContest,
-      getContestStats,
-    }}>
+    <DesignVotingContext.Provider value={contextValue}>
       {children}
     </DesignVotingContext.Provider>
   );
 }
 
 export function useDesignVoting() {
-  const context = useContext(DesignVotingContext);
+  const context = use(DesignVotingContext);
   if (!context) {
     throw new Error("useDesignVoting must be used within a DesignVotingProvider");
   }

@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, doc, getDoc, setDoc } from "@/lib/firebase";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface UserMeasurements {
   height: number; // in cm
@@ -91,12 +92,17 @@ const SizeContext = createContext<SizeContextType>({
   loading: true,
 });
 
-export const useSizeRecommendation = () => useContext(SizeContext);
+export const useSizeRecommendation = () => use(SizeContext);
 
 const MEASUREMENTS_STORAGE_KEY = "cipher_measurements";
 
 export const SizeRecommendationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const convexMeasurements = useQuery(
+    api.userExtras.getMeasurements,
+    user ? {} : "skip"
+  );
+  const setMeasurementsMut = useMutation(api.userExtras.setMeasurements);
   const [measurements, setMeasurements] = useState<UserMeasurements | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,18 +123,12 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
       }
       setLoading(false);
       
-      // Try Firebase in background (non-blocking)
-      if (user) {
-        try {
-          const measurementsDoc = await getDoc(doc(db, "userMeasurements", user.uid));
-          if (measurementsDoc.exists()) {
-            const data = measurementsDoc.data() as UserMeasurements;
-            setMeasurements(data);
-            localStorage.setItem(`${MEASUREMENTS_STORAGE_KEY}_${user.uid}`, JSON.stringify(data));
-          }
-        } catch {
-          // Silently fail
-        }
+      if (user && convexMeasurements) {
+        setMeasurements(convexMeasurements as UserMeasurements);
+        localStorage.setItem(
+          `${MEASUREMENTS_STORAGE_KEY}_${user.uid}`,
+          JSON.stringify(convexMeasurements)
+        );
       }
     };
 
@@ -144,13 +144,10 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
       localStorage.setItem(storageKey, JSON.stringify(newMeasurements));
     }
     
-    // Sync to Firebase in background
     if (user) {
-      setDoc(doc(db, "userMeasurements", user.uid), newMeasurements).catch(() => {
-        // Silently fail
-      });
+      setMeasurementsMut({ measurements: newMeasurements }).catch(() => {});
     }
-  }, [user]);
+  }, [user, setMeasurementsMut]);
 
   const getRecommendation = useCallback((
     category: string, 
@@ -181,9 +178,10 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
     let scores: Record<string, number> = {};
 
     const sizes = Object.keys(sizeChart) as Array<keyof typeof sizeChart>;
-    
+    const availableSizeSet = new Set(availableSizes);
+
     for (const size of sizes) {
-      if (!availableSizes.includes(size)) continue;
+      if (!availableSizeSet.has(size)) continue;
       
       const sizeData = sizeChart[size];
       let score = 0;
@@ -252,16 +250,19 @@ export const SizeRecommendationProvider = ({ children }: { children: ReactNode }
     };
   }, [measurements]);
 
-  return (
-    <SizeContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         measurements,
         saveMeasurements,
         getRecommendation,
         estimateFromHeightWeight: estimateMeasurements,
         loading,
-      }}
-    >
+      }),
+    [getRecommendation, loading, measurements, saveMeasurements]
+  );
+
+  return (
+    <SizeContext.Provider value={contextValue}>
       {children}
     </SizeContext.Provider>
   );

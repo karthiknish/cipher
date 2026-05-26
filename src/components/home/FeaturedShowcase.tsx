@@ -47,8 +47,8 @@ export default function FeaturedShowcase() {
               alt={featuredProducts[activeIndex]?.name || ""}
               fill
               className="object-cover"
-            />
-            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent text-white">
+             sizes="(max-width: 768px) 100vw, 50vw" />
+            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-gray-950/80 to-transparent text-white">
               <span className="text-xs tracking-wider text-white/60 mb-2 block">
                 {featuredProducts[activeIndex]?.category.toUpperCase()}
               </span>
@@ -68,7 +68,7 @@ export default function FeaturedShowcase() {
                   onClick={() => setActiveIndex(index)}
                   className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all ${
                     index === activeIndex 
-                      ? "bg-black text-white" 
+                      ? "bg-gray-950 text-white" 
                       : "bg-gray-50 hover:bg-gray-100"
                   }`}
                   whileHover={{ x: index === activeIndex ? 0 : 10 }}
@@ -79,7 +79,7 @@ export default function FeaturedShowcase() {
                       alt={product.name}
                       fill
                       className="object-cover"
-                    />
+                     sizes="(max-width: 768px) 100vw, 50vw" />
                   </div>
                   <div className="text-left flex-1">
                     <p className={`text-xs tracking-wider mb-1 ${index === activeIndex ? "text-white/60" : "text-gray-400"}`}>
@@ -90,17 +90,17 @@ export default function FeaturedShowcase() {
                       ${product.price}
                     </p>
                   </div>
-                  <ArrowRight className={`w-5 h-5 ${index === activeIndex ? "text-white" : "text-gray-400"}`} />
+                  <ArrowRight className={`size-5 ${index === activeIndex ? "text-white" : "text-gray-400"}`} />
                 </motion.button>
               ))}
             </div>
 
             <Link
               href={`/shop/${featuredProducts[activeIndex]?.id}`}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white text-sm tracking-wider hover:bg-gray-800 transition-all rounded-full"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-800 transition-all rounded-full"
             >
               SHOP THIS LOOK
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>

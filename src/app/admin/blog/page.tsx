@@ -34,7 +34,7 @@ const BlogEditor = dynamic(() => import("@/components/BlogEditor"), {
   ssr: false,
   loading: () => (
     <div className="h-[400px] border border-gray-200 flex items-center justify-center">
-      <SpinnerGap className="w-6 h-6 animate-spin text-gray-400" />
+      <SpinnerGap className="size-6 animate-spin text-gray-400" />
     </div>
   ),
 });
@@ -43,7 +43,7 @@ function BlogPageContent() {
   const { user, loading: authLoading, userRole } = useAuth();
   const { posts, categories, createPost, updatePost, deletePost, publishPost, unpublishPost } = useBlog();
   const toast = useToast();
-  const router = useRouter();
+  const { push } = useRouter();
   
   const [showEditor, setShowEditor] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
@@ -66,9 +66,9 @@ function BlogPageContent() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -145,7 +145,10 @@ function BlogPageContent() {
       content,
       coverImage: coverImage || "https://images.pexels.com/photos/934070/pexels-photo-934070.jpeg",
       category,
-      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      tags: tags.split(",").flatMap((t) => {
+        const trimmed = t.trim();
+        return trimmed ? [trimmed] : [];
+      }),
       author: {
         name: user?.displayName || "CIPHER Team",
         avatar: user?.photoURL || "",
@@ -200,7 +203,7 @@ function BlogPageContent() {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -208,16 +211,15 @@ function BlogPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -238,11 +240,10 @@ function BlogPageContent() {
       title="Blog Management" 
       activeTab="blog"
       actions={
-        <button
-          onClick={() => openEditor()}
+        <button aria-label="plus" type="button" onClick={() => openEditor()}
           className="flex items-center gap-2 bg-white text-black px-4 py-2 text-xs tracking-wider hover:bg-gray-100 transition"
         >
-          <Plus className="w-4 h-4" /> NEW POST
+          <Plus className="size-4" /> NEW POST
         </button>
       }
     >
@@ -250,7 +251,7 @@ function BlogPageContent() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-50 p-4 border border-gray-100">
           <div className="flex items-center gap-3">
-            <Article className="w-5 h-5 text-gray-400" />
+            <Article className="size-5 text-gray-400" />
             <div>
               <p className="text-2xl font-bold">{stats.total}</p>
               <p className="text-xs text-gray-500 uppercase tracking-wider">Total Posts</p>
@@ -259,7 +260,7 @@ function BlogPageContent() {
         </div>
         <div className="bg-gray-50 p-4 border border-gray-100">
           <div className="flex items-center gap-3">
-            <Eye className="w-5 h-5 text-gray-400" />
+            <Eye className="size-5 text-gray-400" />
             <div>
               <p className="text-2xl font-bold">{stats.published}</p>
               <p className="text-xs text-gray-500 uppercase tracking-wider">Published</p>
@@ -268,7 +269,7 @@ function BlogPageContent() {
         </div>
         <div className="bg-gray-50 p-4 border border-gray-100">
           <div className="flex items-center gap-3">
-            <Pencil className="w-5 h-5 text-gray-400" />
+            <Pencil className="size-5 text-gray-400" />
             <div>
               <p className="text-2xl font-bold">{stats.drafts}</p>
               <p className="text-xs text-gray-500 uppercase tracking-wider">Drafts</p>
@@ -277,7 +278,7 @@ function BlogPageContent() {
         </div>
         <div className="bg-gray-50 p-4 border border-gray-100">
           <div className="flex items-center gap-3">
-            <ChartLineUp className="w-5 h-5 text-gray-400" />
+            <ChartLineUp className="size-5 text-gray-400" />
             <div>
               <p className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</p>
               <p className="text-xs text-gray-500 uppercase tracking-wider">Total Views</p>
@@ -289,8 +290,8 @@ function BlogPageContent() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex-1 min-w-[200px] relative">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <input aria-label="Search posts..."
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -299,7 +300,7 @@ function BlogPageContent() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Funnel className="w-4 h-4 text-gray-400" />
+          <Funnel className="size-4 text-gray-400" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
@@ -346,7 +347,7 @@ function BlogPageContent() {
                         alt={post.title}
                         fill
                         className="object-cover"
-                      />
+                       sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate max-w-[200px]">{post.title}</p>
@@ -369,60 +370,56 @@ function BlogPageContent() {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" /> {post.views}
+                      <Eye className="size-3" /> {post.views}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" /> {post.likes}
+                      <Heart className="size-3" /> {post.likes}
                     </span>
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <div className="text-xs text-gray-500">
                     <p className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <Calendar className="size-3" />
                       {post.publishedAt 
                         ? post.publishedAt.toLocaleDateString() 
                         : post.createdAt.toLocaleDateString()}
                     </p>
                     <p className="flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="size-3" />
                       {post.readTime} min read
                     </p>
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => window.open(`/blog/${post.slug}`, "_blank")}
+                    <button type="button" onClick={() => window.open(`/blog/${post.slug}`, "_blank")}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                       title="View"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="size-4" />
                     </button>
-                    <button
-                      onClick={() => openEditor(post)}
+                    <button type="button" onClick={() => openEditor(post)}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="size-4" />
                     </button>
-                    <button
-                      onClick={() => handleTogglePublish(post)}
+                    <button type="button" onClick={() => handleTogglePublish(post)}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                       title={post.status === "published" ? "Unpublish" : "Publish"}
                     >
                       {post.status === "published" ? (
-                        <EyeSlash className="w-4 h-4" />
+                        <EyeSlash className="size-4" />
                       ) : (
-                        <ArrowUp className="w-4 h-4" />
+                        <ArrowUp className="size-4" />
                       )}
                     </button>
-                    <button
-                      onClick={() => handleDelete(post.id)}
+                    <button type="button" onClick={() => handleDelete(post.id)}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-red-500 transition"
                       title="Delete"
                     >
-                      <Trash className="w-4 h-4" />
+                      <Trash className="size-4" />
                     </button>
                   </div>
                 </td>
@@ -433,7 +430,7 @@ function BlogPageContent() {
         
         {filteredPosts.length === 0 && (
           <div className="text-center py-12">
-            <Article className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Article className="size-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No posts found</p>
           </div>
         )}
@@ -441,7 +438,7 @@ function BlogPageContent() {
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto py-8">
+        <div className="fixed inset-0 bg-gray-950/50 z-50 flex items-start justify-center overflow-y-auto py-8">
           <div className="bg-white w-full max-w-5xl mx-4 my-auto">
             {/* Editor Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
@@ -457,18 +454,14 @@ function BlogPageContent() {
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                 </select>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-2 bg-black text-white px-4 py-2 text-sm tracking-wider hover:bg-gray-800 transition"
-                >
-                  <Check className="w-4 h-4" />
+                <button aria-label="check" type="button" onClick={handleSave}
+                  className="flex items-center gap-2 bg-gray-950 text-white px-4 py-2 text-sm tracking-wider hover:bg-gray-800 transition">
+                  <Check className="size-4" />
                   {editingPost ? "UPDATE" : "SAVE"}
                 </button>
-                <button 
-                  onClick={closeEditor}
-                  className="p-2 hover:bg-gray-100 transition"
-                >
-                  <X className="w-5 h-5" />
+                <button aria-label="x" type="button" onClick={closeEditor}
+                  className="p-2 hover:bg-gray-100 transition">
+                  <X className="size-5" />
                 </button>
               </div>
             </div>
@@ -477,21 +470,30 @@ function BlogPageContent() {
             <div className="p-6 space-y-6">
               {/* Cover Image */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">COVER IMAGE</label>
-                <div 
+                <span id="blog-cover-label" className="block text-xs tracking-wider text-gray-500 mb-2">COVER IMAGE</span>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-labelledby="blog-cover-label"
                   className="relative h-48 bg-gray-100 border-2 border-dashed border-gray-300 hover:border-black transition cursor-pointer group overflow-hidden"
                   onClick={() => setShowImagePicker(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setShowImagePicker(true);
+                    }
+                  }}
                 >
                   {coverImage ? (
                     <>
-                      <Image src={coverImage} alt="Cover" fill className="object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                      <Image src={coverImage} alt="Cover" fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
+                      <div className="absolute inset-0 bg-gray-950/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <span className="text-white text-sm">Change Image</span>
                       </div>
                     </>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
+                      <ImageIcon className="size-12 text-gray-400 mb-2" />
                       <p className="text-sm text-gray-500">Click to select cover image from Pexels</p>
                     </div>
                   )}
@@ -500,8 +502,8 @@ function BlogPageContent() {
 
               {/* Title */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">TITLE</label>
-                <input
+                <label htmlFor="page-title-1" className="block text-xs tracking-wider text-gray-500 mb-2">TITLE</label>
+                <input aria-label="TITLE" id="page-title-1"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -512,12 +514,12 @@ function BlogPageContent() {
 
               {/* Slug */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">URL SLUG</label>
+                <label htmlFor="page-url-slug-1" className="block text-xs tracking-wider text-gray-500 mb-2">URL SLUG</label>
                 <div className="flex items-center">
                   <span className="px-4 py-3 bg-gray-100 border border-r-0 border-gray-200 text-gray-500 text-sm">
                     /blog/
                   </span>
-                  <input
+                  <input aria-label="URL SLUG" id="page-url-slug-1"
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
@@ -530,8 +532,8 @@ function BlogPageContent() {
               <div className="grid grid-cols-2 gap-6">
                 {/* Category */}
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">CATEGORY</label>
-                  <select
+                  <label htmlFor="page-category-2" className="block text-xs tracking-wider text-gray-500 mb-2">CATEGORY</label>
+                  <select aria-label="CATEGORY" id="page-category-2"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 focus:border-black focus:outline-none text-sm"
@@ -544,8 +546,8 @@ function BlogPageContent() {
 
                 {/* Tags */}
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">TAGS</label>
-                  <input
+                  <label htmlFor="page-tags-3" className="block text-xs tracking-wider text-gray-500 mb-2">TAGS</label>
+                  <input aria-label="TAGS" id="page-tags-3"
                     type="text"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
@@ -557,8 +559,8 @@ function BlogPageContent() {
 
               {/* Excerpt */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">EXCERPT</label>
-                <textarea
+                <label htmlFor="page-excerpt-4" className="block text-xs tracking-wider text-gray-500 mb-2">EXCERPT</label>
+                <textarea aria-label="EXCERPT" id="page-excerpt-4"
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
                   placeholder="Brief description of the post (optional - will be auto-generated if empty)"
@@ -569,12 +571,14 @@ function BlogPageContent() {
 
               {/* Content Editor */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">CONTENT</label>
-                <BlogEditor
-                  content={content}
-                  onChange={setContent}
-                  placeholder="Start writing your blog post..."
-                />
+                <span className="block text-xs tracking-wider text-gray-500 mb-2">CONTENT</span>
+                <div role="group" aria-label="Blog post content">
+                  <BlogEditor
+                    content={content}
+                    onChange={setContent}
+                    placeholder="Start writing your blog post..."
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -598,7 +602,7 @@ function BlogPageContent() {
 function BlogPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

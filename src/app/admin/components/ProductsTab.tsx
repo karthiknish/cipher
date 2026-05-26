@@ -35,7 +35,7 @@ export function ProductsTab({ products, onDelete }: ProductsTabProps) {
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-16 bg-gray-100 relative overflow-hidden flex-shrink-0">
-                      <Image src={product.image} alt={product.name} fill className="object-cover" />
+                      <Image src={product.image} alt={product.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                     <div>
                       <p className="font-medium">{product.name}</p>
@@ -60,13 +60,12 @@ export function ProductsTab({ products, onDelete }: ProductsTabProps) {
                       href={`/admin/products/${product.id}`}
                       className="p-2 hover:bg-gray-100 text-gray-600 hover:text-black transition"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="size-4" />
                     </Link>
-                    <button
-                      onClick={() => onDelete(product.id)}
+                    <button aria-label="trash" type="button" onClick={() => onDelete(product.id)}
                       className="p-2 hover:bg-rose-50 text-gray-600 hover:text-rose-500 transition"
                     >
-                      <Trash className="w-4 h-4" />
+                      <Trash className="size-4" />
                     </button>
                   </div>
                 </td>
@@ -78,7 +77,7 @@ export function ProductsTab({ products, onDelete }: ProductsTabProps) {
 
       {products.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <Package className="size-12 mx-auto mb-4 opacity-30" />
           <p>No products found</p>
         </div>
       )}

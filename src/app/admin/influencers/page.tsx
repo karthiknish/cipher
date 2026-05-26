@@ -17,20 +17,20 @@ function InfluencersPageContent() {
     updateInfluencerTier,
     updateCommissionRate,
   } = useInfluencer();
-  const router = useRouter();
+  const { push } = useRouter();
 
   const isAdmin = userRole?.isAdmin ?? false;
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -38,16 +38,15 @@ function InfluencersPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -72,7 +71,7 @@ function InfluencersPageContent() {
 function InfluencersPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

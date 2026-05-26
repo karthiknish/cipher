@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Image as ImageIcon, Trash, Eye, Calendar, Trophy, SpinnerGap, Sparkle, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import ImageUploader from "@/components/ImageUploader";
+import { adminFetch } from "@/lib/admin-api";
 
 export default function AdminDesignVotingPage() {
   const { user, userRole } = useAuth();
@@ -156,9 +157,8 @@ export default function AdminDesignVotingPage() {
 
     setGeneratingAI(true);
     try {
-      const response = await fetch("/api/generate-design-details", {
+      const response = await adminFetch("/api/generate-design-details", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hasDesignA: !!formData.designAImage,
           hasDesignB: !!formData.designBImage,
@@ -197,16 +197,15 @@ export default function AdminDesignVotingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/admin" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="size-5" />
               </Link>
               <div>
                 <h1 className="text-xl font-light tracking-wide">Design Voting</h1>
                 <p className="text-sm text-gray-500">Manage A/B design contests</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-black text-white px-6 py-2.5 text-xs tracking-wider hover:bg-gray-900 transition-colors"
+            <button type="button" onClick={() => setShowCreateModal(true)}
+              className="bg-gray-950 text-white px-6 py-2.5 text-xs tracking-wider hover:bg-gray-900 transition-colors"
             >
               CREATE CONTEST
             </button>
@@ -218,15 +217,14 @@ export default function AdminDesignVotingPage() {
       <div className="container mx-auto px-4 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            <div className="size-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
           </div>
         ) : contests.length === 0 ? (
           <div className="text-center py-20">
-            <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+            <ImageIcon className="size-12 mx-auto text-gray-300 mb-4" />
             <h2 className="text-lg font-light mb-2">No Design Contests</h2>
             <p className="text-gray-500 text-sm mb-6">Create your first A/B design voting contest</p>
-            <button
-              onClick={() => setShowCreateModal(true)}
+            <button type="button" onClick={() => setShowCreateModal(true)}
               className="text-sm tracking-wider underline underline-offset-4"
             >
               Create Contest
@@ -254,15 +252,15 @@ export default function AdminDesignVotingPage() {
                               alt={contest.designA.title}
                               fill
                               className="object-cover"
-                            />
+                             sizes="(max-width: 768px) 100vw, 50vw" />
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <ImageIcon className="w-8 h-8 text-gray-300" />
+                              <ImageIcon className="size-8 text-gray-300" />
                             </div>
                           )}
                           {contest.winner === "A" && (
                             <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                              <Trophy className="w-4 h-4" weight="fill" />
+                              <Trophy className="size-4" weight="fill" />
                             </div>
                           )}
                         </div>
@@ -278,15 +276,15 @@ export default function AdminDesignVotingPage() {
                               alt={contest.designB.title}
                               fill
                               className="object-cover"
-                            />
+                             sizes="(max-width: 768px) 100vw, 50vw" />
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <ImageIcon className="w-8 h-8 text-gray-300" />
+                              <ImageIcon className="size-8 text-gray-300" />
                             </div>
                           )}
                           {contest.winner === "B" && (
                             <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                              <Trophy className="w-4 h-4" weight="fill" />
+                              <Trophy className="size-4" weight="fill" />
                             </div>
                           )}
                         </div>
@@ -316,7 +314,7 @@ export default function AdminDesignVotingPage() {
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
                           <div
-                            className="bg-black transition-all duration-500"
+                            className="bg-gray-950 transition-all duration-500"
                             style={{ width: `${stats.percentA}%` }}
                           />
                           <div
@@ -330,7 +328,7 @@ export default function AdminDesignVotingPage() {
                       {/* Dates */}
                       <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="size-4" />
                           <span>{new Date(contest.startDate).toLocaleDateString()}</span>
                         </div>
                         <span>→</span>
@@ -340,17 +338,15 @@ export default function AdminDesignVotingPage() {
                       {/* Actions */}
                       <div className="flex items-center gap-3">
                         {contest.status === "draft" && (
-                          <button
-                            onClick={() => handleActivateContest(contest.id)}
+                          <button type="button" onClick={() => handleActivateContest(contest.id)}
                             className="text-xs tracking-wider px-4 py-2 bg-green-600 text-white hover:bg-green-700 transition-colors"
                           >
                             ACTIVATE
                           </button>
                         )}
                         {contest.status === "active" && (
-                          <button
-                            onClick={() => handleCloseContest(contest.id)}
-                            className="text-xs tracking-wider px-4 py-2 bg-gray-800 text-white hover:bg-black transition-colors"
+                          <button type="button" onClick={() => handleCloseContest(contest.id)}
+                            className="text-xs tracking-wider px-4 py-2 bg-gray-800 text-white hover:bg-gray-950 transition-colors"
                           >
                             CLOSE VOTING
                           </button>
@@ -359,11 +355,10 @@ export default function AdminDesignVotingPage() {
                           href="/vote"
                           className="text-xs tracking-wider px-4 py-2 border border-gray-200 hover:border-gray-400 transition-colors flex items-center gap-2"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="size-4" />
                           PREVIEW
                         </Link>
-                        <button
-                          onClick={() => handleDeleteContest(contest.id)}
+                        <button type="button" onClick={() => handleDeleteContest(contest.id)}
                           className="text-xs tracking-wider px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                         >
                           DELETE
@@ -385,9 +380,9 @@ export default function AdminDesignVotingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowCreateModal(false)}
-          >
+            className="fixed inset-0 bg-gray-950/50 flex items-center justify-center z-50 p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setShowCreateModal(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -405,8 +400,8 @@ export default function AdminDesignVotingPage() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium tracking-wider">CONTEST DETAILS</h3>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Title *</label>
-                    <input
+                    <label htmlFor="page-title-17" className="block text-xs text-gray-500 mb-1">Title *</label>
+                    <input aria-label="Title *" id="page-title-17"
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -415,8 +410,8 @@ export default function AdminDesignVotingPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Description</label>
-                    <textarea
+                    <label htmlFor="page-description-18" className="block text-xs text-gray-500 mb-1">Description</label>
+                    <textarea aria-label="Description" id="page-description-18"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black resize-none"
@@ -426,8 +421,8 @@ export default function AdminDesignVotingPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Start Date</label>
-                      <input
+                      <label htmlFor="page-start-date-19" className="block text-xs text-gray-500 mb-1">Start Date</label>
+                      <input aria-label="Start Date" id="page-start-date-19"
                         type="date"
                         value={formData.startDate}
                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
@@ -435,8 +430,8 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">End Date</label>
-                      <input
+                      <label htmlFor="page-end-date-20" className="block text-xs text-gray-500 mb-1">End Date</label>
+                      <input aria-label="End Date" id="page-end-date-20"
                         type="date"
                         value={formData.endDate}
                         onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
@@ -445,8 +440,8 @@ export default function AdminDesignVotingPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Status</label>
-                    <select
+                    <label htmlFor="page-status-21" className="block text-xs text-gray-500 mb-1">Status</label>
+                    <select aria-label="Status" id="page-status-21"
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as "draft" | "active" })}
                       className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black"
@@ -463,8 +458,8 @@ export default function AdminDesignVotingPage() {
                   <div className="space-y-4 p-4 bg-gray-50">
                     <h3 className="text-sm font-medium tracking-wider">DESIGN A</h3>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Title *</label>
-                      <input
+                      <label htmlFor="page-title-22" className="block text-xs text-gray-500 mb-1">Title *</label>
+                      <input aria-label="Title *" id="page-title-22"
                         type="text"
                         value={formData.designATitle}
                         onChange={(e) => setFormData({ ...formData, designATitle: e.target.value })}
@@ -473,8 +468,8 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Description</label>
-                      <textarea
+                      <label htmlFor="page-description-23" className="block text-xs text-gray-500 mb-1">Description</label>
+                      <textarea aria-label="Description" id="page-description-23"
                         value={formData.designADescription}
                         onChange={(e) => setFormData({ ...formData, designADescription: e.target.value })}
                         className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black resize-none bg-white"
@@ -482,13 +477,12 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
                       <ImageUploader
                         value={formData.designAImage}
                         onChange={(url) => setFormData({ ...formData, designAImage: url })}
                         folder="design-contests"
                         aspectRatio="1/1"
-                        label="Upload Design A"
+                        label="Upload design A image"
                       />
                     </div>
                   </div>
@@ -497,8 +491,8 @@ export default function AdminDesignVotingPage() {
                   <div className="space-y-4 p-4 bg-gray-50">
                     <h3 className="text-sm font-medium tracking-wider">DESIGN B</h3>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Title *</label>
-                      <input
+                      <label htmlFor="page-title-24" className="block text-xs text-gray-500 mb-1">Title *</label>
+                      <input aria-label="Title *" id="page-title-24"
                         type="text"
                         value={formData.designBTitle}
                         onChange={(e) => setFormData({ ...formData, designBTitle: e.target.value })}
@@ -507,8 +501,8 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Description</label>
-                      <textarea
+                      <label htmlFor="page-description-25" className="block text-xs text-gray-500 mb-1">Description</label>
+                      <textarea aria-label="Description" id="page-description-25"
                         value={formData.designBDescription}
                         onChange={(e) => setFormData({ ...formData, designBDescription: e.target.value })}
                         className="w-full border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-black resize-none bg-white"
@@ -516,13 +510,12 @@ export default function AdminDesignVotingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Upload Image *</label>
                       <ImageUploader
                         value={formData.designBImage}
                         onChange={(url) => setFormData({ ...formData, designBImage: url })}
                         folder="design-contests"
                         aspectRatio="1/1"
-                        label="Upload Design B"
+                        label="Upload design B image"
                       />
                     </div>
                   </div>
@@ -531,26 +524,23 @@ export default function AdminDesignVotingPage() {
 
               {/* Footer */}
               <div className="p-6 border-t border-gray-100 flex justify-between items-center sticky bottom-0 bg-white">
-                <button
-                  onClick={handleAIFill}
+                <button type="button" onClick={handleAIFill}
                   disabled={generatingAI || (!formData.designAImage && !formData.designBImage)}
-                  className="px-4 py-2.5 text-xs tracking-wider border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
+                  className="px-4 py-2.5 text-xs tracking-wider border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 flex items-center gap-2">
                   {generatingAI ? (
                     <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
-                      GENERATING...
+                      <SpinnerGap className="size-4 animate-spin" />
+                      GENERATING…
                     </>
                   ) : (
                     <>
-                      <Sparkle className="w-4 h-4" weight="fill" />
+                      <Sparkle className="size-4" weight="fill" />
                       AI FILL DETAILS
                     </>
                   )}
                 </button>
                 <div className="flex gap-4">
-                  <button
-                    onClick={() => {
+                  <button type="button" onClick={() => {
                       setShowCreateModal(false);
                       resetForm();
                     }}
@@ -558,12 +548,10 @@ export default function AdminDesignVotingPage() {
                   >
                     CANCEL
                   </button>
-                  <button
-                    onClick={handleCreateContest}
+                  <button type="button" onClick={handleCreateContest}
                     disabled={isSubmitting}
-                    className="px-6 py-2.5 text-xs tracking-wider bg-black text-white hover:bg-gray-900 transition-colors disabled:opacity-50"
-                  >
-                    {isSubmitting ? "CREATING..." : "CREATE CONTEST"}
+                    className="px-6 py-2.5 text-xs tracking-wider bg-gray-950 text-white hover:bg-gray-900 transition-colors disabled:opacity-50">
+                    {isSubmitting ? "CREATING…" : "CREATE CONTEST"}
                   </button>
                 </div>
               </div>

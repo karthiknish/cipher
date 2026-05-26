@@ -100,11 +100,10 @@ export function PricingTab({
           <h2 className="text-xl font-medium">Dynamic Pricing Rules</h2>
           <p className="text-sm text-gray-500">Manage flash sales, demand-based pricing, and promotional discounts</p>
         </div>
-        <button
-          onClick={() => setShowPricingModal(true)}
-          className="flex items-center gap-2 bg-black text-white px-4 py-2 text-sm hover:bg-gray-800"
+        <button aria-label="plus" type="button" onClick={() => setShowPricingModal(true)}
+          className="flex items-center gap-2 bg-gray-950 text-white px-4 py-2 text-sm hover:bg-gray-800"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="size-4" />
           Create Rule
         </button>
       </div>
@@ -113,28 +112,28 @@ export function PricingTab({
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Fire className="w-4 h-4" />
+            <Fire className="size-4" />
             Active Flash Sales
           </div>
           <p className="text-2xl font-light">{activeFlashSalesCount}</p>
         </div>
         <div className="bg-white border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Percent className="w-4 h-4" />
+            <Percent className="size-4" />
             Total Rules
           </div>
           <p className="text-2xl font-light">{pricingRules.length}</p>
         </div>
         <div className="bg-white border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Timer className="w-4 h-4" />
+            <Timer className="size-4" />
             Time-Based Active
           </div>
           <p className="text-2xl font-light">{pricingRules.filter(r => r.isActive && (r.type === 'time_based' || r.type === 'happy_hour')).length}</p>
         </div>
         <div className="bg-white border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <TrendUp className="w-4 h-4" />
+            <TrendUp className="size-4" />
             Demand Surge Rules
           </div>
           <p className="text-2xl font-light">{pricingRules.filter(r => r.type === 'demand_surge').length}</p>
@@ -219,19 +218,17 @@ export function PricingTab({
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onToggleRule(rule.id)}
+                        <button type="button" onClick={() => onToggleRule(rule.id)}
                           className={`p-1.5 rounded ${rule.isActive ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
                           title={rule.isActive ? "Deactivate" : "Activate"}
                         >
-                          {rule.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          {rule.isActive ? <XCircle className="size-4" /> : <CheckCircle className="size-4" />}
                         </button>
-                        <button
-                          onClick={() => onDeleteRule(rule.id)}
+                        <button type="button" onClick={() => onDeleteRule(rule.id)}
                           className="p-1.5 rounded hover:bg-rose-50 text-rose-600"
                           title="Delete Rule"
                         >
-                          <Trash className="w-4 h-4" />
+                          <Trash className="size-4" />
                         </button>
                       </div>
                     </td>
@@ -250,9 +247,9 @@ export function PricingTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPricingModal(false)}
-          >
+            className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setShowPricingModal(false)} />
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
@@ -262,15 +259,16 @@ export function PricingTab({
             >
               <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
                 <h3 className="font-medium">Create Pricing Rule</h3>
-                <button onClick={() => setShowPricingModal(false)} className="p-1 hover:bg-gray-100 rounded">
-                  <X className="w-5 h-5" />
+                <button type="button" onClick={() => setShowPricingModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                  <X className="size-5" />
                 </button>
               </div>
               <div className="p-4 space-y-4">
                 {/* Rule Type */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Rule Type</label>
-                  <select
+                  <label htmlFor="pricing-rule-type" className="block text-sm font-medium mb-2">Rule Type</label>
+                  <select aria-label="Rule Type"
+                    id="pricing-rule-type"
                     value={newRule.type}
                     onChange={e => setNewRule({ ...newRule, type: e.target.value as typeof newRule.type })}
                     className="w-full border border-gray-200 p-2 text-sm"
@@ -286,9 +284,10 @@ export function PricingTab({
 
                 {/* Target */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Apply To</label>
+                  <label htmlFor="pricing-rule-product" className="block text-sm font-medium mb-2">Apply To</label>
                   <div className="space-y-2">
-                    <select
+                    <select aria-label="Apply To"
+                      id="pricing-rule-product"
                       value={newRule.productId || ""}
                       onChange={e => setNewRule({ ...newRule, productId: e.target.value || undefined, category: undefined })}
                       className="w-full border border-gray-200 p-2 text-sm"
@@ -316,8 +315,10 @@ export function PricingTab({
                 {/* Discount/Multiplier */}
                 {newRule.type === 'demand_surge' ? (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Price Multiplier</label>
+                    <label htmlFor="pricing-rule-multiplier" className="block text-sm font-medium mb-2">Price Multiplier</label>
                     <input
+                      id="pricing-rule-multiplier"
+                      aria-label="Price multiplier"
                       type="number"
                       step="0.05"
                       min="1"
@@ -332,8 +333,8 @@ export function PricingTab({
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Discount %</label>
-                      <input
+                      <label htmlFor="PricingTab-discount-6" className="block text-sm font-medium mb-2">Discount %</label>
+                      <input aria-label="Discount %" id="PricingTab-discount-6"
                         type="number"
                         min="0"
                         max="100"
@@ -344,8 +345,8 @@ export function PricingTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Or Fixed Amount $</label>
-                      <input
+                      <label htmlFor="PricingTab-or-fixed-amount-7" className="block text-sm font-medium mb-2">Or Fixed Amount $</label>
+                      <input aria-label="Or Fixed Amount $" id="PricingTab-or-fixed-amount-7"
                         type="number"
                         min="0"
                         value={newRule.discountAmount || ""}
@@ -360,8 +361,8 @@ export function PricingTab({
                 {/* Bulk Discount Min Quantity */}
                 {newRule.type === 'bulk_discount' && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Minimum Quantity</label>
-                    <input
+                    <label htmlFor="PricingTab-minimum-quantity-8" className="block text-sm font-medium mb-2">Minimum Quantity</label>
+                    <input aria-label="Minimum Quantity" id="PricingTab-minimum-quantity-8"
                       type="number"
                       min="2"
                       value={newRule.minQuantity || 3}
@@ -375,8 +376,8 @@ export function PricingTab({
                 {newRule.type === 'happy_hour' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Start Hour (24h)</label>
-                      <input
+                      <label htmlFor="PricingTab-start-hour-24h-9" className="block text-sm font-medium mb-2">Start Hour (24h)</label>
+                      <input aria-label="Start Hour (24h)" id="PricingTab-start-hour-24h-9"
                         type="number"
                         min="0"
                         max="23"
@@ -392,8 +393,8 @@ export function PricingTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">End Hour (24h)</label>
-                      <input
+                      <label htmlFor="PricingTab-end-hour-24h-10" className="block text-sm font-medium mb-2">End Hour (24h)</label>
+                      <input aria-label="End Hour (24h)" id="PricingTab-end-hour-24h-10"
                         type="number"
                         min="0"
                         max="23"
@@ -415,8 +416,8 @@ export function PricingTab({
                 {(newRule.type === 'flash_sale' || newRule.type === 'time_based') && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Start Date</label>
-                      <input
+                      <label htmlFor="PricingTab-start-date-11" className="block text-sm font-medium mb-2">Start Date</label>
+                      <input aria-label="Start Date" id="PricingTab-start-date-11"
                         type="datetime-local"
                         value={newRule.startTime ? new Date(newRule.startTime).toISOString().slice(0, 16) : ""}
                         onChange={e => setNewRule({ ...newRule, startTime: new Date(e.target.value) })}
@@ -424,8 +425,8 @@ export function PricingTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">End Date</label>
-                      <input
+                      <label htmlFor="PricingTab-end-date-12" className="block text-sm font-medium mb-2">End Date</label>
+                      <input aria-label="End Date" id="PricingTab-end-date-12"
                         type="datetime-local"
                         value={newRule.endTime ? new Date(newRule.endTime).toISOString().slice(0, 16) : ""}
                         onChange={e => setNewRule({ ...newRule, endTime: new Date(e.target.value) })}
@@ -437,8 +438,8 @@ export function PricingTab({
 
                 {/* Priority */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Priority (higher = more important)</label>
-                  <input
+                  <label htmlFor="PricingTab-priority-higher-more-important-13" className="block text-sm font-medium mb-2">Priority (higher = more important)</label>
+                  <input aria-label="Priority (higher = more important)" id="PricingTab-priority-higher-more-important-13"
                     type="number"
                     min="1"
                     max="100"
@@ -451,27 +452,25 @@ export function PricingTab({
 
                 {/* Active */}
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
+                  <input id="PricingTab-field-14"
+                    aria-label="Activate immediately"
                     type="checkbox"
                     checked={newRule.isActive}
                     onChange={e => setNewRule({ ...newRule, isActive: e.target.checked })}
-                    className="w-4 h-4"
+                    className="size-4"
                   />
                   <span className="text-sm">Activate immediately</span>
                 </label>
               </div>
               <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowPricingModal(false)}
+                <button type="button" onClick={() => setShowPricingModal(false)}
                   className="px-4 py-2 text-sm hover:bg-gray-100"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleCreateRule}
+                <button type="button" onClick={handleCreateRule}
                   disabled={creatingRule || (!newRule.discountPercent && !newRule.discountAmount && !newRule.multiplier)}
-                  className="px-4 py-2 text-sm bg-black text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  className="px-4 py-2 text-sm bg-gray-950 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
                   {creatingRule ? "Creating..." : "Create Rule"}
                 </button>
               </div>

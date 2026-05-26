@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { adminFetch } from "@/lib/admin-api";
 import { AnimatePresence, motion } from "@/lib/motion";
 import {
   Brain,
@@ -145,16 +146,15 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
 
   const getTrendIcon = (trend: "up" | "down" | "stable") => {
     switch (trend) {
-      case "up": return <TrendUp className="w-4 h-4 text-emerald-500" />;
-      case "down": return <TrendDown className="w-4 h-4 text-rose-500" />;
-      default: return <ArrowRight className="w-4 h-4 text-gray-400" />;
+      case "up": return <TrendUp className="size-4 text-emerald-500" />;
+      case "down": return <TrendDown className="size-4 text-rose-500" />;
+      default: return <ArrowRight className="size-4 text-gray-400" />;
     }
   };
 
   const sendCampaign = async (type: CampaignType, emails: string[]) => {
-    const response = await fetch("/api/email-campaign", {
+    const response = await adminFetch("/api/email-campaign", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type,
         recipients: emails.map(email => ({ email })),
@@ -205,36 +205,32 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
       {/* Tab Switcher */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div className="flex gap-2">
-          <button
-            onClick={() => setActiveView("overview")}
+          <button type="button" onClick={() => setActiveView("overview")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition rounded-lg ${
               activeView === "overview"
-                ? "bg-black text-white"
+                ? "bg-gray-950 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <UserList className="w-4 h-4" />
+            <UserList className="size-4" />
             Customer Overview
           </button>
-          <button
-            onClick={() => setActiveView("behavior")}
+          <button type="button" onClick={() => setActiveView("behavior")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition rounded-lg ${
               activeView === "behavior"
-                ? "bg-black text-white"
+                ? "bg-gray-950 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <Brain className="w-4 h-4" />
+            <Brain className="size-4" />
             Behavior Insights
           </button>
         </div>
         
         {activeView === "behavior" && (
-          <button 
-            onClick={loadBehaviorInsights}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-200 hover:border-gray-300 transition rounded"
-          >
-            <Sparkle className="w-4 h-4" />
+          <button aria-label="sparkle" type="button" onClick={loadBehaviorInsights}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-200 hover:border-gray-300 transition rounded">
+            <Sparkle className="size-4" />
             Refresh
           </button>
         )}
@@ -285,13 +281,13 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
           {behaviorLoading ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <Brain className="w-12 h-12 mx-auto text-gray-300 animate-pulse mb-4" />
-                <p className="text-gray-500">Analyzing customer behavior...</p>
+                <Brain className="size-12 mx-auto text-gray-300 animate-pulse mb-4" />
+                <p className="text-gray-500">Analyzing customer behavior…</p>
               </div>
             </div>
           ) : !insights ? (
             <div className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
-              <Brain className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+              <Brain className="size-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-600 mb-2">No Behavior Data Yet</h3>
               <p className="text-gray-500 text-sm">
                 Customer behavior insights will appear as users interact with your store.
@@ -307,7 +303,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                   className="bg-white border border-gray-200 p-5 rounded-lg"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-5 h-5 text-violet-600" />
+                    <Users className="size-5 text-violet-600" />
                     <span className="text-sm text-gray-500">Tracked Users</span>
                   </div>
                   <p className="text-3xl font-semibold">{insights.totalCustomers.toLocaleString()}</p>
@@ -321,7 +317,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                   className="bg-white border border-gray-200 p-5 rounded-lg"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <Target className="w-5 h-5 text-emerald-600" />
+                    <Target className="size-5 text-emerald-600" />
                     <span className="text-sm text-gray-500">Conversion Rate</span>
                   </div>
                   <p className="text-3xl font-semibold">{insights.conversionRate.toFixed(1)}%</p>
@@ -335,7 +331,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                   className="bg-white border border-gray-200 p-5 rounded-lg"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <ShoppingCart className="w-5 h-5 text-amber-600" />
+                    <ShoppingCart className="size-5 text-amber-600" />
                     <span className="text-sm text-gray-500">Cart Abandonment</span>
                   </div>
                   <p className="text-3xl font-semibold">{insights.cartAbandonmentRate.toFixed(1)}%</p>
@@ -349,7 +345,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                   className="bg-white border border-gray-200 p-5 rounded-lg"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <CurrencyDollar className="w-5 h-5 text-sky-600" />
+                    <CurrencyDollar className="size-5 text-sky-600" />
                     <span className="text-sm text-gray-500">Avg Order Value</span>
                   </div>
                   <p className="text-3xl font-semibold">${insights.averageOrderValue.toFixed(0)}</p>
@@ -361,7 +357,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
               {insights.insights.length > 0 && (
                 <div className="bg-gradient-to-br from-violet-50 to-sky-50 border border-violet-200 p-6 rounded-lg">
                   <div className="flex items-center gap-2 mb-4">
-                    <Lightning className="w-5 h-5 text-violet-600" />
+                    <Lightning className="size-5 text-violet-600" />
                     <h3 className="font-medium">AI-Generated Insights</h3>
                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
                       {insights.insights.length} insights
@@ -379,12 +375,11 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                           layout
                           className="bg-white border border-gray-200 rounded-lg overflow-hidden"
                         >
-                          <button
-                            onClick={() => setExpandedInsight(isExpanded ? null : insight.id)}
+                          <button type="button" onClick={() => setExpandedInsight(isExpanded ? null : insight.id)}
                             className="w-full p-4 text-left flex items-start gap-3 hover:bg-gray-50 transition"
                           >
                             <div className={`p-2 rounded ${getImpactColor(insight.impact).split(" ").slice(0, 1).join(" ")}`}>
-                              <Icon className={`w-5 h-5 ${getImpactColor(insight.impact).split(" ").slice(1, 2).join(" ")}`} />
+                              <Icon className={`size-5 ${getImpactColor(insight.impact).split(" ").slice(1, 2).join(" ")}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
@@ -398,7 +393,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-2xl font-semibold">{insight.value}</span>
-                              {isExpanded ? <CaretUp className="w-5 h-5 text-gray-400" /> : <CaretDown className="w-5 h-5 text-gray-400" />}
+                              {isExpanded ? <CaretUp className="size-5 text-gray-400" /> : <CaretDown className="size-5 text-gray-400" />}
                             </div>
                           </button>
                           
@@ -412,7 +407,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                               >
                                 <div className="p-4 bg-gray-50">
                                   <div className="flex items-start gap-2">
-                                    <Sparkle className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                                    <Sparkle className="size-4 text-violet-500 mt-0.5 flex-shrink-0" />
                                     <div>
                                       <p className="text-sm font-medium text-gray-700 mb-1">Recommendation</p>
                                       <p className="text-sm text-gray-600">{insight.recommendation}</p>
@@ -437,7 +432,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
               {/* Behavior Segments */}
               <div className="bg-white border border-gray-200 p-6 rounded-lg">
                 <div className="flex items-center gap-2 mb-6">
-                  <ChartPie className="w-5 h-5 text-gray-400" />
+                  <ChartPie className="size-5 text-gray-400" />
                   <h3 className="font-medium">Behavior Segments</h3>
                   <span className="text-sm text-gray-400">({totalSegmentCount} tracked)</span>
                 </div>
@@ -493,8 +488,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                         <h4 className="font-medium">
                           {SEGMENT_LABELS[selectedSegment].label} ({segmentCustomers.length})
                         </h4>
-                        <button
-                          onClick={() => { setSelectedSegment(null); setSegmentCustomers([]); }}
+                        <button type="button" onClick={() => { setSelectedSegment(null); setSegmentCustomers([]); }}
                           className="text-sm text-gray-500 hover:text-gray-700"
                         >
                           Close
@@ -503,7 +497,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
 
                       {loadingSegment ? (
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-black rounded-full" />
+                          <div className="animate-spin size-6 border-2 border-gray-300 border-t-black rounded-full" />
                         </div>
                       ) : segmentCustomers.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">No customers in this segment yet</div>
@@ -525,7 +519,7 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
                                 <tr key={customer.userId} className="hover:bg-gray-50">
                                   <td className="py-2 px-3">
                                     <div className="flex items-center gap-2">
-                                      <UserCircle className="w-6 h-6 text-gray-300" />
+                                      <UserCircle className="size-6 text-gray-300" />
                                       <span className="truncate max-w-32">{customer.email || customer.userId.slice(0, 8)}</span>
                                     </div>
                                   </td>
@@ -556,13 +550,13 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
               {insights.topCategories.length > 0 && (
                 <div className="bg-white border border-gray-200 p-6 rounded-lg">
                   <div className="flex items-center gap-2 mb-6">
-                    <Package className="w-5 h-5 text-gray-400" />
+                    <Package className="size-5 text-gray-400" />
                     <h3 className="font-medium">Top Categories by Engagement</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {insights.topCategories.map((category, i) => (
                       <div key={category.category} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <span className="w-8 h-8 flex items-center justify-center bg-black text-white text-sm font-medium rounded">
+                        <span className="size-8 flex items-center justify-center bg-gray-950 text-white text-sm font-medium rounded">
                           {i + 1}
                         </span>
                         <div className="flex-1">
@@ -580,33 +574,30 @@ export function CustomersTab({ metrics }: CustomersTabProps) {
               )}
 
               {/* Quick Actions Banner */}
-              <div className="bg-gradient-to-r from-black to-gray-800 text-white p-6 rounded-lg">
+              <div className="bg-gradient-to-r from-gray-950 to-gray-800 text-white p-6 rounded-lg">
                 <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-5 h-5" />
+                  <Target className="size-5" />
                   <h3 className="font-medium">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button 
-                    onClick={() => handleOpenCampaign("win-back", metrics.customerSegments.dormant)}
+                  <button aria-label="shopping cart" type="button" onClick={() => handleOpenCampaign("win-back", metrics.customerSegments.dormant)}
                     className="p-4 bg-white/10 hover:bg-white/20 transition rounded-lg text-left"
                   >
-                    <ShoppingCart className="w-6 h-6 mb-2" />
+                    <ShoppingCart className="size-6 mb-2" />
                     <p className="font-medium">Recover Abandoned Carts</p>
                     <p className="text-sm text-gray-400">{insights.customerSegments.cart_abandoner} carts waiting</p>
                   </button>
-                  <button 
-                    onClick={() => handleOpenCampaign("win-back", metrics.customerSegments.atRisk)}
+                  <button aria-label="heart" type="button" onClick={() => handleOpenCampaign("win-back", metrics.customerSegments.atRisk)}
                     className="p-4 bg-white/10 hover:bg-white/20 transition rounded-lg text-left"
                   >
-                    <Heart className="w-6 h-6 mb-2" />
+                    <Heart className="size-6 mb-2" />
                     <p className="font-medium">Win Back At-Risk</p>
                     <p className="text-sm text-gray-400">{insights.customerSegments.at_risk + insights.customerSegments.dormant} to re-engage</p>
                   </button>
-                  <button 
-                    onClick={() => handleOpenCampaign("vip-exclusive", metrics.customerSegments.vip)}
+                  <button aria-label="star" type="button" onClick={() => handleOpenCampaign("vip-exclusive", metrics.customerSegments.vip)}
                     className="p-4 bg-white/10 hover:bg-white/20 transition rounded-lg text-left"
                   >
-                    <Star className="w-6 h-6 mb-2" />
+                    <Star className="size-6 mb-2" />
                     <p className="font-medium">Reward Loyal Customers</p>
                     <p className="text-sm text-gray-400">{insights.customerSegments.loyal_customer} VIPs to nurture</p>
                   </button>

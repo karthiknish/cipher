@@ -4,9 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Chatbot from "@/components/Chatbot";
-import ActivityTicker from "@/components/ActivityTicker";
-import SpinWheel from "@/components/SpinWheel";
+import { SiteChrome } from "@/components/SiteChrome";
+import { SkipLink } from "@/components/SkipLink";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cipher.store";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cipher-omega-three.vercel.app";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -112,17 +111,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground flex flex-col min-h-screen`}
       >
         <Providers>
+          <SkipLink />
           <Navbar />
-          <main className="flex-grow">
+          <main id="main-content" className="flex-grow">
             {children}
           </main>
           <Footer />
-          <Chatbot />
-          <ActivityTicker />
-          <SpinWheel />
+          <SiteChrome />
         </Providers>
       </body>
     </html>

@@ -37,8 +37,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
       <div className="flex justify-end">
         <div className="flex gap-2 bg-gray-100 p-1">
           {(["7d", "30d", "90d", "all"] as const).map((range) => (
-            <button
-              key={range}
+            <button type="button" key={range}
               onClick={() => setDateRange(range)}
               className={`px-4 py-2 text-xs tracking-wider transition ${
                 dateRange === range ? "bg-white shadow-sm" : "hover:bg-gray-200"
@@ -58,11 +57,11 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-emerald-100 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-emerald-600" />
+            <div className="size-10 bg-emerald-100 flex items-center justify-center">
+              <CurrencyDollar className="size-5 text-emerald-600" />
             </div>
             <span className={`flex items-center gap-1 text-xs font-medium ${metrics.revenueChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {metrics.revenueChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {metrics.revenueChange >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
               {Math.abs(metrics.revenueChange).toFixed(1)}%
             </span>
           </div>
@@ -77,11 +76,11 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-sky-100 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-sky-600" />
+            <div className="size-10 bg-sky-100 flex items-center justify-center">
+              <ShoppingBag className="size-5 text-sky-600" />
             </div>
             <span className={`flex items-center gap-1 text-xs font-medium ${metrics.ordersChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {metrics.ordersChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {metrics.ordersChange >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
               {Math.abs(metrics.ordersChange).toFixed(1)}%
             </span>
           </div>
@@ -96,11 +95,11 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-violet-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-violet-600" />
+            <div className="size-10 bg-violet-100 flex items-center justify-center">
+              <Users className="size-5 text-violet-600" />
             </div>
             <span className={`flex items-center gap-1 text-xs font-medium ${metrics.customersChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {metrics.customersChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {metrics.customersChange >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
               {Math.abs(metrics.customersChange).toFixed(1)}%
             </span>
           </div>
@@ -115,11 +114,11 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           className="bg-white border border-gray-200 p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-amber-100 flex items-center justify-center">
-              <TrendUp className="w-5 h-5 text-amber-600" />
+            <div className="size-10 bg-amber-100 flex items-center justify-center">
+              <TrendUp className="size-5 text-amber-600" />
             </div>
             <span className={`flex items-center gap-1 text-xs font-medium ${metrics.avgChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {metrics.avgChange >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {metrics.avgChange >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
               {Math.abs(metrics.avgChange).toFixed(1)}%
             </span>
           </div>
@@ -137,7 +136,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
               <h3 className="font-medium">Orders (Last 7 Days)</h3>
               <p className="text-xs text-gray-500 mt-1">Daily order volume</p>
             </div>
-            <ChartBar className="w-5 h-5 text-gray-400" />
+            <ChartBar className="size-5 text-gray-400" />
           </div>
           <MiniBarChart data={metrics.ordersByDay} maxValue={Math.max(...metrics.ordersByDay, 1)} />
           <div className="flex justify-between mt-3 text-xs text-gray-400">
@@ -153,7 +152,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
               <h3 className="font-medium">Order Status</h3>
               <p className="text-xs text-gray-500 mt-1">Current distribution</p>
             </div>
-            <ChartPie className="w-5 h-5 text-gray-400" />
+            <ChartPie className="size-5 text-gray-400" />
           </div>
           <DonutChart 
             data={[
@@ -168,7 +167,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
           <div className="grid grid-cols-3 gap-2 mt-4">
             {STATUS_OPTIONS.map(status => (
               <div key={status} className="flex items-center gap-2 text-xs">
-                <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[status].replace("text-", "bg-").split(" ")[0]}`} />
+                <span className={`size-2 rounded-full ${STATUS_COLORS[status].replace("text-", "bg-").split(" ")[0]}`} />
                 <span className="capitalize">{status}</span>
                 <span className="text-gray-400">({metrics.ordersByStatus[status]})</span>
               </div>
@@ -186,17 +185,17 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
               <h3 className="font-medium">Top Products</h3>
               <p className="text-xs text-gray-500 mt-1">By revenue</p>
             </div>
-            <TrendUp className="w-5 h-5 text-gray-400" />
+            <TrendUp className="size-5 text-gray-400" />
           </div>
           <div className="space-y-4">
             {metrics.topProducts.length > 0 ? (
               metrics.topProducts.map((product, i) => (
                 <div key={product.id} className="flex items-center gap-4">
-                  <span className="w-6 h-6 bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500">
+                  <span className="size-6 bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500">
                     {i + 1}
                   </span>
                   <div className="w-10 h-12 bg-gray-100 relative overflow-hidden flex-shrink-0">
-                    <Image src={product.image} alt={product.name} fill className="object-cover" />
+                    <Image src={product.image} alt={product.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{product.name}</p>
@@ -218,7 +217,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
               <h3 className="font-medium">Recent Orders</h3>
               <p className="text-xs text-gray-500 mt-1">Latest activity</p>
             </div>
-            <Clock className="w-5 h-5 text-gray-400" />
+            <Clock className="size-5 text-gray-400" />
           </div>
           <div className="space-y-4">
             {metrics.recentOrders.length > 0 ? (
@@ -250,7 +249,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
             <h3 className="font-medium">Sales by Category</h3>
             <p className="text-xs text-gray-500 mt-1">Revenue distribution</p>
           </div>
-          <Tag className="w-5 h-5 text-gray-400" />
+          <Tag className="size-5 text-gray-400" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {CATEGORIES.map(category => {
@@ -262,7 +261,7 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
                 <p className="text-2xl font-medium">${revenue.toFixed(0)}</p>
                 <p className="text-xs text-gray-500 tracking-wider mt-1">{category.toUpperCase()}</p>
                 <div className="w-full h-1 bg-gray-200 mt-3">
-                  <div className="h-full bg-black" style={{ width: `${percentage}%` }} />
+                  <div className="h-full bg-gray-950" style={{ width: `${percentage}%` }} />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">{percentage.toFixed(1)}%</p>
               </div>
@@ -274,28 +273,28 @@ export function DashboardTab({ metrics, dateRange, setDateRange }: DashboardTabP
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <CheckCircle className="w-8 h-8 text-emerald-500" />
+          <CheckCircle className="size-8 text-emerald-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.delivered}</p>
             <p className="text-xs text-gray-500">Delivered</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <Truck className="w-8 h-8 text-slate-500" />
+          <Truck className="size-8 text-slate-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.shipped}</p>
             <p className="text-xs text-gray-500">In Transit</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <Clock className="w-8 h-8 text-amber-500" />
+          <Clock className="size-8 text-amber-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.pending + metrics.ordersByStatus.confirmed}</p>
             <p className="text-xs text-gray-500">Pending</p>
           </div>
         </div>
         <div className="bg-gray-50 p-4 flex items-center gap-4">
-          <XCircle className="w-8 h-8 text-rose-500" />
+          <XCircle className="size-8 text-rose-500" />
           <div>
             <p className="text-lg font-medium">{metrics.ordersByStatus.cancelled}</p>
             <p className="text-xs text-gray-500">Cancelled</p>

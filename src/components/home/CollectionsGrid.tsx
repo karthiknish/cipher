@@ -62,8 +62,8 @@ export default function CollectionsGrid() {
                   alt={collection.title}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                 sizes="(max-width: 768px) 100vw, 50vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/80 via-gray-950/20 to-transparent" />
                 <div className="absolute inset-0 flex flex-col justify-end p-8">
                   <p className="text-white/60 text-sm tracking-wider mb-2">
                     {collection.count} items
@@ -74,7 +74,7 @@ export default function CollectionsGrid() {
                   <p className="text-white/80 text-sm">{collection.subtitle}</p>
                   <div className="mt-6 flex items-center gap-2 text-white text-sm tracking-wider opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                     <span>SHOP NOW</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="size-4" />
                   </div>
                 </div>
               </Link>

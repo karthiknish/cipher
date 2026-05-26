@@ -10,8 +10,8 @@ export function MediaTab({ formData, setFormData }: MediaTabProps) {
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-          <ImageSquare className="w-5 h-5 text-white" />
+        <div className="size-10 bg-gray-950 rounded-lg flex items-center justify-center">
+          <ImageSquare className="size-5 text-white" />
         </div>
         <div>
           <h2 className="text-lg font-medium">Media</h2>

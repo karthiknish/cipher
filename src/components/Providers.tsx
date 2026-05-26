@@ -1,5 +1,6 @@
 "use client";
 
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ProductProvider } from "@/context/ProductContext";
@@ -36,8 +37,9 @@ import { ReactNode, Suspense } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <ToastProvider>
+    <ConvexClientProvider>
+      <AuthProvider>
+        <ToastProvider>
         <Suspense fallback={null}>
           <AnalyticsProvider>
             <ProductProvider>
@@ -101,7 +103,8 @@ export function Providers({ children }: { children: ReactNode }) {
             </ProductProvider>
           </AnalyticsProvider>
         </Suspense>
-      </ToastProvider>
-    </AuthProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </ConvexClientProvider>
   );
 }

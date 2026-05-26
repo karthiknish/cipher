@@ -27,7 +27,8 @@ export default function ReviewsSection({
 }: ReviewsSectionProps) {
   const { user } = useAuth();
   const { getProductReviews, getReviewStats } = useReviews();
-  const [reviews, setReviews] = useState(initialReviews);
+  const [filteredReviews, setFilteredReviews] = useState<Review[] | null>(null);
+  const reviews = filteredReviews ?? initialReviews;
   const [stats, setStats] = useState<Awaited<ReturnType<typeof getReviewStats>> | null>(null);
   const [sortBy, setSortBy] = useState<"recent" | "helpful" | "rating-high" | "rating-low">("recent");
   const [filterRating, setFilterRating] = useState<number | null>(null);
@@ -40,10 +41,6 @@ export default function ReviewsSection({
     getReviewStats(productId).then(setStats);
   }, [productId, getReviewStats]);
 
-  useEffect(() => {
-    setReviews(initialReviews);
-  }, [initialReviews]);
-
   const handleFilterChange = useCallback(async () => {
     setIsLoading(true);
     const filtered = await getProductReviews(productId, {
@@ -52,7 +49,7 @@ export default function ReviewsSection({
       verifiedOnly,
       withMediaOnly,
     });
-    setReviews(filtered);
+    setFilteredReviews(filtered);
     setIsLoading(false);
   }, [productId, sortBy, filterRating, verifiedOnly, withMediaOnly, getProductReviews]);
 
@@ -75,11 +72,10 @@ export default function ReviewsSection({
     <div>
       {/* Write Review Button */}
       {user && canReview && (
-        <button 
-          onClick={() => setIsReviewModalOpen(true)} 
-          className="mb-8 bg-black text-white px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition flex items-center gap-2"
+        <button aria-label="star" type="button" onClick={() => setIsReviewModalOpen(true)} 
+          className="mb-8 bg-gray-950 text-white px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition flex items-center gap-2"
         >
-          <Star className="w-4 h-4" /> WRITE A REVIEW
+          <Star className="size-4" /> WRITE A REVIEW
         </button>
       )}
       {!user && (
@@ -100,15 +96,14 @@ export default function ReviewsSection({
             </div>
             <div className="flex-1 space-y-1">
               {[5, 4, 3, 2, 1].map((star) => (
-                <button
-                  key={star}
+                <button type="button" key={star}
                   onClick={() => setFilterRating(filterRating === star ? null : star)}
                   className={`flex items-center gap-2 w-full group ${
                     filterRating === star ? "text-black" : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
                   <span className="text-xs w-3">{star}</span>
-                  <Star className="w-3 h-3" weight={filterRating === star ? "fill" : "regular"} />
+                  <Star className="size-3" weight={filterRating === star ? "fill" : "regular"} />
                   <div className="flex-1 h-2 bg-gray-100 overflow-hidden">
                     <div 
                       className="h-full bg-yellow-400 transition-all"
@@ -152,31 +147,30 @@ export default function ReviewsSection({
           </select>
 
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
+            <input aria-label="Select row" id="ReviewsSection-field-39"
               type="checkbox"
               checked={verifiedOnly}
               onChange={(e) => setVerifiedOnly(e.target.checked)}
-              className="w-4 h-4 accent-black"
+              className="size-4 accent-black"
             />
             Verified only
           </label>
 
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
+            <input aria-label="Select row" id="ReviewsSection-field-40"
               type="checkbox"
               checked={withMediaOnly}
               onChange={(e) => setWithMediaOnly(e.target.checked)}
-              className="w-4 h-4 accent-black"
+              className="size-4 accent-black"
             />
             With photos/videos
           </label>
 
           {filterRating && (
-            <button
-              onClick={() => setFilterRating(null)}
+            <button aria-label="x" type="button" onClick={() => setFilterRating(null)}
               className="text-sm text-gray-500 hover:text-black flex items-center gap-1"
             >
-              <X className="w-3 h-3" /> {filterRating} star filter
+              <X className="size-3" /> {filterRating} star filter
             </button>
           )}
         </div>
@@ -185,7 +179,7 @@ export default function ReviewsSection({
       {/* Reviews List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <SpinnerGap className="w-6 h-6 animate-spin text-gray-400" />
+          <SpinnerGap className="size-6 animate-spin text-gray-400" />
         </div>
       ) : reviews.length > 0 ? (
         <div className="max-w-2xl">
@@ -195,7 +189,7 @@ export default function ReviewsSection({
         </div>
       ) : (
         <div className="text-center py-12 text-gray-500">
-          <Star className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <Star className="size-12 mx-auto mb-4 text-gray-300" />
           <p>{filterRating || verifiedOnly || withMediaOnly 
             ? "No reviews match your filters" 
             : "No reviews yet. Be the first to share your thoughts!"

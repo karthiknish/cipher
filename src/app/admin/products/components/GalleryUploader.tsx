@@ -16,13 +16,11 @@ export default function GalleryUploader({
 }: GalleryUploaderProps) {
   return (
     <ImageUploader
-      mode="gallery"
-      images={images}
-      onImagesChange={onChange}
-      maxFiles={maxImages}
+      multiple
+      multipleValues={images}
+      onMultipleChange={onChange}
       folder={folder}
       label="Add gallery images"
-      variant="light"
     />
   );
 }

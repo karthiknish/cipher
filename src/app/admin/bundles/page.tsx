@@ -37,7 +37,7 @@ function BundlesPageContent() {
   const { bundles, getAllBundlesWithProducts, addBundle, updateBundle, deleteBundle } = useBundles();
   const { products } = useProducts();
   const toast = useToast();
-  const router = useRouter();
+  const { push } = useRouter();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<Bundle["category"] | "all">("all");
@@ -49,9 +49,9 @@ function BundlesPageContent() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   const bundlesWithProducts = getAllBundlesWithProducts();
 
@@ -89,30 +89,34 @@ function BundlesPageContent() {
     setFormData(initialFormData);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.productIds.length < 2) {
       toast.error("A bundle must contain at least 2 products");
       return;
     }
-    
-    if (editingBundle) {
-      const updated = updateBundle(editingBundle.id, formData);
-      if (updated) {
-        toast.success("Bundle updated successfully");
+
+    try {
+      if (editingBundle) {
+        const updated = await updateBundle(editingBundle.id, formData);
+        if (updated) {
+          toast.success("Bundle updated successfully");
+        } else {
+          toast.error("Failed to update bundle");
+        }
       } else {
-        toast.error("Failed to update bundle");
+        await addBundle(formData);
+        toast.success("Bundle created successfully");
       }
-    } else {
-      addBundle(formData);
-      toast.success("Bundle created successfully");
+      handleCloseModal();
+    } catch {
+      toast.error("Failed to save bundle");
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (bundleId: string) => {
+  const handleDelete = async (bundleId: string) => {
     if (!confirm("Are you sure you want to delete this bundle?")) return;
-    const deleted = deleteBundle(bundleId);
+    const deleted = await deleteBundle(bundleId);
     if (deleted) {
       toast.success("Bundle deleted successfully");
     } else {
@@ -139,7 +143,7 @@ function BundlesPageContent() {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -147,16 +151,15 @@ function BundlesPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -171,20 +174,20 @@ function BundlesPageContent() {
       title="Bundles" 
       activeTab="bundles"
       actions={
-        <button
-          onClick={() => handleOpenModal()}
+        <button aria-label="plus" type="button" onClick={() => handleOpenModal()}
           className="flex items-center gap-2 bg-white text-black px-4 py-2 text-xs tracking-wider hover:bg-gray-100 transition"
         >
-          <Plus className="w-4 h-4" /> CREATE BUNDLE
+          <Plus className="size-4" /> CREATE BUNDLE
         </button>
       }
     >
       {/* Filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
           <input
             type="text"
+            aria-label="Search bundles"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search bundles..."
@@ -192,6 +195,7 @@ function BundlesPageContent() {
           />
         </div>
         <select
+          aria-label="Filter by category"
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value as Bundle["category"] | "all")}
           className="px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
@@ -235,7 +239,7 @@ function BundlesPageContent() {
       {/* Bundles Grid */}
       {filteredBundles.length === 0 ? (
         <div className="text-center py-12">
-          <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <Package className="size-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No bundles found</p>
         </div>
       ) : (
@@ -252,10 +256,10 @@ function BundlesPageContent() {
                   alt={bundle.name}
                   fill
                   className="object-cover"
-                />
+                 sizes="(max-width: 768px) 100vw, 50vw" />
                 {bundle.featured && (
-                  <div className="absolute top-2 left-2 bg-black text-white px-2 py-1 text-xs flex items-center gap-1">
-                    <Star className="w-3 h-3" weight="fill" />
+                  <div className="absolute top-2 left-2 bg-gray-950 text-white px-2 py-1 text-xs flex items-center gap-1">
+                    <Star className="size-3" weight="fill" />
                     FEATURED
                   </div>
                 )}
@@ -263,18 +267,16 @@ function BundlesPageContent() {
                   -{bundle.discountPercent}%
                 </div>
                 {/* Hover Actions */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
-                  <button
-                    onClick={() => handleOpenModal(bundle)}
+                <div className="absolute inset-0 bg-gray-950/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
+                  <button aria-label="pencil" type="button" onClick={() => handleOpenModal(bundle)}
                     className="p-3 bg-white text-black hover:bg-gray-100 transition"
                   >
-                    <Pencil className="w-5 h-5" />
+                    <Pencil className="size-5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(bundle.id)}
+                  <button aria-label="trash" type="button" onClick={() => handleDelete(bundle.id)}
                     className="p-3 bg-white text-red-500 hover:bg-red-50 transition"
                   >
-                    <Trash className="w-5 h-5" />
+                    <Trash className="size-5" />
                   </button>
                 </div>
               </div>
@@ -294,7 +296,7 @@ function BundlesPageContent() {
                   {bundle.products.slice(0, 4).map((product, index) => (
                     <div 
                       key={product.id}
-                      className="relative w-8 h-8 rounded-full bg-gray-200 border-2 border-white overflow-hidden"
+                      className="relative size-8 rounded-full bg-gray-200 border-2 border-white overflow-hidden"
                       style={{ zIndex: 4 - index }}
                     >
                       {product.images?.[0] && (
@@ -303,12 +305,12 @@ function BundlesPageContent() {
                           alt={product.name}
                           fill
                           className="object-cover"
-                        />
+                         sizes="(max-width: 768px) 100vw, 50vw" />
                       )}
                     </div>
                   ))}
                   {bundle.products.length > 4 && (
-                    <div className="relative w-8 h-8 rounded-full bg-gray-800 text-white border-2 border-white flex items-center justify-center text-xs font-bold">
+                    <div className="relative size-8 rounded-full bg-gray-800 text-white border-2 border-white flex items-center justify-center text-xs font-bold">
                       +{bundle.products.length - 4}
                     </div>
                   )}
@@ -334,15 +336,15 @@ function BundlesPageContent() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
               <h2 className="text-lg font-bold">
                 {editingBundle ? "Edit Bundle" : "Create New Bundle"}
               </h2>
-              <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 transition">
-                <X className="w-5 h-5" />
+              <button aria-label="x" type="button" onClick={handleCloseModal} className="p-2 hover:bg-gray-100 transition">
+                <X className="size-5" />
               </button>
             </div>
 
@@ -351,10 +353,10 @@ function BundlesPageContent() {
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-2" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Bundle Name
                   </label>
-                  <input
+                  <input aria-label="Bundle Name" id="page-field-2"
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -365,10 +367,10 @@ function BundlesPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-3" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Tagline
                   </label>
-                  <input
+                  <input aria-label="Tagline" id="page-field-3"
                     type="text"
                     value={formData.tagline}
                     onChange={(e) => setFormData(prev => ({ ...prev, tagline: e.target.value }))}
@@ -379,10 +381,10 @@ function BundlesPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-4" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Category
                   </label>
-                  <select
+                  <select aria-label="Category" id="page-field-4"
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as Bundle["category"] }))}
                     className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
@@ -395,10 +397,10 @@ function BundlesPageContent() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-5" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Description
                   </label>
-                  <textarea
+                  <textarea aria-label="Description" id="page-field-5"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     required
@@ -409,10 +411,10 @@ function BundlesPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-6" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Image URL
                   </label>
-                  <input
+                  <input aria-label="Image URL" id="page-field-6"
                     type="url"
                     value={formData.image}
                     onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
@@ -423,11 +425,11 @@ function BundlesPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
+                  <label htmlFor="page-field-7" className="block text-xs uppercase tracking-wider text-gray-500 mb-2">
                     Discount Percentage
                   </label>
                   <div className="relative">
-                    <input
+                    <input aria-label="Discount Percentage" id="page-field-7"
                       type="number"
                       value={formData.discountPercent}
                       onChange={(e) => setFormData(prev => ({ ...prev, discountPercent: Number(e.target.value) }))}
@@ -445,13 +447,16 @@ function BundlesPageContent() {
               <div className="flex items-center gap-3 py-2">
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={formData.featured}
+                  aria-label="Featured bundle"
                   onClick={() => setFormData(prev => ({ ...prev, featured: !prev.featured }))}
                   className={`w-12 h-6 rounded-full transition relative ${
-                    formData.featured ? "bg-black" : "bg-gray-200"
+                    formData.featured ? "bg-gray-950" : "bg-gray-200"
                   }`}
                 >
                   <span 
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${
                       formData.featured ? "translate-x-7" : "translate-x-1"
                     }`}
                   />
@@ -476,24 +481,24 @@ function BundlesPageContent() {
                           isSelected ? "bg-gray-50" : ""
                         }`}
                       >
-                        <div className="relative w-10 h-10 bg-gray-100 flex-shrink-0">
+                        <div className="relative size-10 bg-gray-100 flex-shrink-0">
                           {product.images?.[0] && (
                             <Image
                               src={product.images[0]}
                               alt={product.name}
                               fill
                               className="object-cover"
-                            />
+                             sizes="(max-width: 768px) 100vw, 50vw" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{product.name}</p>
                           <p className="text-xs text-gray-500">${product.price.toFixed(2)}</p>
                         </div>
-                        <div className={`w-5 h-5 border flex items-center justify-center transition ${
-                          isSelected ? "bg-black border-black" : "border-gray-300"
+                        <div className={`size-5 border flex items-center justify-center transition ${
+                          isSelected ? "bg-gray-950 border-black" : "border-gray-300"
                         }`}>
-                          {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
+                          {isSelected && <Check className="size-3 text-white" weight="bold" />}
                         </div>
                       </button>
                     );
@@ -530,7 +535,7 @@ function BundlesPageContent() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-black text-white text-sm tracking-wider hover:bg-gray-900 transition"
+                  className="flex-1 px-4 py-3 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-900 transition"
                 >
                   {editingBundle ? "UPDATE BUNDLE" : "CREATE BUNDLE"}
                 </button>
@@ -546,7 +551,7 @@ function BundlesPageContent() {
 function BundlesPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

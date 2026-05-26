@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, doc, getDoc, setDoc } from "@/lib/firebase";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface SavedAddress {
   id: string;
@@ -105,10 +106,15 @@ const UserProfileContext = createContext<UserProfileContextType>({
   updateStylePreferences: async () => false,
 });
 
-export const useUserProfile = () => useContext(UserProfileContext);
+export const useUserProfile = () => use(UserProfileContext);
 
 export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const convexProfile = useQuery(
+    api.userProfiles.getMine,
+    user ? {} : "skip"
+  );
+  const upsertProfile = useMutation(api.userProfiles.upsert);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -137,41 +143,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         }
         setLoading(false); // Show UI immediately
 
-        // Then fetch from Firebase in background (non-blocking)
-        try {
-          const timeoutPromise = new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error("Firestore timeout")), 5000)
-          );
-          
-          const fetchPromise = (async () => {
-            const userDoc = await getDoc(doc(db, "userProfiles", user.uid));
-            if (userDoc.exists()) {
-              return userDoc.data() as UserProfile;
-            }
-            // Create default profile if doesn't exist
-            const newProfile: UserProfile = {
-              ...DEFAULT_PROFILE,
-              displayName: user.displayName || "",
-              email: user.email || "",
-              avatar: user.photoURL || "",
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-            // Don't await this - fire and forget
-            setDoc(doc(db, "userProfiles", user.uid), newProfile).catch(() => {});
-            return newProfile;
-          })();
-
-          const fetchedProfile = await Promise.race([fetchPromise, timeoutPromise]);
-          if (fetchedProfile) {
-            setProfile(fetchedProfile);
-            // Cache in localStorage for next time
-            localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(fetchedProfile));
-          }
-        } catch {
-          // Silently fail - we already have a profile from cache or default
-          console.log("Using cached/default profile");
-        }
+        // Convex profile syncs via useEffect below
       } else {
         // Guest: use localStorage
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -191,6 +163,28 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     loadProfile();
   }, [user]);
 
+  useEffect(() => {
+    if (!user || convexProfile === undefined) return;
+    if (convexProfile) {
+      setProfile(convexProfile as UserProfile);
+      localStorage.setItem(
+        `${STORAGE_KEY}_${user.uid}`,
+        JSON.stringify(convexProfile)
+      );
+    } else {
+      const newProfile: UserProfile = {
+        ...DEFAULT_PROFILE,
+        displayName: user.displayName || "",
+        email: user.email || "",
+        avatar: user.photoURL || "",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setProfile(newProfile);
+      upsertProfile({ profile: newProfile }).catch(() => {});
+    }
+  }, [user, convexProfile, upsertProfile]);
+
   // Save profile helper
   const saveProfile = useCallback(async (newProfile: UserProfile): Promise<boolean> => {
     try {
@@ -202,9 +196,8 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
       if (user) {
         // Cache to localStorage immediately
         localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(updated));
-        // Save to Firebase in background (don't await)
-        setDoc(doc(db, "userProfiles", user.uid), updated).catch((err) => 
-          console.error("Error syncing profile to Firebase:", err)
+        upsertProfile({ profile: updated }).catch((err) =>
+          console.error("Error syncing profile to Convex:", err)
         );
       } else {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -215,7 +208,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error saving profile:", error);
       return false;
     }
-  }, [user]);
+  }, [user, upsertProfile]);
 
   const updateProfile = useCallback(async (data: Partial<UserProfile>): Promise<boolean> => {
     if (!profile) return false;
@@ -322,9 +315,8 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [profile, saveProfile]);
 
-  return (
-    <UserProfileContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         profile,
         loading,
         updateProfile,
@@ -336,8 +328,12 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         getDefaultAddress,
         saveStyleQuiz,
         updateStylePreferences,
-      }}
-    >
+      }),
+    [addAddress, deleteAddress, getDefaultAddress, loading, profile, saveStyleQuiz, setDefaultAddress, updateAddress, updateAvatar, updateProfile, updateStylePreferences]
+  );
+
+  return (
+    <UserProfileContext.Provider value={contextValue}>
       {children}
     </UserProfileContext.Provider>
   );

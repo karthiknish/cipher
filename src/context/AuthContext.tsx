@@ -1,8 +1,10 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+
+import { createContext, use, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
+import { authClient } from "@/lib/auth-client";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { AuthUser } from "@/lib/auth-types";
 
 interface UserRole {
   role: "admin" | "user";
@@ -10,112 +12,111 @@ interface UserRole {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
   userRole: UserRole | null;
   refreshUserRole: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ 
-  user: null, 
+const ADMIN_EMAILS = ["karthik.nishanth06@gmail.com"];
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
   loading: true,
   userRole: null,
   refreshUserRole: async () => {},
+  signOut: async () => {},
 });
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => use(AuthContext);
 
-// Admin email whitelist (fallback if Firestore role not set)
-const ADMIN_EMAILS = ["karthik.nishanth06@gmail.com"];
+function mapBetterAuthUser(
+  sessionUser: {
+    id: string;
+    email: string;
+    name: string;
+    image?: string | null;
+    createdAt: Date | number;
+  } | null
+): AuthUser | null {
+  if (!sessionUser) return null;
+  const createdAt =
+    typeof sessionUser.createdAt === "number"
+      ? sessionUser.createdAt
+      : sessionUser.createdAt.getTime();
+  return {
+    uid: sessionUser.id,
+    email: sessionUser.email ?? null,
+    displayName: sessionUser.name ?? null,
+    photoURL: sessionUser.image ?? null,
+    metadata: { creationTime: new Date(createdAt).toISOString() },
+  };
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending } = authClient.useSession();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const ensureUser = useMutation(api.users.ensureUser);
 
-  const fetchUserRole = async (currentUser: User) => {
-    // Immediately set role based on email whitelist (instant, no network)
-    const isAdminByEmail = ADMIN_EMAILS.includes(currentUser.email || "");
-    setUserRole({
-      role: isAdminByEmail ? "admin" : "user",
-      isAdmin: isAdminByEmail,
-    });
+  const user = mapBetterAuthUser(session?.user ?? null);
+  const loading = isPending;
 
-    // Force refresh the token to get updated custom claims (like admin role set via service account)
+  const applyRole = useCallback(
+    (role: "admin" | "user", isAdmin: boolean) => {
+      setUserRole({ role, isAdmin });
+    },
+    []
+  );
+
+  const refreshUserRole = useCallback(async () => {
+    if (!user) {
+      setUserRole(null);
+      return;
+    }
+
+    const isAdminByEmail = ADMIN_EMAILS.includes(user.email || "");
+    if (isAdminByEmail) {
+      applyRole("admin", true);
+      return;
+    }
+
     try {
-      const tokenResult = await currentUser.getIdTokenResult(true);
-      const claims = tokenResult.claims;
-      
-      // Check custom claims set by Firebase Admin SDK (via service account)
-      if (claims.admin === true || claims.role === "admin") {
-        setUserRole({
-          role: "admin",
-          isAdmin: true,
-        });
-        return; // Admin verified via custom claims, no need to check Firestore
-      }
+      const result = await ensureUser();
+      applyRole(result.role, result.isAdmin);
     } catch {
-      // Token refresh failed, continue with other checks
+      applyRole("user", false);
     }
-
-    // Then try to fetch from Firestore in background (non-blocking)
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Firestore timeout")), 3000)
-      );
-      
-      const fetchPromise = (async () => {
-        const userRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          const role = data?.role as "admin" | "user" || "user";
-          return { role, isAdmin: role === "admin" };
-        }
-        return null;
-      })();
-
-      const result = await Promise.race([fetchPromise, timeoutPromise]) as UserRole | null;
-      if (result) {
-        setUserRole(result);
-      }
-    } catch {
-      // Silently fail - we already have the email-based role set
-    }
-  };
-
-  const refreshUserRole = async () => {
-    if (user) {
-      // Force refresh the token to get updated custom claims
-      try {
-        await user.getIdToken(true);
-      } catch {
-        // Token refresh failed
-      }
-      await fetchUserRole(user);
-    }
-  };
+  }, [user, ensureUser, applyRole]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      
-      if (currentUser) {
-        await fetchUserRole(currentUser);
-      } else {
-        setUserRole(null);
-      }
-      
-      setLoading(false);
-    });
+    if (!user) {
+      setUserRole(null);
+      return;
+    }
 
-    return () => unsubscribe();
+    const isAdminByEmail = ADMIN_EMAILS.includes(user.email || "");
+    if (isAdminByEmail) {
+      applyRole("admin", true);
+      return;
+    }
+
+    ensureUser()
+      .then((result) => applyRole(result.role, result.isAdmin))
+      .catch(() => applyRole("user", false));
+  }, [user?.uid, user?.email, ensureUser, applyRole]);
+
+  const signOut = useCallback(async () => {
+    await authClient.signOut();
+    setUserRole(null);
   }, []);
 
+  const contextValue = useMemo(
+    () => ({ user, loading, userRole, refreshUserRole, signOut }),
+    [user, loading, userRole, refreshUserRole, signOut]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, userRole, refreshUserRole }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };

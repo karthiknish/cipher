@@ -102,9 +102,7 @@ export default function AdminNewsletterPage() {
   const handleBulkDelete = async () => {
     if (!confirm(`Delete ${selectedSubscribers.length} subscribers?`)) return;
     
-    for (const id of selectedSubscribers) {
-      await deleteSubscriber(id);
-    }
+    await Promise.all(selectedSubscribers.map((id) => deleteSubscriber(id)));
     setSelectedSubscribers([]);
     toast.success(`Deleted ${selectedSubscribers.length} subscribers`);
   };
@@ -163,22 +161,19 @@ export default function AdminNewsletterPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-sm tracking-wider hover:bg-gray-50 transition"
-          >
-            <Export className="w-4 h-4" />
+          <button aria-label="export" type="button" onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-sm tracking-wider hover:bg-gray-50 transition">
+            <Export className="size-4" />
             EXPORT CSV
           </button>
-          <button
-            onClick={() => loadAllSubscribers()}
+          <button type="button" onClick={() => loadAllSubscribers()}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-black text-white text-sm tracking-wider hover:bg-gray-900 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-900 transition disabled:opacity-50"
           >
             {loading ? (
-              <SpinnerGap className="w-4 h-4 animate-spin" />
+              <SpinnerGap className="size-4 animate-spin" />
             ) : (
-              <Envelope className="w-4 h-4" />
+              <Envelope className="size-4" />
             )}
             REFRESH
           </button>
@@ -189,8 +184,8 @@ export default function AdminNewsletterPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-blue-50 flex items-center justify-center rounded-lg">
-              <Users className="w-5 h-5 text-blue-600" />
+            <div className="size-10 bg-blue-50 flex items-center justify-center rounded-lg">
+              <Users className="size-5 text-blue-600" />
             </div>
             <span className="text-xs text-gray-500 tracking-wider">TOTAL</span>
           </div>
@@ -199,8 +194,8 @@ export default function AdminNewsletterPage() {
         
         <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-green-50 flex items-center justify-center rounded-lg">
-              <Check className="w-5 h-5 text-green-600" />
+            <div className="size-10 bg-green-50 flex items-center justify-center rounded-lg">
+              <Check className="size-5 text-green-600" />
             </div>
             <span className="text-xs text-gray-500 tracking-wider">ACTIVE</span>
           </div>
@@ -209,8 +204,8 @@ export default function AdminNewsletterPage() {
         
         <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-purple-50 flex items-center justify-center rounded-lg">
-              <TrendUp className="w-5 h-5 text-purple-600" />
+            <div className="size-10 bg-purple-50 flex items-center justify-center rounded-lg">
+              <TrendUp className="size-5 text-purple-600" />
             </div>
             <span className="text-xs text-gray-500 tracking-wider">THIS MONTH</span>
           </div>
@@ -219,8 +214,8 @@ export default function AdminNewsletterPage() {
         
         <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-red-50 flex items-center justify-center rounded-lg">
-              <X className="w-5 h-5 text-red-600" />
+            <div className="size-10 bg-red-50 flex items-center justify-center rounded-lg">
+              <X className="size-5 text-red-600" />
             </div>
             <span className="text-xs text-gray-500 tracking-wider">UNSUBSCRIBED</span>
           </div>
@@ -252,10 +247,10 @@ export default function AdminNewsletterPage() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <input aria-label="Search by email…"
             type="text"
-            placeholder="Search by email..."
+            placeholder="Search by email…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 focus:border-black outline-none transition"
@@ -292,15 +287,12 @@ export default function AdminNewsletterPage() {
         <div className="bg-gray-50 border border-gray-200 p-4 mb-4 flex items-center justify-between">
           <span className="text-sm">{selectedSubscribers.length} selected</span>
           <div className="flex gap-2">
-            <button
-              onClick={handleBulkDelete}
-              className="px-4 py-2 bg-red-500 text-white text-sm hover:bg-red-600 transition flex items-center gap-2"
-            >
-              <Trash className="w-4 h-4" />
+            <button aria-label="trash" type="button" onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-500 text-white text-sm hover:bg-red-600 transition flex items-center gap-2">
+              <Trash className="size-4" />
               Delete Selected
             </button>
-            <button
-              onClick={() => setSelectedSubscribers([])}
+            <button type="button" onClick={() => setSelectedSubscribers([])}
               className="px-4 py-2 border border-gray-300 text-sm hover:bg-gray-100 transition"
             >
               Clear Selection
@@ -316,11 +308,11 @@ export default function AdminNewsletterPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-6 py-4 w-12">
-                  <input
+                  <input aria-label="Select row"
                     type="checkbox"
                     checked={selectedSubscribers.length === filteredSubscribers.length && filteredSubscribers.length > 0}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 accent-black"
+                    className="size-4 accent-black"
                   />
                 </th>
                 <th className="text-left text-xs tracking-wider text-gray-500 font-medium px-6 py-4">EMAIL</th>
@@ -339,11 +331,11 @@ export default function AdminNewsletterPage() {
                 return (
                   <tr key={subscriber.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4">
-                      <input
+                      <input aria-label="Select row"
                         type="checkbox"
                         checked={selectedSubscribers.includes(subscriber.id)}
                         onChange={() => toggleSelect(subscriber.id)}
-                        className="w-4 h-4 accent-black"
+                        className="size-4 accent-black"
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -372,20 +364,18 @@ export default function AdminNewsletterPage() {
                             className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-xs group"
                           >
                             {tag}
-                            <button
-                              onClick={() => handleRemoveTag(subscriber.id, tag)}
+                            <button aria-label="x" type="button" onClick={() => handleRemoveTag(subscriber.id, tag)}
                               className="opacity-0 group-hover:opacity-100 transition"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="size-3" />
                             </button>
                           </span>
                         ))}
-                        <button
-                          onClick={() => setShowTagModal(subscriber.id)}
+                        <button type="button" onClick={() => setShowTagModal(subscriber.id)}
                           className="p-1 hover:bg-gray-100 rounded transition"
                           title="Add tag"
                         >
-                          <Plus className="w-3 h-3 text-gray-400" />
+                          <Plus className="size-3 text-gray-400" />
                         </button>
                       </div>
                     </td>
@@ -394,12 +384,11 @@ export default function AdminNewsletterPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleDelete(subscriber.id)}
+                        <button type="button" onClick={() => handleDelete(subscriber.id)}
                           className="p-2 hover:bg-red-50 text-red-500 transition rounded"
                           title="Delete"
                         >
-                          <Trash className="w-4 h-4" />
+                          <Trash className="size-4" />
                         </button>
                       </div>
                     </td>
@@ -412,7 +401,7 @@ export default function AdminNewsletterPage() {
 
         {filteredSubscribers.length === 0 && (
           <div className="text-center py-12">
-            <Envelope className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Envelope className="size-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">
               {subscribers.length === 0 
                 ? "No subscribers yet" 
@@ -435,9 +424,9 @@ export default function AdminNewsletterPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowTagModal(null)}
-          >
+            className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setShowTagModal(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -446,7 +435,7 @@ export default function AdminNewsletterPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-medium mb-4">Add Tag</h3>
-              <input
+              <input aria-label="Enter tag name"
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
@@ -455,16 +444,14 @@ export default function AdminNewsletterPage() {
                 autoFocus
               />
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowTagModal(null)}
+                <button type="button" onClick={() => setShowTagModal(null)}
                   className="flex-1 py-2 border border-gray-200 text-sm hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={() => handleAddTag(showTagModal)}
+                <button type="button" onClick={() => handleAddTag(showTagModal)}
                   disabled={!newTag.trim()}
-                  className="flex-1 py-2 bg-black text-white text-sm hover:bg-gray-900 transition disabled:opacity-50"
+                  className="flex-1 py-2 bg-gray-950 text-white text-sm hover:bg-gray-900 transition disabled:opacity-50"
                 >
                   Add Tag
                 </button>

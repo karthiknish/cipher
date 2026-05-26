@@ -161,8 +161,8 @@ function ImageUploadModal({
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-      onClick={onClose}
-    >
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -174,7 +174,7 @@ function ImageUploadModal({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div
-              className="w-8 h-8 rounded-lg border-2 border-gray-200"
+              className="size-8 rounded-lg border-2 border-gray-200"
               style={{ backgroundColor: colorHex }}
             />
             <div>
@@ -187,7 +187,7 @@ function ImageUploadModal({
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition"
           >
-            <X className="w-5 h-5" />
+            <X className="size-5" />
           </button>
         </div>
 
@@ -205,6 +205,7 @@ function ImageUploadModal({
             ref={inputRef}
             type="file"
             accept="image/*"
+            aria-label="Upload variant image file"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFile(file);
@@ -226,12 +227,12 @@ function ImageUploadModal({
                 alt="Preview"
                 fill
                 className="object-cover rounded-xl"
-              />
+               sizes="(max-width: 768px) 100vw, 50vw" />
 
               {/* Loading overlay */}
               {isLoading && (
-                <div className="absolute inset-0 bg-black/50 rounded-xl flex flex-col items-center justify-center">
-                  <SpinnerGap className="w-8 h-8 text-white animate-spin mb-2" />
+                <div className="absolute inset-0 bg-gray-950/50 rounded-xl flex flex-col items-center justify-center">
+                  <SpinnerGap className="size-8 text-white animate-spin mb-2" />
                   <div className="w-32 h-2 bg-white/30 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-white"
@@ -239,7 +240,7 @@ function ImageUploadModal({
                       animate={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <p className="text-white text-xs mt-2">Uploading... {Math.round(uploadProgress)}%</p>
+                  <p className="text-white text-xs mt-2">Uploading… {Math.round(uploadProgress)}%</p>
                 </div>
               )}
 
@@ -250,7 +251,7 @@ function ImageUploadModal({
                   animate={{ scale: 1 }}
                   className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
                 >
-                  <CheckCircle className="w-3 h-3" weight="bold" />
+                  <CheckCircle className="size-3" weight="bold" />
                   Ready
                 </motion.div>
               )}
@@ -262,17 +263,17 @@ function ImageUploadModal({
                     type="button"
                     onClick={handleBrowseClick}
                     className="p-2 bg-white/90 hover:bg-white rounded-lg shadow transition"
-                    title="Change image"
+                    aria-label="Change image" title="Change image"
                   >
-                    <Camera className="w-4 h-4 text-gray-700" />
+                    <Camera className="size-4 text-gray-700" />
                   </button>
                   <button
                     type="button"
                     onClick={handleClear}
                     className="p-2 bg-red-500/90 hover:bg-red-500 rounded-lg shadow transition"
-                    title="Remove image"
+                    aria-label="Remove image" title="Remove image"
                   >
-                    <Trash className="w-4 h-4 text-white" />
+                    <Trash className="size-4 text-white" />
                   </button>
                 </div>
               )}
@@ -281,19 +282,28 @@ function ImageUploadModal({
             <>
               {/* Drag & Drop Zone */}
               <div
+                role="button"
+                tabIndex={0}
                 onDrop={handleDrop}
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
                 onClick={handleBrowseClick}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    inputRef.current?.click();
+                  }
+                }}
+                aria-label="Upload variant image"
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition relative ${isDragging ? 'border-black bg-gray-50 scale-[1.02]' : 'border-gray-300 hover:border-gray-400'
                   }`}
               >
                 <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform ${isDragging ? 'scale-110 -translate-y-1' : ''
+                  className={`size-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform ${isDragging ? 'scale-110 -translate-y-1' : ''
                     }`}
                   style={{ backgroundColor: colorHex + "20" }}
                 >
-                  <Camera className="w-8 h-8" style={{ color: colorHex === "#FFFFFF" ? "#000" : colorHex }} />
+                  <Camera className="size-8" style={{ color: colorHex === "#FFFFFF" ? "#000" : colorHex }} />
                 </div>
 
                 <p className="text-base font-medium mb-1">
@@ -303,7 +313,7 @@ function ImageUploadModal({
 
                 <div className="flex items-center justify-center gap-3 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
-                    <ImageSquare className="w-4 h-4" />
+                    <ImageSquare className="size-4" />
                     JPG, PNG, WEBP
                   </span>
                   <span>•</span>
@@ -318,7 +328,7 @@ function ImageUploadModal({
                   onClick={(e) => { e.stopPropagation(); setShowUrlInput(!showUrlInput); }}
                   className="text-sm text-gray-500 hover:text-black transition flex items-center gap-2 mx-auto"
                 >
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className="size-4" />
                   {showUrlInput ? "Hide URL input" : "Paste an image URL instead"}
                 </button>
               </div>
@@ -326,6 +336,7 @@ function ImageUploadModal({
               {showUrlInput && (
                 <div className="flex gap-2">
                   <input
+                    aria-label="Image URL"
                     type="url"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
@@ -337,7 +348,7 @@ function ImageUploadModal({
                     type="button"
                     onClick={handleUrlSubmit}
                     disabled={!urlInput.trim()}
-                    className="px-4 py-3 bg-black text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-50 transition"
+                    className="px-4 py-3 bg-gray-950 text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-50 transition"
                   >
                     Add
                   </button>
@@ -366,7 +377,7 @@ function ImageUploadModal({
                 }
               }}
               disabled={!uploadedUrl}
-              className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition"
+              className="px-4 py-2 bg-gray-950 text-white text-sm rounded-lg hover:bg-gray-800 transition"
             >
               Use This Image
             </button>
@@ -397,7 +408,7 @@ function ColorImageUploader({
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="relative group w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-black transition"
+          className="relative group size-20 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-black transition"
         >
           <Image
             src={value}
@@ -407,18 +418,18 @@ function ColorImageUploader({
             onError={(e) => {
               (e.target as HTMLImageElement).src = `https://placehold.co/200x200/${colorHex.replace('#', '')}/ffffff?text=${colorName}`;
             }}
-          />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-            <PencilSimple className="w-5 h-5 text-white" />
+           sizes="(max-width: 768px) 100vw, 50vw" />
+          <div className="absolute inset-0 bg-gray-950/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <PencilSimple className="size-5 text-white" />
           </div>
         </button>
       ) : (
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 hover:border-black flex flex-col items-center justify-center transition cursor-pointer bg-gray-50 hover:bg-gray-100"
+          className="size-20 rounded-lg border-2 border-dashed border-gray-300 hover:border-black flex flex-col items-center justify-center transition cursor-pointer bg-gray-50 hover:bg-gray-100"
         >
-          <Camera className="w-6 h-6 text-gray-400 mb-1" />
+          <Camera className="size-6 text-gray-400 mb-1" />
           <span className="text-[10px] text-gray-400">Add Image</span>
         </button>
       )}
@@ -536,8 +547,8 @@ export function VariantsTab({
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-          <Palette className="w-5 h-5 text-white" />
+        <div className="size-10 bg-gray-950 rounded-lg flex items-center justify-center">
+          <Palette className="size-5 text-white" />
         </div>
         <div>
           <h2 className="text-lg font-medium">Colors & Sizes</h2>
@@ -549,7 +560,7 @@ export function VariantsTab({
         {/* Sizes Section */}
         <div>
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <Ruler className="w-4 h-4" />
+            <Ruler className="size-4" />
             Available Sizes
           </h3>
 
@@ -566,14 +577,13 @@ export function VariantsTab({
                 >
                   <label className="flex items-center gap-3 cursor-pointer flex-1">
                     <input
+                      aria-label={`Enable size ${size}`}
                       type="checkbox"
                       checked={isActive}
                       onChange={() => toggleSize(size)}
-                      className="w-4 h-4 accent-black"
+                      className="size-4 accent-black"
                     />
-                    <span
-                      className={`text-sm ${isActive ? "font-medium" : "text-gray-500"}`}
-                    >
+                    <span>
                       {size}
                     </span>
                   </label>
@@ -583,6 +593,7 @@ export function VariantsTab({
                       <span className="text-xs text-gray-400">Stock:</span>
                       <input
                         type="number"
+                        aria-label={`Stock for size ${size}`}
                         value={sizeStock?.stock || 0}
                         onChange={(e) =>
                           updateSizeStock(size, Number(e.target.value))
@@ -601,7 +612,7 @@ export function VariantsTab({
         {/* Colors Section */}
         <div>
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4" />
+            <Palette className="size-4" />
             Color Variants
             <span className="text-xs text-gray-400 font-normal">
               ({formData.colors?.length || 0} colors)
@@ -621,7 +632,7 @@ export function VariantsTab({
                     key={preset.hex}
                     type="button"
                     onClick={() => selectPresetColor(preset)}
-                    className={`group relative w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${newColor.hex.toLowerCase() === preset.hex.toLowerCase()
+                    className={`group relative size-8 rounded-lg border-2 transition-all hover:scale-110 ${newColor.hex.toLowerCase() === preset.hex.toLowerCase()
                       ? "border-black ring-2 ring-black ring-offset-2"
                       : "border-gray-200 hover:border-gray-400"
                       }`}
@@ -630,7 +641,7 @@ export function VariantsTab({
                   >
                     {newColor.hex.toLowerCase() === preset.hex.toLowerCase() && (
                       <Check
-                        className={`absolute inset-0 m-auto w-4 h-4 ${preset.hex === "#FFFFFF" || preset.hex === "#d4c5a9" || preset.hex === "#eab308"
+                        className={`absolute inset-0 m-auto size-4 ${preset.hex === "#FFFFFF" || preset.hex === "#d4c5a9" || preset.hex === "#eab308"
                           ? "text-black"
                           : "text-white"
                           }`}
@@ -658,7 +669,7 @@ export function VariantsTab({
               {/* Color Details */}
               <div className="flex-1 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <input
+                  <input aria-label="Color name (e.g., Navy)"
                     type="text"
                     value={newColor.name}
                     onChange={(e) =>
@@ -671,6 +682,7 @@ export function VariantsTab({
                     <div className="relative">
                       <input
                         type="color"
+                        aria-label="Color picker"
                         value={newColor.hex}
                         onChange={(e) =>
                           setNewColor((prev) => ({ ...prev, hex: e.target.value }))
@@ -686,6 +698,7 @@ export function VariantsTab({
                       />
                     </div>
                     <input
+                      aria-label="Hex color code"
                       type="text"
                       value={newColor.hex}
                       onChange={(e) =>
@@ -699,12 +712,13 @@ export function VariantsTab({
                 <div className="flex justify-between items-center">
                   <label className="flex items-center gap-2 text-sm">
                     <input
+                      aria-label="In stock"
                       type="checkbox"
                       checked={newColor.inStock}
                       onChange={(e) =>
                         setNewColor((prev) => ({ ...prev, inStock: e.target.checked }))
                       }
-                      className="w-4 h-4 accent-black"
+                      className="size-4 accent-black"
                     />
                     In Stock
                   </label>
@@ -712,7 +726,7 @@ export function VariantsTab({
                     type="button"
                     onClick={addColor}
                     disabled={!newColor.name.trim()}
-                    className="px-4 py-2 bg-black text-white text-xs tracking-wider rounded-lg hover:bg-gray-900 disabled:opacity-50 transition"
+                    className="px-4 py-2 bg-gray-950 text-white text-xs tracking-wider rounded-lg hover:bg-gray-900 disabled:opacity-50 transition"
                   >
                     ADD COLOR
                   </button>
@@ -726,7 +740,7 @@ export function VariantsTab({
             <div className="space-y-2">
               {formData.colors.map((color, index) => (
                 <div
-                  key={index}
+                  key={`${color.name}-${color.hex}-${index}`}
                   className="border border-gray-200 rounded-lg bg-white overflow-hidden"
                 >
                   {editingColorIndex === index && editingColor ? (
@@ -740,14 +754,14 @@ export function VariantsTab({
                             onClick={cancelEditingColor}
                             className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="size-4" />
                           </button>
                           <button
                             type="button"
                             onClick={saveEditingColor}
                             className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
                           >
-                            <Check className="w-4 h-4" />
+                            <Check className="size-4" />
                           </button>
                         </div>
                       </div>
@@ -758,8 +772,9 @@ export function VariantsTab({
                           <button
                             key={preset.hex}
                             type="button"
+                            aria-label={`Select color ${preset.name}`}
                             onClick={() => setEditingColor((prev) => prev ? { ...prev, name: preset.name, hex: preset.hex } : null)}
-                            className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${editingColor.hex.toLowerCase() === preset.hex.toLowerCase()
+                            className={`size-6 rounded border-2 transition-all hover:scale-110 ${editingColor.hex.toLowerCase() === preset.hex.toLowerCase()
                               ? "border-black"
                               : "border-gray-200"
                               }`}
@@ -791,7 +806,7 @@ export function VariantsTab({
 
                         <div className="flex-1 space-y-2">
                           <div className="grid grid-cols-2 gap-2">
-                            <input
+                            <input aria-label="Color name"
                               type="text"
                               value={editingColor.name}
                               onChange={(e) => setEditingColor((prev) => prev ? { ...prev, name: e.target.value } : null)}
@@ -801,6 +816,7 @@ export function VariantsTab({
                             <div className="flex gap-2">
                               <input
                                 type="color"
+                                aria-label="Color picker"
                                 value={editingColor.hex}
                                 onChange={(e) => setEditingColor((prev) => prev ? { ...prev, hex: e.target.value } : null)}
                                 className="w-10 h-full rounded-lg cursor-pointer border-0"
@@ -808,6 +824,7 @@ export function VariantsTab({
                               />
                               <input
                                 type="text"
+                                aria-label="Hex color code"
                                 value={editingColor.hex}
                                 onChange={(e) => setEditingColor((prev) => prev ? { ...prev, hex: e.target.value } : null)}
                                 className="flex-1 px-2 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:border-black outline-none"
@@ -816,10 +833,11 @@ export function VariantsTab({
                           </div>
                           <label className="flex items-center gap-2 text-sm">
                             <input
+                              aria-label="In stock"
                               type="checkbox"
                               checked={editingColor.inStock}
                               onChange={(e) => setEditingColor((prev) => prev ? { ...prev, inStock: e.target.checked } : null)}
-                              className="w-4 h-4 accent-black"
+                              className="size-4 accent-black"
                             />
                             In Stock
                           </label>
@@ -831,7 +849,7 @@ export function VariantsTab({
                     <div className="flex items-center gap-3 p-3">
                       {/* Color Image or Swatch */}
                       {color.image ? (
-                        <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-200 group">
+                        <div className="relative size-14 rounded-lg overflow-hidden border border-gray-200 group">
                           <Image
                             src={color.image}
                             alt={color.name}
@@ -840,9 +858,9 @@ export function VariantsTab({
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = `https://placehold.co/200x200/${color.hex.replace('#', '')}/ffffff?text=${color.name}`;
                             }}
-                          />
+                           sizes="(max-width: 768px) 100vw, 50vw" />
                           <div
-                            className="absolute bottom-0 right-0 w-4 h-4 rounded-tl border-t border-l border-white"
+                            className="absolute bottom-0 right-0 size-4 rounded-tl border-t border-l border-white"
                             style={{ backgroundColor: color.hex }}
                             title={color.hex}
                           />
@@ -851,12 +869,12 @@ export function VariantsTab({
                         <button
                           type="button"
                           onClick={() => startEditingColor(index)}
-                          className="relative w-14 h-14 rounded-lg border-2 border-gray-200 group hover:border-black transition cursor-pointer"
+                          className="relative size-14 rounded-lg border-2 border-gray-200 group hover:border-black transition cursor-pointer"
                           style={{ backgroundColor: color.hex }}
                           title="Click to edit and add image"
                         >
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 rounded-md transition">
-                            <ImageSquare className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-950/0 group-hover:bg-gray-950/20 rounded-md transition">
+                            <ImageSquare className="size-5 text-white opacity-0 group-hover:opacity-100 transition" />
                           </div>
                         </button>
                       )}
@@ -869,12 +887,13 @@ export function VariantsTab({
                       </div>
                       <label className="flex items-center gap-2 text-xs">
                         <input
+                          aria-label={`${color.name} in stock`}
                           type="checkbox"
                           checked={color.inStock}
                           onChange={(e) =>
                             updateColor(index, { inStock: e.target.checked })
                           }
-                          className="w-3 h-3 accent-black"
+                          className="size-3 accent-black"
                         />
                         In Stock
                       </label>
@@ -884,14 +903,14 @@ export function VariantsTab({
                         className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 transition rounded"
                         title="Edit color"
                       >
-                        <PencilSimple className="w-4 h-4" />
+                        <PencilSimple className="size-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeColor(index)}
                         className="p-1.5 text-red-500 hover:bg-red-50 transition rounded"
                       >
-                        <Trash className="w-4 h-4" />
+                        <Trash className="size-4" />
                       </button>
                     </div>
                   )}
@@ -900,7 +919,7 @@ export function VariantsTab({
             </div>
           ) : (
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center text-gray-400">
-              <Drop className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <Drop className="size-8 mx-auto mb-2 opacity-30" />
               <p className="text-sm">No colors added</p>
             </div>
           )}

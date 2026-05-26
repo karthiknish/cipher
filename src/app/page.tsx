@@ -1,37 +1,9 @@
-"use client";
+import type { Metadata } from "next";
 
-import {
-  LiveStatsTicker,
-  HeroSection,
-  ServiceBar,
-  StyleAgentSection,
-  SpinToWinBanner,
-  FeaturedShowcase,
-  CollectionsGrid,
-  FeaturesSection,
-  EventsHomeBanner,
-  AITryOnSection,
-  EditorialBanner,
-  NewsletterSection,
-} from "@/components/home";
-import ForYouSection from "@/components/ForYouSection";
+export const metadata: Metadata = {
+  title: { absolute: "CIPHER | Premium Streetwear & Urban Fashion" },
+  description:
+    "Discover premium streetwear with AI-powered virtual try-on. Shop hoodies, tees, outerwear & accessories.",
+};
 
-export default function Home() {
-  return (
-    <div className="min-h-screen">
-      <LiveStatsTicker />
-      <HeroSection />
-      <ServiceBar />
-      <StyleAgentSection />
-      <SpinToWinBanner />
-      <FeaturedShowcase />
-      <ForYouSection />
-      <CollectionsGrid />
-      <FeaturesSection />
-      <EventsHomeBanner />
-      <AITryOnSection />
-      <EditorialBanner />
-      <NewsletterSection />
-    </div>
-  );
-}
+export { default } from "./page.client";

@@ -27,6 +27,21 @@ interface LiveStatsViewProps {
 export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
   const { recentActivities, viewerCounts } = useLiveActivity();
   const { allOrders } = useOrders();
+  const [clock, setClock] = useState<string>("");
+
+  useEffect(() => {
+    const tick = () =>
+      setClock(
+        new Date().toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+      );
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [visibleActivities, setVisibleActivities] = useState<LiveActivity[]>([]);
@@ -123,16 +138,12 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75" />
+            <div className="size-3 bg-green-500 rounded-full animate-pulse" />
+            <div className="absolute inset-0 size-3 bg-green-500 rounded-full animate-ping opacity-75" />
           </div>
           <h3 className="text-lg font-medium">Live View</h3>
-          <span className="text-xs text-gray-500">
-            {new Date().toLocaleTimeString("en-US", { 
-              hour: "numeric", 
-              minute: "2-digit",
-              hour12: true 
-            })}
+          <span className="text-xs text-gray-500" suppressHydrationWarning>
+            {clock || "--:--"}
           </span>
         </div>
         <span className="text-xs text-gray-400">Updates in real-time</span>
@@ -147,12 +158,12 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
           transition={{ duration: 2, repeat: Infinity }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4" weight="bold" />
+            <Users className="size-4" weight="bold" />
             <span className="text-xs text-white/80">VISITORS NOW</span>
           </div>
           <p className="text-3xl font-bold">{liveVisitors}</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-white/70">
-            <Globe className="w-3 h-3" />
+            <Globe className="size-3" />
             <span>Across all pages</span>
           </div>
         </motion.div>
@@ -160,12 +171,12 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
         {/* Today's Orders */}
         <div className="bg-white border border-gray-200 p-4 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-gray-400" />
+            <Package className="size-4 text-gray-400" />
             <span className="text-xs text-gray-500">TODAY'S ORDERS</span>
           </div>
           <p className="text-3xl font-bold">{todayOrders.length}</p>
           <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <Clock className="w-3 h-3" />
+            <Clock className="size-3" />
             <span>{lastHourOrders.length} in last hour</span>
           </div>
         </div>
@@ -173,12 +184,12 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
         {/* Today's Revenue */}
         <div className="bg-white border border-gray-200 p-4 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
-            <CurrencyDollar className="w-4 h-4 text-gray-400" />
+            <CurrencyDollar className="size-4 text-gray-400" />
             <span className="text-xs text-gray-500">TODAY'S REVENUE</span>
           </div>
           <p className="text-3xl font-bold">${todayRevenue.toLocaleString()}</p>
           <div className={`flex items-center gap-1 mt-1 text-xs ${revenueChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {revenueChange >= 0 ? <TrendUp className="w-3 h-3" /> : <ArrowUp className="w-3 h-3 rotate-180" />}
+            {revenueChange >= 0 ? <TrendUp className="size-3" /> : <ArrowUp className="size-3 rotate-180" />}
             <span>{revenueChange >= 0 ? '+' : ''}{revenueChange.toFixed(0)}% vs yesterday</span>
           </div>
         </div>
@@ -186,7 +197,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
         {/* Conversion Rate */}
         <div className="bg-white border border-gray-200 p-4 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
-            <TrendUp className="w-4 h-4 text-gray-400" />
+            <TrendUp className="size-4 text-gray-400" />
             <span className="text-xs text-gray-500">CONVERSION</span>
           </div>
           <p className="text-3xl font-bold">{conversionRate.toFixed(1)}%</p>
@@ -200,7 +211,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Lightning className="w-4 h-4 text-yellow-500" weight="fill" />
+            <Lightning className="size-4 text-yellow-500" weight="fill" />
             <span className="font-medium text-sm">Live Activity</span>
           </div>
           <span className="text-xs text-gray-400">
@@ -223,19 +234,19 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
                     className="flex items-center gap-3 p-3 hover:bg-gray-50 transition"
                   >
                     {/* Activity Type Icon */}
-                    <div className={`w-8 h-8 ${getActivityColor(activity.type)} rounded-full flex items-center justify-center flex-shrink-0`}>
-                      <Icon className="w-4 h-4 text-white" weight="fill" />
+                    <div className={`size-8 ${getActivityColor(activity.type)} rounded-full flex items-center justify-center flex-shrink-0`}>
+                      <Icon className="size-4 text-white" weight="fill" />
                     </div>
                     
                     {/* Product Image */}
                     {activity.productImage && (
-                      <div className="relative w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                      <div className="relative size-10 flex-shrink-0 rounded overflow-hidden bg-gray-100">
                         <Image
                           src={activity.productImage}
                           alt={activity.productName}
                           fill
                           className="object-cover"
-                        />
+                         sizes="(max-width: 768px) 100vw, 50vw" />
                       </div>
                     )}
                     
@@ -259,7 +270,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
               })
             ) : (
               <div className="p-8 text-center text-gray-400">
-                <Lightning className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <Lightning className="size-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No recent activity</p>
                 <p className="text-xs mt-1">Activity will appear here in real-time</p>
               </div>
@@ -272,7 +283,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
       {Object.keys(viewerCounts).length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
-            <Eye className="w-4 h-4 text-purple-500" />
+            <Eye className="size-4 text-purple-500" />
             <span className="font-medium text-sm">Currently Being Viewed</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -285,7 +296,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
                   key={productId}
                   className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-sm"
                 >
-                  <Circle className="w-2 h-2 animate-pulse" weight="fill" />
+                  <Circle className="size-2 animate-pulse" weight="fill" />
                   <span className="font-medium">{count}</span>
                   <span className="text-purple-500">viewing</span>
                 </div>
@@ -298,7 +309,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4" />
+            <Globe className="size-4" />
             <span className="font-medium text-sm">Visitor Locations</span>
           </div>
           <span className="text-xs text-gray-400">From recent activity</span>
@@ -326,7 +337,7 @@ export function LiveStatsView({ className = "" }: LiveStatsViewProps) {
           if (sortedLocations.length === 0) {
             return (
               <div className="text-center py-4 text-gray-400">
-                <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <Globe className="size-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No location data yet</p>
                 <p className="text-xs mt-1">Location data appears as users interact</p>
               </div>

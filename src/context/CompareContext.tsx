@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useCallback, ReactNode, useMemo } from "react";
 
 export interface CompareItem {
   id: string;
@@ -33,7 +33,7 @@ const CompareContext = createContext<CompareContextType>({
   canAddMore: true,
 });
 
-export const useCompare = () => useContext(CompareContext);
+export const useCompare = () => use(CompareContext);
 
 export const CompareProvider = ({ children }: { children: ReactNode }) => {
   const [compareItems, setCompareItems] = useState<CompareItem[]>([]);
@@ -60,17 +60,20 @@ export const CompareProvider = ({ children }: { children: ReactNode }) => {
     setCompareItems([]);
   }, []);
 
-  return (
-    <CompareContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         compareItems,
         addToCompare,
         removeFromCompare,
         isInCompare,
         clearCompare,
         canAddMore,
-      }}
-    >
+      }),
+    [addToCompare, canAddMore, clearCompare, compareItems, isInCompare, removeFromCompare]
+  );
+
+  return (
+    <CompareContext.Provider value={contextValue}>
       {children}
     </CompareContext.Provider>
   );

@@ -18,7 +18,7 @@ export function EventsHomeBanner() {
   const daysUntil = Math.ceil((startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   
   return (
-    <section className="py-16 md:py-24 bg-black text-white">
+    <section className="py-16 md:py-24 bg-gray-950 text-white">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Featured Event Image */}
@@ -31,8 +31,8 @@ export function EventsHomeBanner() {
               alt={featuredEvent.title}
               fill
               className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+             sizes="(max-width: 768px) 100vw, 50vw" />
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-950/60 to-transparent" />
             
             {/* Date Badge */}
             <div className="absolute top-6 left-6 bg-white text-black px-4 py-2 text-center">
@@ -57,7 +57,7 @@ export function EventsHomeBanner() {
             {...createViewportAnimation("right", 0.1)}
           >
             <div className="flex items-center gap-3 mb-4">
-              <Lightning weight="fill" className="w-5 h-5 text-purple-400" />
+              <Lightning weight="fill" className="size-5 text-purple-400" />
               <span className="text-sm tracking-[0.3em] text-gray-400">UPCOMING EVENT</span>
             </div>
             
@@ -71,15 +71,15 @@ export function EventsHomeBanner() {
             
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400 mb-8">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="size-4" />
                 <span>{startDate.toLocaleDateString("en-US", { month: "long", day: "numeric" })}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
+                <MapPin className="size-4" />
                 <span>{featuredEvent.location.city}, {featuredEvent.location.state}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
+                <Users className="size-4" />
                 <span>{featuredEvent.rsvpCount}/{featuredEvent.capacity} attending</span>
               </div>
             </div>
@@ -90,7 +90,7 @@ export function EventsHomeBanner() {
                 className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-100 transition"
               >
                 VIEW EVENT
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="size-4" />
               </Link>
               <Link
                 href="/events"
@@ -124,13 +124,13 @@ export function EventsHomeBanner() {
                     href={`/events/${event.id}`}
                     className="group flex gap-4 hover:bg-white/5 p-4 -m-4 transition"
                   >
-                    <div className="w-16 h-16 relative flex-shrink-0">
+                    <div className="size-16 relative flex-shrink-0">
                       <Image
                         src={event.imageUrl}
                         alt={event.title}
                         fill
                         className="object-cover"
-                      />
+                       sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-500 mb-1">

@@ -18,14 +18,13 @@ export function QuickActions({
 }: QuickActionsProps) {
   return (
     <div className="grid md:grid-cols-3 gap-4">
-      <button
-        onClick={() => onOpenCampaign("win-back", dormantCustomers)}
+      <button type="button" onClick={() => onOpenCampaign("win-back", dormantCustomers)}
         disabled={dormantCustomers.length === 0}
         className="bg-white border border-gray-200 p-4 text-left hover:border-black transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-amber-100 flex items-center justify-center rounded-lg">
-            <Archive className="w-5 h-5 text-amber-600" />
+          <div className="size-10 bg-amber-100 flex items-center justify-center rounded-lg">
+            <Archive className="size-5 text-amber-600" />
           </div>
           <div>
             <p className="font-medium">Win-Back Campaign</p>
@@ -34,14 +33,13 @@ export function QuickActions({
         </div>
       </button>
 
-      <button
-        onClick={() => onOpenCampaign("vip-exclusive", vipCustomers)}
+      <button type="button" onClick={() => onOpenCampaign("vip-exclusive", vipCustomers)}
         disabled={vipCustomers.length === 0}
         className="bg-white border border-gray-200 p-4 text-left hover:border-black transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-amber-100 flex items-center justify-center rounded-lg">
-            <Crown className="w-5 h-5 text-amber-600" />
+          <div className="size-10 bg-amber-100 flex items-center justify-center rounded-lg">
+            <Crown className="size-5 text-amber-600" />
           </div>
           <div>
             <p className="font-medium">VIP Exclusive Access</p>
@@ -50,14 +48,13 @@ export function QuickActions({
         </div>
       </button>
 
-      <button
-        onClick={() => onOpenCampaign("re-engagement", atRiskCustomers)}
+      <button type="button" onClick={() => onOpenCampaign("re-engagement", atRiskCustomers)}
         disabled={atRiskCustomers.length === 0}
         className="bg-white border border-gray-200 p-4 text-left hover:border-black transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-rose-100 flex items-center justify-center rounded-lg">
-            <Warning className="w-5 h-5 text-rose-600" />
+          <div className="size-10 bg-rose-100 flex items-center justify-center rounded-lg">
+            <Warning className="size-5 text-rose-600" />
           </div>
           <div>
             <p className="font-medium">Re-Engagement Campaign</p>

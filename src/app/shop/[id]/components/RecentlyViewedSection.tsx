@@ -19,7 +19,7 @@ export default function RecentlyViewedSection({ currentProductId }: RecentlyView
   return (
     <div className="mt-16 border-t border-gray-200 pt-12">
       <div className="flex items-center gap-2 mb-8">
-        <Clock className="w-5 h-5 text-gray-400" />
+        <Clock className="size-5 text-gray-400" />
         <h2 className="text-xl font-light tracking-tight">RECENTLY VIEWED</h2>
       </div>
       
@@ -32,7 +32,7 @@ export default function RecentlyViewedSection({ currentProductId }: RecentlyView
                 alt={product.name} 
                 fill 
                 className="object-cover group-hover:scale-105 transition-transform duration-500" 
-              />
+               sizes="(max-width: 768px) 100vw, 50vw" />
             </div>
             <p className="text-xs text-gray-400 mb-1">{product.category}</p>
             <h3 className="font-medium text-sm">{product.name}</h3>

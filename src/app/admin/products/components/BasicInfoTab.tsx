@@ -25,8 +25,8 @@ export function BasicInfoTab({
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-          <TextT className="w-5 h-5 text-white" />
+        <div className="size-10 bg-gray-950 rounded-lg flex items-center justify-center">
+          <TextT className="size-5 text-white" />
         </div>
         <div>
           <h2 className="text-lg font-medium">Basic Information</h2>
@@ -36,10 +36,10 @@ export function BasicInfoTab({
 
       <div className="space-y-6">
         <div>
-          <label className="block text-xs tracking-wider text-gray-500 mb-2">
+          <label htmlFor="BasicInfoTab-field-8" className="block text-xs tracking-wider text-gray-500 mb-2">
             PRODUCT NAME *
           </label>
-          <input
+          <input aria-label="PRODUCT NAME *" id="BasicInfoTab-field-8"
             type="text"
             value={formData.name}
             onChange={(e) =>
@@ -52,7 +52,7 @@ export function BasicInfoTab({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-xs tracking-wider text-gray-500">
+            <label htmlFor="product-short-description" className="block text-xs tracking-wider text-gray-500">
               SHORT DESCRIPTION
             </label>
             <button
@@ -63,18 +63,18 @@ export function BasicInfoTab({
             >
               {isGeneratingAI ? (
                 <>
-                  <SpinnerGap className="w-3 h-3 animate-spin" />
-                  Generating...
-                </>
+                  <SpinnerGap className="size-3 animate-spin" />Generating…</>
               ) : (
                 <>
-                  <MagicWand className="w-3 h-3" />
+                  <MagicWand className="size-3" />
                   AI Fill All
                 </>
               )}
             </button>
           </div>
           <input
+            id="product-short-description"
+            aria-label="Short description"
             type="text"
             value={formData.shortDescription || ""}
             onChange={(e) =>
@@ -93,10 +93,10 @@ export function BasicInfoTab({
         </div>
 
         <div>
-          <label className="block text-xs tracking-wider text-gray-500 mb-2">
+          <label htmlFor="BasicInfoTab-field-9" className="block text-xs tracking-wider text-gray-500 mb-2">
             FULL DESCRIPTION *
           </label>
-          <textarea
+          <textarea aria-label="FULL DESCRIPTION *" id="BasicInfoTab-field-9"
             value={formData.description}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, description: e.target.value }))
@@ -109,12 +109,12 @@ export function BasicInfoTab({
 
         <div className="grid grid-cols-3 gap-6">
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="BasicInfoTab-field-10" className="block text-xs tracking-wider text-gray-500 mb-2">
               PRICE ($) *
             </label>
             <div className="relative">
-              <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
+              <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <input aria-label="PRICE ($) *" id="BasicInfoTab-field-10"
                 type="number"
                 value={formData.price || ""}
                 onChange={(e) =>
@@ -131,12 +131,12 @@ export function BasicInfoTab({
             </div>
           </div>
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="BasicInfoTab-field-11" className="block text-xs tracking-wider text-gray-500 mb-2">
               COMPARE PRICE
             </label>
             <div className="relative">
-              <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
+              <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <input aria-label="COMPARE PRICE" id="BasicInfoTab-field-11"
                 type="number"
                 value={formData.comparePrice || ""}
                 onChange={(e) =>
@@ -154,11 +154,11 @@ export function BasicInfoTab({
             <p className="text-xs text-gray-400 mt-1">Shows as strikethrough</p>
           </div>
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="BasicInfoTab-field-12" className="block text-xs tracking-wider text-gray-500 mb-2">
               CATEGORY *
             </label>
             <div className="relative">
-              <select
+              <select aria-label="CATEGORY *" id="BasicInfoTab-field-12"
                 value={formData.category}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, category: e.target.value }))
@@ -171,7 +171,7 @@ export function BasicInfoTab({
                   </option>
                 ))}
               </select>
-              <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -185,54 +185,54 @@ export function BasicInfoTab({
             <label className="flex items-center justify-between cursor-pointer p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition">
               <div className="flex items-center gap-3">
                 <CheckCircle
-                  className={`w-5 h-5 ${formData.inStock ? "text-green-500" : "text-gray-300"}`}
+                  className={`size-5 ${formData.inStock ? "text-green-500" : "text-gray-300"}`}
                   weight={formData.inStock ? "fill" : "regular"}
                 />
                 <span className="text-sm">In Stock</span>
               </div>
-              <input
+              <input id="BasicInfoTab-field-1" aria-label="In stock"
                 type="checkbox"
                 checked={formData.inStock}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, inStock: e.target.checked }))
                 }
-                className="w-5 h-5 accent-black"
+                className="size-5 accent-black"
               />
             </label>
 
             <label className="flex items-center justify-between cursor-pointer p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition">
               <div className="flex items-center gap-3">
                 <Star
-                  className={`w-5 h-5 ${formData.featured ? "text-amber-500" : "text-gray-300"}`}
+                  className={`size-5 ${formData.featured ? "text-amber-500" : "text-gray-300"}`}
                   weight={formData.featured ? "fill" : "regular"}
                 />
                 <span className="text-sm">Featured</span>
               </div>
-              <input
+              <input id="BasicInfoTab-field-2" aria-label="Featured"
                 type="checkbox"
                 checked={formData.featured || false}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, featured: e.target.checked }))
                 }
-                className="w-5 h-5 accent-black"
+                className="size-5 accent-black"
               />
             </label>
 
             <label className="flex items-center justify-between cursor-pointer p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition">
               <div className="flex items-center gap-3">
                 <Sparkle
-                  className={`w-5 h-5 ${formData.isNew ? "text-blue-500" : "text-gray-300"}`}
+                  className={`size-5 ${formData.isNew ? "text-blue-500" : "text-gray-300"}`}
                   weight={formData.isNew ? "fill" : "regular"}
                 />
                 <span className="text-sm">New Arrival</span>
               </div>
-              <input
+              <input id="BasicInfoTab-field-3" aria-label="New arrival"
                 type="checkbox"
                 checked={formData.isNew || false}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, isNew: e.target.checked }))
                 }
-                className="w-5 h-5 accent-black"
+                className="size-5 accent-black"
               />
             </label>
           </div>

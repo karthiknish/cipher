@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import {
   Crown,
@@ -88,9 +88,9 @@ function AdjustPointsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -102,10 +102,10 @@ function AdjustPointsModal({
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-xl font-light tracking-tight">Adjust Points</h2>
-              <p className="text-sm text-gray-500 mt-1">User ID: {profile.userId.slice(0, 8)}...</p>
+              <p className="text-sm text-gray-500 mt-1">User ID: {profile.userId.slice(0, 8)}…</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -113,8 +113,8 @@ function AdjustPointsModal({
         <div className="p-6 space-y-6">
           {success ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-black" weight="fill" />
+              <div className="size-16 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="size-8 text-black" weight="fill" />
               </div>
               <h3 className="text-lg font-medium">Points Adjusted!</h3>
             </div>
@@ -134,33 +134,33 @@ function AdjustPointsModal({
               </div>
 
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">POINTS TO ADD/REMOVE</label>
+                <label htmlFor="loyalty-points-adjust" className="block text-xs tracking-wider text-gray-500 mb-2">POINTS TO ADD/REMOVE</label>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setPoints(p => p - 100)}
+                  <button type="button" aria-label="Decrease points by 100" onClick={() => setPoints(p => p - 100)}
                     className="p-3 border border-gray-200 hover:border-black"
                   >
-                    <ArrowDown className="w-4 h-4" />
+                    <ArrowDown className="size-4" />
                   </button>
                   <input
+                    id="loyalty-points-adjust"
                     type="number"
+                    aria-label="Points to add or remove"
                     value={points}
                     onChange={(e) => setPoints(Number(e.target.value))}
                     className="flex-1 px-4 py-3 border border-gray-200 focus:border-black outline-none text-center"
                     placeholder="0"
                   />
-                  <button
-                    onClick={() => setPoints(p => p + 100)}
+                  <button type="button" aria-label="Increase points by 100" onClick={() => setPoints(p => p + 100)}
                     className="p-3 border border-gray-200 hover:border-black"
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    <ArrowUp className="size-4" />
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">REASON</label>
-                <textarea
+                <label htmlFor="LoyaltyTab-reason-5" className="block text-xs tracking-wider text-gray-500 mb-2">REASON</label>
+                <textarea aria-label="REASON" id="LoyaltyTab-reason-5"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={3}
@@ -169,19 +169,17 @@ function AdjustPointsModal({
                 />
               </div>
 
-              <button
-                onClick={handleSubmit}
+              <button type="button" onClick={handleSubmit}
                 disabled={submitting || points === 0 || !reason.trim()}
-                className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
+                className="w-full bg-gray-950 text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
                 {submitting ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    PROCESSING...
+                    <SpinnerGap className="size-4 animate-spin" />
+                    PROCESSING…
                   </>
                 ) : (
                   <>
-                    <PencilSimple className="w-4 h-4" />
+                    <PencilSimple className="size-4" />
                     {points > 0 ? "ADD" : "REMOVE"} {Math.abs(points)} POINTS
                   </>
                 )}
@@ -216,9 +214,9 @@ function MemberDetailsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -229,16 +227,16 @@ function MemberDetailsModal({
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-100 flex items-center justify-center">
-                <TierIcon className="w-6 h-6 text-gray-800" />
+              <div className="size-12 bg-gray-100 flex items-center justify-center">
+                <TierIcon className="size-6 text-gray-800" />
               </div>
               <div>
                 <h2 className="text-xl font-light tracking-tight">Member Profile</h2>
-                <p className="text-sm text-gray-500">{profile.userId.slice(0, 16)}...</p>
+                <p className="text-sm text-gray-500">{profile.userId.slice(0, 16)}…</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -274,7 +272,7 @@ function MemberDetailsModal({
             </div>
             <div className="h-2 bg-gray-200 overflow-hidden">
               <div 
-                className="h-full bg-black transition-all"
+                className="h-full bg-gray-950 transition-all"
                 style={{ width: `${profile.tierProgress}%` }}
               />
             </div>
@@ -291,8 +289,8 @@ function MemberDetailsModal({
               <h4 className="font-medium">Recent Transactions</h4>
             </div>
             <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
-              {profile.transactions.slice(-10).reverse().map((tx, i) => (
-                <div key={i} className="p-4 flex items-center justify-between">
+              {profile.transactions.slice(-10).reverse().map((tx) => (
+                <div key={`${tx.createdAt}-${tx.description}-${tx.points}`} className="p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm">{tx.description}</p>
                     <p className="text-xs text-gray-500">{formatDate(tx.createdAt)}</p>
@@ -307,11 +305,9 @@ function MemberDetailsModal({
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button
-              onClick={onAdjustPoints}
-              className="flex-1 bg-black text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-800 flex items-center justify-center gap-2"
-            >
-              <PencilSimple className="w-4 h-4" />
+            <button aria-label="pencil simple" type="button" onClick={onAdjustPoints}
+              className="flex-1 bg-gray-950 text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-800 flex items-center justify-center gap-2">
+              <PencilSimple className="size-4" />
               ADJUST POINTS
             </button>
           </div>
@@ -332,16 +328,16 @@ export function LoyaltyTab() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("overview");
 
-  useEffect(() => {
-    loadProfiles();
-  }, []);
-
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     setLoading(true);
     const data = await getAllLoyaltyProfiles();
     setProfiles(data);
     setLoading(false);
-  };
+  }, [getAllLoyaltyProfiles]);
+
+  useEffect(() => {
+    loadProfiles();
+  }, [loadProfiles]);
 
   const handleAdjustPoints = async (points: number, reason: string) => {
     if (!selectedProfile) return;
@@ -375,7 +371,7 @@ export function LoyaltyTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -383,11 +379,11 @@ export function LoyaltyTab() {
   return (
     <div className="space-y-8">
       {/* Program Overview */}
-      <div className="bg-black text-white p-6">
+      <div className="bg-gray-950 text-white p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-medium flex items-center gap-2">
-              <Crown className="w-5 h-5" />
+              <Crown className="size-5" />
               CIPHER Rewards Program
             </h3>
             <p className="text-white/60 text-sm mt-1">Loyalty program overview and management</p>
@@ -439,8 +435,8 @@ export function LoyaltyTab() {
               className="bg-white border border-gray-200 p-4 hover:border-black transition"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-100 flex items-center justify-center">
-                  <TierIcon className="w-5 h-5 text-gray-800" />
+                <div className="size-10 bg-gray-100 flex items-center justify-center">
+                  <TierIcon className="size-5 text-gray-800" />
                 </div>
                 <div>
                   <p className="font-medium capitalize">{config.name}</p>
@@ -453,7 +449,7 @@ export function LoyaltyTab() {
               </div>
               <div className="h-1 bg-gray-200 mt-3 overflow-hidden">
                 <div 
-                  className="h-full bg-black transition-all"
+                  className="h-full bg-gray-950 transition-all"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
@@ -464,20 +460,19 @@ export function LoyaltyTab() {
 
       {/* Tier Benefits Reference */}
       <div className="bg-white border border-gray-200">
-        <button
-          onClick={() => setExpandedSection(expandedSection === "benefits" ? null : "benefits")}
+        <button type="button" onClick={() => setExpandedSection(expandedSection === "benefits" ? null : "benefits")}
           className="w-full p-6 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-black flex items-center justify-center">
-              <Gift className="w-5 h-5 text-white" />
+            <div className="size-10 bg-gray-950 flex items-center justify-center">
+              <Gift className="size-5 text-white" />
             </div>
             <div className="text-left">
               <h3 className="font-medium">Tier Benefits</h3>
               <p className="text-xs text-gray-500 mt-1">What each tier offers</p>
             </div>
           </div>
-          {expandedSection === "benefits" ? <CaretUp className="w-5 h-5" /> : <CaretDown className="w-5 h-5" />}
+          {expandedSection === "benefits" ? <CaretUp className="size-5" /> : <CaretDown className="size-5" />}
         </button>
         
         <AnimatePresence>
@@ -534,7 +529,7 @@ export function LoyaltyTab() {
                       {(Object.keys(tierConfig) as LoyaltyTier[]).map(tier => (
                         <td key={tier} className="py-3 text-center">
                           {tierConfig[tier].earlyAccess 
-                            ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> 
+                            ? <CheckCircle className="size-4 text-green-500 mx-auto" /> 
                             : <span className="text-gray-300">-</span>}
                         </td>
                       ))}
@@ -544,7 +539,7 @@ export function LoyaltyTab() {
                       {(Object.keys(tierConfig) as LoyaltyTier[]).map(tier => (
                         <td key={tier} className="py-3 text-center">
                           {tierConfig[tier].exclusiveProducts 
-                            ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> 
+                            ? <CheckCircle className="size-4 text-green-500 mx-auto" /> 
                             : <span className="text-gray-300">-</span>}
                         </td>
                       ))}
@@ -575,9 +570,10 @@ export function LoyaltyTab() {
             </div>
             <div className="flex gap-3">
               <div className="relative">
-                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <input
                   type="text"
+                  aria-label="Search members by ID or code"
                   placeholder="Search by ID or code..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -613,19 +609,19 @@ export function LoyaltyTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProfiles.slice(0, 20).map((profile, i) => {
+              {filteredProfiles.slice(0, 20).map((profile) => {
                 const config = tierConfig[profile.currentTier];
                 const TierIcon = TIER_ICONS[profile.currentTier];
                 
                 return (
-                  <tr key={i} className="hover:bg-gray-50 transition">
+                  <tr key={profile.userId} className="hover:bg-gray-50 transition">
                     <td className="py-3 px-6">
-                      <p className="text-sm font-medium">{profile.userId.slice(0, 12)}...</p>
+                      <p className="text-sm font-medium">{profile.userId.slice(0, 12)}…</p>
                       <p className="text-xs text-gray-500">{profile.referralCode}</p>
                     </td>
                     <td className="py-3 px-6">
                       <div className="flex items-center gap-2">
-                        <TierIcon className="w-4 h-4 text-gray-800" />
+                        <TierIcon className="size-4 text-gray-800" />
                         <span className="text-sm capitalize">{profile.currentTier}</span>
                       </div>
                     </td>
@@ -645,25 +641,23 @@ export function LoyaltyTab() {
                     </td>
                     <td className="py-3 px-6">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
+                        <button type="button" onClick={() => {
                             setSelectedProfile(profile);
                             setShowDetailsModal(true);
                           }}
                           className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                           title="View Details"
                         >
-                          <ChartLineUp className="w-4 h-4" />
+                          <ChartLineUp className="size-4" />
                         </button>
-                        <button
-                          onClick={() => {
+                        <button type="button" onClick={() => {
                             setSelectedProfile(profile);
                             setShowAdjustModal(true);
                           }}
                           className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                           title="Adjust Points"
                         >
-                          <PencilSimple className="w-4 h-4" />
+                          <PencilSimple className="size-4" />
                         </button>
                       </div>
                     </td>

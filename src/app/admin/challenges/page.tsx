@@ -26,7 +26,7 @@ function ChallengesPageContent() {
   const { user, loading: authLoading, userRole } = useAuth();
   const { challenges } = useStyleChallenges();
   const toast = useToast();
-  const router = useRouter();
+  const { push } = useRouter();
   
   const [showModal, setShowModal] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<StyleChallenge | null>(null);
@@ -36,9 +36,9 @@ function ChallengesPageContent() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      push("/login");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, push]);
 
   const filteredChallenges = challenges.filter(c => 
     filterStatus === "all" || c.status === filterStatus
@@ -53,7 +53,7 @@ function ChallengesPageContent() {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -61,16 +61,15 @@ function ChallengesPageContent() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           You don&apos;t have permission to access the admin panel.
         </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
+        <button type="button" onClick={() => push("/")}
+          className="bg-gray-950 text-white px-8 py-4 text-sm tracking-wider hover:bg-gray-900 transition"
         >
           RETURN HOME
         </button>
@@ -91,11 +90,10 @@ function ChallengesPageContent() {
       title="Style Challenges" 
       activeTab="challenges"
       actions={
-        <button
-          onClick={() => setShowModal(true)}
+        <button aria-label="plus" type="button" onClick={() => setShowModal(true)}
           className="flex items-center gap-2 bg-white text-black px-4 py-2 text-xs tracking-wider hover:bg-gray-100 transition"
         >
-          <Plus className="w-4 h-4" /> CREATE CHALLENGE
+          <Plus className="size-4" /> CREATE CHALLENGE
         </button>
       }
     >
@@ -122,12 +120,11 @@ function ChallengesPageContent() {
       {/* Filters */}
       <div className="flex items-center gap-2 mb-6">
         {["all", "active", "upcoming", "ended"].map((status) => (
-          <button
-            key={status}
+          <button type="button" key={status}
             onClick={() => setFilterStatus(status as typeof filterStatus)}
             className={`px-4 py-2 text-sm ${
               filterStatus === status
-                ? "bg-black text-white"
+                ? "bg-gray-950 text-white"
                 : "bg-gray-100 hover:bg-gray-200"
             }`}
           >
@@ -159,12 +156,12 @@ function ChallengesPageContent() {
                         alt={challenge.title}
                         fill
                         className="object-cover"
-                      />
+                       sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                     <div>
                       <p className="font-medium text-sm flex items-center gap-2">
                         {challenge.title}
-                        {challenge.featured && <Fire className="w-4 h-4 text-orange-500" weight="fill" />}
+                        {challenge.featured && <Fire className="size-4 text-orange-500" weight="fill" />}
                       </p>
                       <p className="text-xs text-gray-500">{challenge.theme}</p>
                     </div>
@@ -183,7 +180,7 @@ function ChallengesPageContent() {
                 <td className="py-3 px-4">
                   <div className="text-sm">
                     <p className="flex items-center gap-1">
-                      <CalendarBlank className="w-3 h-3 text-gray-400" />
+                      <CalendarBlank className="size-3 text-gray-400" />
                       {new Date(challenge.startDate).toLocaleDateString()}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -194,7 +191,7 @@ function ChallengesPageContent() {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3 text-sm">
                     <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4 text-gray-400" />
+                      <Users className="size-4 text-gray-400" />
                       {challenge.participantCount}
                     </span>
                     <span className="text-gray-400">|</span>
@@ -203,29 +200,26 @@ function ChallengesPageContent() {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => window.open(`/challenges`, "_blank")}
+                    <button type="button" onClick={() => window.open(`/challenges`, "_blank")}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                       title="View"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="size-4" />
                     </button>
-                    <button
-                      onClick={() => {
+                    <button type="button" onClick={() => {
                         setEditingChallenge(challenge);
                         setShowModal(true);
                       }}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-black transition"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="size-4" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(challenge.id)}
+                    <button type="button" onClick={() => handleDelete(challenge.id)}
                       className="p-2 hover:bg-gray-100 text-gray-500 hover:text-red-500 transition"
                       title="Delete"
                     >
-                      <Trash className="w-4 h-4" />
+                      <Trash className="size-4" />
                     </button>
                   </div>
                 </td>
@@ -236,7 +230,7 @@ function ChallengesPageContent() {
         
         {filteredChallenges.length === 0 && (
           <div className="text-center py-12">
-            <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Trophy className="size-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No challenges found</p>
           </div>
         )}
@@ -244,20 +238,19 @@ function ChallengesPageContent() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
               <h2 className="text-lg font-bold">
                 {editingChallenge ? "Edit Challenge" : "Create New Challenge"}
               </h2>
-              <button 
-                onClick={() => {
+              <button type="button" onClick={() => {
                   setShowModal(false);
                   setEditingChallenge(null);
                 }}
                 className="p-2 hover:bg-gray-100 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" />
               </button>
             </div>
             <div className="p-6">
@@ -266,13 +259,12 @@ function ChallengesPageContent() {
                 <br />
                 This is a placeholder for the full implementation.
               </p>
-              <button
-                onClick={() => {
+              <button type="button" onClick={() => {
                   toast.success(editingChallenge ? "Challenge updated!" : "Challenge created!");
                   setShowModal(false);
                   setEditingChallenge(null);
                 }}
-                className="w-full bg-black text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
+                className="w-full bg-gray-950 text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
               >
                 {editingChallenge ? "UPDATE CHALLENGE" : "CREATE CHALLENGE"}
               </button>
@@ -287,7 +279,7 @@ function ChallengesPageContent() {
 function ChallengesPageLoading() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+      <SpinnerGap className="size-8 animate-spin text-gray-400" />
     </div>
   );
 }

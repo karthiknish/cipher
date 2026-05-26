@@ -23,7 +23,7 @@ import {
 import { NewProductHeader, NewProductFooter } from "./components";
 
 export default function NewProductPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const { user, loading: authLoading, userRole } = useAuth();
   const { addProduct } = useProducts();
   const toast = useToast();
@@ -41,7 +41,7 @@ export default function NewProductPage() {
 
   // Form states
   const [newTag, setNewTag] = useState("");
-  const [newColor, setNewColor] = useState<ColorVariant>(getInitialColor());
+  const [newColor, setNewColor] = useState<ColorVariant>(() => getInitialColor());
   const [formData, setFormData] = useState<ProductFormData>({
     ...getInitialFormData(),
     isNew: true, // New products default to "New Arrival"
@@ -247,7 +247,7 @@ export default function NewProductPage() {
     if (productId) {
       clearDraft();
       toast.success(`${formData.name} created successfully`);
-      router.push("/admin?tab=products");
+      push("/admin?tab=products");
     } else {
       toast.error("Failed to create product");
     }
@@ -269,15 +269,9 @@ export default function NewProductPage() {
 
     setIsGeneratingAI(true);
     try {
-      // Get the auth token for the API request
-      const token = await user.getIdToken();
-      
-      const response = await fetch("/api/generate-product-details", {
+      const { adminFetch } = await import("@/lib/admin-api");
+      const response = await adminFetch("/api/generate-product-details", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
         body: JSON.stringify({
           name: formData.name,
           category: formData.category,
@@ -314,7 +308,7 @@ export default function NewProductPage() {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -323,8 +317,8 @@ export default function NewProductPage() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6">You don&apos;t have permission to access this page.</p>

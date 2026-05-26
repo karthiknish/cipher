@@ -6,6 +6,7 @@ import { motion } from "@/lib/motion";
 import { X, SpinnerGap, Camera } from "@phosphor-icons/react";
 import { useReviews } from "@/context/ReviewContext";
 import { useToast } from "@/context/ToastContext";
+import { uploadFile, generateImagePath } from "@/lib/uploadImage";
 import StarRating from "./StarRating";
 
 interface ReviewFormModalProps {
@@ -34,36 +35,44 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
     }
 
     setUploading(true);
-    const { storage } = await import("@/lib/firebase");
-    const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
 
-    const uploaded: typeof media = [];
-    for (const file of fileArray) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max 10MB.`);
-        continue;
-      }
-      
-      const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/webm"];
-      if (!validTypes.includes(file.type)) {
-        toast.error(`${file.name} is not a supported format.`);
-        continue;
-      }
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+    ];
 
-      try {
-        const timestamp = Date.now();
-        const path = `reviews/${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        uploaded.push({
-          type: file.type.startsWith("video/") ? "video" : "image",
-          url,
-        });
-      } catch {
-        toast.error(`Failed to upload ${file.name}`);
-      }
-    }
+    const uploaded = (
+      await Promise.all(
+        fileArray.map(async (file) => {
+          if (file.size > 10 * 1024 * 1024) {
+            toast.error(`${file.name} is too large. Max 10MB.`);
+            return null;
+          }
+          if (!validTypes.includes(file.type)) {
+            toast.error(`${file.name} is not a supported format.`);
+            return null;
+          }
+          try {
+            const path = generateImagePath(
+              `reviews/${productId}`,
+              file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+            );
+            const url = await uploadFile(file, path);
+            return {
+              type: file.type.startsWith("video/") ? ("video" as const) : ("image" as const),
+              url,
+            };
+          } catch {
+            toast.error(`Failed to upload ${file.name}`);
+            return null;
+          }
+        })
+      )
+    ).filter((item): item is NonNullable<typeof item> => item !== null);
 
     setMedia([...media, ...uploaded]);
     setUploading(false);
@@ -75,8 +84,8 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
     if (e.dataTransfer.files?.length) handleFileUpload(e.dataTransfer.files);
   };
 
-  const removeMedia = (index: number) => {
-    setMedia(media.filter((_, i) => i !== index));
+  const removeMedia = (url: string) => {
+    setMedia(media.filter((item) => item.url !== url));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,9 +115,9 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" 
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/60 z-50 flex items-center justify-center p-4" 
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
@@ -119,19 +128,21 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
         <div className="p-6 border-b border-gray-100">
           <div className="flex justify-between items-start">
             <h2 className="text-xl font-light tracking-tight">WRITE A REVIEW</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-3">YOUR RATING</label>
-            <StarRating rating={rating} size="lg" interactive onChange={setRating} />
+            <span id="review-rating-label" className="block text-xs tracking-wider text-gray-500 mb-3">YOUR RATING</span>
+            <div role="group" aria-labelledby="review-rating-label">
+              <StarRating rating={rating} size="lg" interactive onChange={setRating} />
+            </div>
           </div>
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">REVIEW TITLE</label>
-            <input 
+            <label htmlFor="review-title" className="block text-xs tracking-wider text-gray-500 mb-2">REVIEW TITLE</label>
+            <input aria-label="REVIEW TITLE" id="review-title" 
               type="text" 
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
@@ -141,8 +152,8 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
             />
           </div>
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">YOUR REVIEW</label>
-            <textarea 
+            <label htmlFor="ReviewFormModal-your-review-38" className="block text-xs tracking-wider text-gray-500 mb-2">YOUR REVIEW</label>
+            <textarea aria-label="YOUR REVIEW" id="ReviewFormModal-your-review-38" 
               value={comment} 
               onChange={(e) => setComment(e.target.value)} 
               placeholder="What did you like?" 
@@ -154,18 +165,18 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
           
           {/* Media Upload Section */}
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">ADD PHOTOS OR VIDEOS (OPTIONAL)</label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-4 text-center transition cursor-pointer ${
+            <label
+              className={`block border-2 border-dashed rounded-lg p-4 text-center transition cursor-pointer ${
                 dragActive ? "border-black bg-gray-50" : "border-gray-200 hover:border-gray-400"
               } ${uploading ? "opacity-50 pointer-events-none" : ""}`}
               onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
               onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
             >
-              <input
+              <span className="block text-xs tracking-wider text-gray-500 mb-2">ADD PHOTOS OR VIDEOS (OPTIONAL)</span>
+              <input aria-label="ADD PHOTOS OR VIDEOS (OPTIONAL)"
+                id="review-media-upload"
                 ref={fileInputRef}
                 type="file"
                 multiple
@@ -175,37 +186,37 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
               />
               {uploading ? (
                 <div className="flex items-center justify-center gap-2 py-4">
-                  <SpinnerGap className="w-5 h-5 animate-spin" />
-                  <span className="text-sm text-gray-500">Uploading...</span>
+                  <SpinnerGap className="size-5 animate-spin" />
+                  <span className="text-sm text-gray-500">Uploading…</span>
                 </div>
               ) : (
                 <div className="py-4">
-                  <Camera className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                  <Camera className="size-8 mx-auto text-gray-400 mb-2" />
                   <p className="text-sm text-gray-500">Drag & drop or click to upload</p>
                   <p className="text-xs text-gray-400 mt-1">JPG, PNG, GIF, MP4, WebM (max 10MB, up to 5 files)</p>
                 </div>
               )}
-            </div>
+            </label>
 
             {/* Media Preview */}
             {media.length > 0 && (
               <div className="flex gap-2 mt-3 flex-wrap">
-                {media.map((item, i) => (
-                  <div key={i} className="relative w-16 h-16 group">
+                {media.map((item) => (
+                  <div key={item.url} className="relative size-16 group">
                     {item.type === "video" ? (
-                      <video src={item.url} className="w-full h-full object-cover" muted />
+                      <video src={item.url} className="size-full object-cover" muted aria-label="Review media preview" />
                     ) : (
-                      <Image src={item.url} alt="" fill className="object-cover" />
+                      <Image src={item.url} alt="" fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                     )}
                     <button
                       type="button"
-                      onClick={() => removeMedia(i)}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      onClick={() => removeMedia(item.url)}
+                      className="absolute -top-1 -right-1 size-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="size-3" />
                     </button>
                     {item.type === "video" && (
-                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center py-0.5">VIDEO</span>
+                      <span className="absolute bottom-0 left-0 right-0 bg-gray-950/60 text-white text-[8px] text-center py-0.5">VIDEO</span>
                     )}
                   </div>
                 ))}
@@ -216,11 +227,11 @@ export default function ReviewFormModal({ isOpen, onClose, productId, onSubmit }
           <button 
             type="submit" 
             disabled={loading || uploading} 
-            className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-gray-950 text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
-                <SpinnerGap className="w-4 h-4 animate-spin" /> SUBMITTING
+                <SpinnerGap className="size-4 animate-spin" /> SUBMITTING
               </>
             ) : (
               "SUBMIT REVIEW"

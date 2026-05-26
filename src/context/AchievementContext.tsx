@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { createContext, use, useState, useCallback, ReactNode, useEffect, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "@/lib/firebase";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export type BadgeCategory = 
   | "shopping" 
@@ -388,16 +389,20 @@ const AchievementContext = createContext<AchievementContextType>({
   getAchievementProgress: () => null,
 });
 
-export const useAchievements = () => useContext(AchievementContext);
+export const useAchievements = () => use(AchievementContext);
 
 export const AchievementProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const convexAchievements = useQuery(
+    api.userExtras.getAchievements,
+    user ? {} : "skip"
+  );
+  const setAchievementsMut = useMutation(api.userExtras.setAchievements);
   const [badges] = useState<Badge[]>(ALL_BADGES);
   const [achievements] = useState<Achievement[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievements | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user achievements from Firebase
   useEffect(() => {
     const loadUserAchievements = async () => {
       if (!user) {
@@ -405,33 +410,12 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
         return;
       }
+      if (convexAchievements === undefined) return;
 
       try {
-        const userAchievementsRef = doc(db, "userAchievements", user.uid);
-        const snapshot = await getDoc(userAchievementsRef);
-
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          setUserAchievements({
-            userId: user.uid,
-            badges: data.badges || [],
-            totalPoints: data.totalPoints || 0,
-            rank: data.rank || 0,
-            streak: data.streak || { current: 0, longest: 0, lastActiveDate: "" },
-            stats: data.stats || {
-              totalPurchases: 0,
-              totalSpent: 0,
-              reviewsWritten: 0,
-              referrals: 0,
-              challengesEntered: 0,
-              challengesWon: 0,
-              votesGiven: 0,
-              itemsWishlisted: 0,
-              daysAsMember: 0,
-            },
-          });
+        if (convexAchievements) {
+          setUserAchievements(convexAchievements as UserAchievements);
         } else {
-          // Create initial achievements document for new user
           const initialAchievements: UserAchievements = {
             userId: user.uid,
             badges: [],
@@ -447,14 +431,10 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
               challengesWon: 0,
               votesGiven: 0,
               itemsWishlisted: 0,
-              daysAsMember: Math.floor((Date.now() - (user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : Date.now())) / (1000 * 60 * 60 * 24)),
+              daysAsMember: 0,
             },
           };
-          await setDoc(userAchievementsRef, {
-            ...initialAchievements,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
+          await setAchievementsMut({ data: initialAchievements });
           setUserAchievements(initialAchievements);
         }
       } catch (error) {
@@ -484,7 +464,7 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadUserAchievements();
-  }, [user]);
+  }, [user, convexAchievements, setAchievementsMut]);
 
   const getUserBadges = useCallback(() => {
     if (!userAchievements) return [];
@@ -569,7 +549,7 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
     return userAchievements?.badges.filter(ub => ub.isNew).length || 0;
   }, [userAchievements]);
 
-  // Unlock a badge and save to Firebase
+  // Unlock a badge and persist to Convex
   const unlockBadge = useCallback(async (badgeId: string): Promise<boolean> => {
     if (!user || !userAchievements) return false;
     
@@ -592,25 +572,19 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
     const updatedPoints = userAchievements.totalPoints + badge.points;
 
     try {
-      const userAchievementsRef = doc(db, "userAchievements", user.uid);
-      await updateDoc(userAchievementsRef, {
+      const next = {
+        ...userAchievements,
         badges: updatedBadges,
         totalPoints: updatedPoints,
-        updatedAt: serverTimestamp(),
-      });
-
-      setUserAchievements(prev => prev ? {
-        ...prev,
-        badges: updatedBadges,
-        totalPoints: updatedPoints,
-      } : null);
-
+      };
+      await setAchievementsMut({ data: next });
+      setUserAchievements(next);
       return true;
     } catch (error) {
       console.error("Error unlocking badge:", error);
       return false;
     }
-  }, [user, userAchievements, badges]);
+  }, [user, userAchievements, badges, setAchievementsMut]);
 
   // Update user stats and check for badge unlocks
   const updateStats = useCallback(async (newStats: Partial<UserAchievements["stats"]>): Promise<void> => {
@@ -619,16 +593,9 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
     const updatedStats = { ...userAchievements.stats, ...newStats };
 
     try {
-      const userAchievementsRef = doc(db, "userAchievements", user.uid);
-      await updateDoc(userAchievementsRef, {
-        stats: updatedStats,
-        updatedAt: serverTimestamp(),
-      });
-
-      setUserAchievements(prev => prev ? {
-        ...prev,
-        stats: updatedStats,
-      } : null);
+      const next = { ...userAchievements, stats: updatedStats };
+      await setAchievementsMut({ data: next });
+      setUserAchievements(next);
 
       // Check for badge unlocks based on new stats
       const badgesToUnlock: string[] = [];
@@ -675,14 +642,11 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
         badgesToUnlock.push("challenge-winner");
       }
 
-      // Unlock badges
-      for (const badgeId of badgesToUnlock) {
-        await unlockBadge(badgeId);
-      }
+      await Promise.all(badgesToUnlock.map((badgeId) => unlockBadge(badgeId)));
     } catch (error) {
       console.error("Error updating stats:", error);
     }
-  }, [user, userAchievements, unlockBadge]);
+  }, [user, userAchievements, unlockBadge, setAchievementsMut]);
 
   const checkAndUnlockBadges = useCallback(async (): Promise<Badge[]> => {
     // This would normally check server-side
@@ -719,8 +683,8 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
     return { current: achievement.currentValue, next: nextValue, progress };
   }, [achievements]);
 
-  return (
-    <AchievementContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       badges,
       achievements,
       userAchievements,
@@ -736,7 +700,12 @@ export const AchievementProvider = ({ children }: { children: ReactNode }) => {
       updateStats,
       getLeaderboard,
       getAchievementProgress,
-    }}>
+    }),
+    [achievements, badges, checkAndUnlockBadges, getAchievementProgress, getBadgeById, getLeaderboard, getLockedBadges, getNewBadgesCount, getUserBadges, hasBadge, loading, markBadgeAsSeen, unlockBadge, updateStats, userAchievements]
+  );
+
+  return (
+    <AchievementContext.Provider value={contextValue}>
       {children}
     </AchievementContext.Provider>
   );

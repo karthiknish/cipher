@@ -11,16 +11,16 @@ import { useMoodStyle, MoodType, MOOD_QUIZ_QUESTIONS } from "@/context/MoodStyle
 
 // Mood icons mapping
 const MOOD_ICONS: Record<MoodType, React.ReactNode> = {
-  calm: <Moon className="w-5 h-5" />,
-  playful: <Confetti className="w-5 h-5" />,
-  focused: <Brain className="w-5 h-5" />,
-  confident: <Lightning className="w-5 h-5" />,
-  cozy: <Coffee className="w-5 h-5" />,
-  adventurous: <Fire className="w-5 h-5" />,
-  romantic: <Heart className="w-5 h-5" />,
-  professional: <Trophy className="w-5 h-5" />,
-  rebellious: <Fire className="w-5 h-5" />,
-  minimal: <Palette className="w-5 h-5" />,
+  calm: <Moon className="size-5" />,
+  playful: <Confetti className="size-5" />,
+  focused: <Brain className="size-5" />,
+  confident: <Lightning className="size-5" />,
+  cozy: <Coffee className="size-5" />,
+  adventurous: <Fire className="size-5" />,
+  romantic: <Heart className="size-5" />,
+  professional: <Trophy className="size-5" />,
+  rebellious: <Fire className="size-5" />,
+  minimal: <Palette className="size-5" />,
 };
 
 const MOOD_COLORS: Record<MoodType, string> = {
@@ -83,9 +83,10 @@ export default function StyleAgentSection() {
       const data = await response.json();
       
       if (data.success) {
-        const matchedProducts = data.products
-          .map((id: string) => products.find((p) => p.id === id))
-          .filter(Boolean) as Product[];
+        const matchedProducts = data.products.flatMap((id: string) => {
+          const product = products.find((p) => p.id === id);
+          return product ? [product] : [];
+        }) as Product[];
         
         setResults({
           products: matchedProducts,
@@ -155,7 +156,7 @@ export default function StyleAgentSection() {
           className="text-center mb-12"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6">
-            <Sparkle className="w-4 h-4" weight="fill" />
+            <Sparkle className="size-4" weight="fill" />
             <span className="text-sm tracking-wider">AI-POWERED VIRTUAL STYLIST</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-light tracking-tight mb-4">
@@ -171,7 +172,7 @@ export default function StyleAgentSection() {
               animate={{ opacity: 1, scale: 1 }}
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-full"
             >
-              <Confetti className="w-4 h-4 text-white/70" />
+              <Confetti className="size-4 text-white/70" />
               <span className="text-sm text-white/70">Dopamine Dressing Mode Active — Let&apos;s boost your mood! ✨</span>
             </motion.div>
           )}
@@ -189,7 +190,7 @@ export default function StyleAgentSection() {
             <div className={`relative p-6 rounded-2xl ${MOOD_COLORS[currentMood.primaryMood]} border border-white/10 mb-8`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                  <div className="size-12 bg-white/10 rounded-full flex items-center justify-center">
                     {MOOD_ICONS[currentMood.primaryMood]}
                   </div>
                   <div>
@@ -198,23 +199,19 @@ export default function StyleAgentSection() {
                     <p className="text-sm text-white/50">{getMoodStyleInfo(currentMood.primaryMood).vibe}</p>
                   </div>
                 </div>
-                <button
-                  onClick={handleStartQuiz}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm transition"
-                >
+                <button type="button" onClick={handleStartQuiz}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-sm transition">
                   Retake Quiz
                 </button>
               </div>
             </div>
           ) : (
             <div className="text-center mb-8">
-              <button
-                onClick={handleStartQuiz}
-                className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-full font-medium hover:bg-neutral-200 transition-all"
-              >
-                <Sparkle className="w-5 h-5" weight="fill" />
+              <button aria-label="sparkle" type="button" onClick={handleStartQuiz}
+                className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-full font-medium hover:bg-neutral-200 transition-all">
+                <Sparkle className="size-5" weight="fill" />
                 Take the Mood Quiz
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </button>
               <p className="text-white/40 text-sm mt-3">5 quick questions to find your perfect style</p>
             </div>
@@ -228,9 +225,9 @@ export default function StyleAgentSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={handleCloseQuiz}
-            >
+              className="fixed inset-0 bg-gray-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              role="presentation"
+            ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={handleCloseQuiz} />
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -244,20 +241,20 @@ export default function StyleAgentSection() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", damping: 10 }}
-                      className={`w-20 h-20 mx-auto mb-6 rounded-full ${currentMood ? MOOD_COLORS[currentMood.primaryMood] : ""} flex items-center justify-center`}
+                      className={`size-20 mx-auto mb-6 rounded-full ${currentMood ? MOOD_COLORS[currentMood.primaryMood] : ""} flex items-center justify-center`}
                     >
                       {currentMood && MOOD_ICONS[currentMood.primaryMood]}
                     </motion.div>
                     <h3 className="text-2xl font-medium mb-2">You&apos;re feeling {currentMood?.primaryMood}!</h3>
                     <p className="text-white/60">{currentMood && getMoodStyleInfo(currentMood.primaryMood).vibe}</p>
-                    <p className="text-white/40 text-sm mt-4">Finding your perfect looks...</p>
+                    <p className="text-white/40 text-sm mt-4">Finding your perfect looks…</p>
                   </div>
                 ) : (
                   <>
                     <div className="mb-8">
                       <div className="flex justify-between text-sm text-white/50 mb-2">
                         <span>Question {currentQuestion + 1} of {MOOD_QUIZ_QUESTIONS.length}</span>
-                        <button onClick={handleCloseQuiz} className="hover:text-white">Skip</button>
+                        <button type="button" onClick={handleCloseQuiz} className="hover:text-white">Skip</button>
                       </div>
                       <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                         <motion.div
@@ -282,7 +279,7 @@ export default function StyleAgentSection() {
                         <div className="space-y-3">
                           {MOOD_QUIZ_QUESTIONS[currentQuestion].options.map((option, idx) => (
                             <motion.button
-                              key={idx}
+                              key={option.text}
                               onClick={() => handleQuizAnswer(idx)}
                               className="w-full p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all"
                               whileHover={{ scale: 1.02 }}
@@ -310,7 +307,7 @@ export default function StyleAgentSection() {
           className="max-w-2xl mx-auto mb-8"
         >
           <div className="relative">
-            <input
+            <input aria-label="Try 'I have a date tonight' or 'feeling stressed, need comfort'..."
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -318,15 +315,14 @@ export default function StyleAgentSection() {
               placeholder="Try 'I have a date tonight' or 'feeling stressed, need comfort'..."
               className="w-full pl-6 pr-14 py-5 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition text-base"
             />
-            <button
-              onClick={() => handleSearch()}
+            <button type="button" onClick={() => handleSearch()}
               disabled={loading || !query.trim()}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-white text-black rounded-full hover:bg-white/90 transition disabled:opacity-50"
             >
               {loading ? (
-                <SpinnerGap className="w-5 h-5 animate-spin" />
+                <SpinnerGap className="size-5 animate-spin" />
               ) : (
-                <MagnifyingGlass className="w-5 h-5" />
+                <MagnifyingGlass className="size-5" />
               )}
             </button>
           </div>
@@ -341,8 +337,7 @@ export default function StyleAgentSection() {
               "work from home",
               "weekend exploring"
             ].map((tag) => (
-              <button
-                key={tag}
+              <button type="button" key={tag}
                 onClick={() => handleTagClick(tag)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full text-sm transition"
               >
@@ -363,8 +358,8 @@ export default function StyleAgentSection() {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-16 text-white/40"
               >
-                <SpinnerGap className="w-10 h-10 animate-spin mb-4" />
-                <p className="text-sm tracking-wider">UNDERSTANDING YOUR MOOD...</p>
+                <SpinnerGap className="size-10 animate-spin mb-4" />
+                <p className="text-sm tracking-wider">UNDERSTANDING YOUR MOOD…</p>
               </motion.div>
             )}
 
@@ -376,8 +371,8 @@ export default function StyleAgentSection() {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-16 text-center"
               >
-                <div className="w-20 h-20 border border-white/20 rounded-full flex items-center justify-center mb-6">
-                  <Sparkle className="w-8 h-8 text-white/30" weight="fill" />
+                <div className="size-20 border border-white/20 rounded-full flex items-center justify-center mb-6">
+                  <Sparkle className="size-8 text-white/30" weight="fill" />
                 </div>
                 <p className="text-white/40 text-sm tracking-wider">YOUR PERSONALIZED STYLE PICKS WILL APPEAR HERE</p>
                 <p className="text-white/30 text-xs mt-2">Take the mood quiz or describe how you&apos;re feeling</p>
@@ -398,8 +393,8 @@ export default function StyleAgentSection() {
                   className={`${results.moodDetected ? MOOD_COLORS[results.moodDetected as MoodType] : "bg-white/5"} border border-white/10 rounded-2xl p-6 mb-8`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      {results.moodDetected ? MOOD_ICONS[results.moodDetected as MoodType] : <Sparkle className="w-5 h-5" weight="fill" />}
+                    <div className="size-10 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      {results.moodDetected ? MOOD_ICONS[results.moodDetected as MoodType] : <Sparkle className="size-5" weight="fill" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -435,14 +430,13 @@ export default function StyleAgentSection() {
                               alt={product.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                             sizes="(max-width: 768px) 100vw, 50vw" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </Link>
                         
                         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => {
+                          <button type="button" onClick={() => {
                               if (isInWishlist(product.id)) {
                                 removeFromWishlist(product.id);
                               } else {
@@ -452,12 +446,11 @@ export default function StyleAgentSection() {
                             className="p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
                           >
                             <Heart 
-                              className={`w-4 h-4 ${isInWishlist(product.id) ? "text-red-500" : "text-gray-600"}`} 
+                              className={`size-4 ${isInWishlist(product.id) ? "text-red-500" : "text-gray-600"}`} 
                               weight={isInWishlist(product.id) ? "fill" : "regular"}
                             />
                           </button>
-                          <button
-                            onClick={() => addToCart({ 
+                          <button type="button" onClick={() => addToCart({ 
                               id: product.id,
                               name: product.name,
                               price: product.price,
@@ -468,7 +461,7 @@ export default function StyleAgentSection() {
                             })}
                             className="p-2 bg-white rounded-full shadow-lg hover:scale-110 transition-transform"
                           >
-                            <ShoppingBag className="w-4 h-4 text-gray-600" />
+                            <ShoppingBag className="size-4 text-gray-600" />
                           </button>
                         </div>
 
@@ -499,7 +492,7 @@ export default function StyleAgentSection() {
                       className="inline-flex items-center gap-2 px-8 py-4 border border-white/20 hover:bg-white hover:text-black transition-all text-sm tracking-wider rounded-full"
                     >
                       VIEW ALL PRODUCTS
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="size-4" />
                     </Link>
                   </motion.div>
                 )}

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white">
+    <footer className="bg-gray-950 text-white">
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
@@ -59,7 +59,7 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/40">
-            <p>© {new Date().getFullYear()} Cipher. All rights reserved.</p>
+            <p suppressHydrationWarning>© {new Date().getFullYear()} Cipher. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="#" className="hover:text-white transition">Instagram</Link>
               <Link href="#" className="hover:text-white transition">Twitter</Link>

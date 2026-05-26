@@ -8,19 +8,18 @@ import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useProducts } from "@/context/ProductContext";
-import { signOut } from "@/lib/firebase";
 import { List, X, User, Heart, MagnifyingGlass, ArrowRight, Tag, Clock, Gift, CaretDown, Trophy, ShoppingBag, UserCircle, Fire } from "@phosphor-icons/react";
 import { useSpinWheel } from "@/context/SpinWheelContext";
 import { motion, AnimatePresence } from "@/lib/motion";
 
 export default function Navbar() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, signOut } = useAuth();
   const { cart } = useCart();
   const toast = useToast();
   const { wishlist } = useWishlist();
   const { products } = useProducts();
   const { canSpinToday, result, setShowWheel, requiresLogin } = useSpinWheel();
-  const router = useRouter();
+  const { push } = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -39,9 +38,9 @@ export default function Navbar() {
 
   // Focus input when search opens
   useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      setTimeout(() => searchInputRef.current?.focus(), 100);
-    }
+    if (!searchOpen) return;
+    const timer = setTimeout(() => searchInputRef.current?.focus(), 100);
+    return () => clearTimeout(timer);
   }, [searchOpen]);
 
   // Close search on escape
@@ -90,7 +89,7 @@ export default function Navbar() {
     localStorage.setItem("cipher-recent-searches", JSON.stringify(updated));
 
     // Navigate to shop with search query
-    router.push(`/shop?search=${encodeURIComponent(query)}`);
+    push(`/shop?search=${encodeURIComponent(query)}`);
     setSearchOpen(false);
     setSearchQuery("");
   };
@@ -98,7 +97,7 @@ export default function Navbar() {
   const handleProductClick = (productId: string) => {
     setSearchOpen(false);
     setSearchQuery("");
-    router.push(`/shop/${productId}`);
+    push(`/shop/${productId}`);
   };
 
   const clearRecentSearches = () => {
@@ -121,6 +120,7 @@ export default function Navbar() {
     await signOut();
     toast.info("Signed out successfully");
     setUserMenuOpen(false);
+    push("/login");
   };
 
   return (
@@ -128,12 +128,11 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          <button type="button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 -ml-2"
             aria-label="Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" weight="bold" /> : <List className="w-5 h-5" weight="bold" />}
+            {mobileMenuOpen ? <X className="size-5" weight="bold" /> : <List className="size-5" weight="bold" />}
           </button>
 
           {/* Desktop Navigation - Left */}
@@ -157,35 +156,33 @@ export default function Navbar() {
           {/* Right Icons */}
           <div className="flex items-center gap-6">
             {/* Spin to Win */}
-            <button
-              onClick={() => setShowWheel(true)}
+            <button type="button" onClick={() => setShowWheel(true)}
               className="relative hover:opacity-60 transition-opacity group"
               aria-label="Spin to Win"
               title={requiresLogin ? "Sign in to spin!" : canSpinToday ? "Spin to Win!" : (result ? "View your reward" : "Come back tomorrow!")}
             >
-              <Gift className="w-5 h-5" />
+              <Gift className="size-5" />
               {(requiresLogin || canSpinToday) && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="absolute -top-1 -right-1 size-2 bg-red-500 rounded-full animate-pulse" />
               )}
               {!requiresLogin && !canSpinToday && result && result.segment.type !== "tryAgain" && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-[8px] rounded-full flex items-center justify-center">✓</span>
+                <span className="absolute -top-1 -right-1 size-4 bg-green-500 text-white text-[8px] rounded-full flex items-center justify-center">✓</span>
               )}
             </button>
 
             {/* Search */}
-            <button
-              onClick={() => setSearchOpen(true)}
+            <button type="button" onClick={() => setSearchOpen(true)}
               className="hover:opacity-60 transition-opacity"
               aria-label="Search"
             >
-              <MagnifyingGlass className="w-5 h-5" />
+              <MagnifyingGlass className="size-5" />
             </button>
 
             {/* Wishlist */}
             <Link href="/wishlist" className="relative hover:opacity-60 transition-opacity">
-              <Heart className="w-5 h-5" />
+              <Heart className="size-5" />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 size-4 bg-gray-950 text-white text-[10px] rounded-full flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
@@ -194,12 +191,11 @@ export default function Navbar() {
             {/* User Menu */}
             {user ? (
               <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                <button type="button" onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="hover:opacity-60 transition-opacity"
                   aria-label="Account"
                 >
-                  <User className="w-5 h-5" />
+                  <User className="size-5" />
                 </button>
 
                 <AnimatePresence>
@@ -223,7 +219,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                         >
-                          <UserCircle className="w-4 h-4 text-gray-400" />
+                          <UserCircle className="size-4 text-gray-400" />
                           PROFILE
                         </Link>
                         <Link
@@ -231,7 +227,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                         >
-                          <ShoppingBag className="w-4 h-4 text-gray-400" />
+                          <ShoppingBag className="size-4 text-gray-400" />
                           ORDERS
                         </Link>
                         <Link
@@ -239,7 +235,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                         >
-                          <Heart className="w-4 h-4 text-gray-400" />
+                          <Heart className="size-4 text-gray-400" />
                           WISHLIST
                         </Link>
                         <Link
@@ -247,7 +243,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                         >
-                          <Trophy className="w-4 h-4 text-gray-400" />
+                          <Trophy className="size-4 text-gray-400" />
                           ACHIEVEMENTS
                         </Link>
                         <Link
@@ -255,7 +251,7 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                         >
-                          <Fire className="w-4 h-4 text-gray-400" />
+                          <Fire className="size-4 text-gray-400" />
                           CHALLENGES
                         </Link>
                       </div>
@@ -268,7 +264,7 @@ export default function Navbar() {
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wider hover:bg-gray-50 transition-colors"
                           >
-                            <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
+                            <span className="size-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
                             ADMIN PANEL
                           </Link>
                         </div>
@@ -276,11 +272,9 @@ export default function Navbar() {
 
                       {/* Sign Out */}
                       <div className="border-t border-gray-100">
-                        <button
-                          onClick={handleSignOut}
-                          className="flex items-center gap-3 w-full text-left px-4 py-3 text-xs tracking-wider hover:bg-red-50 transition-colors text-red-600"
-                        >
-                          <X className="w-4 h-4" />
+                        <button aria-label="x" type="button" onClick={handleSignOut}
+                          className="flex items-center gap-3 w-full text-left px-4 py-3 text-xs tracking-wider hover:bg-red-50 transition-colors text-red-600">
+                          <X className="size-4" />
                           SIGN OUT
                         </button>
                       </div>
@@ -336,7 +330,7 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      <UserCircle className="w-4 h-4 text-gray-400" />
+                      <UserCircle className="size-4 text-gray-400" />
                       PROFILE
                     </Link>
                     <Link 
@@ -344,7 +338,7 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      <ShoppingBag className="w-4 h-4 text-gray-400" />
+                      <ShoppingBag className="size-4 text-gray-400" />
                       ORDERS
                     </Link>
                     <Link 
@@ -352,7 +346,7 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      <Heart className="w-4 h-4 text-gray-400" />
+                      <Heart className="size-4 text-gray-400" />
                       WISHLIST
                     </Link>
                     <Link 
@@ -360,7 +354,7 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      <Trophy className="w-4 h-4 text-gray-400" />
+                      <Trophy className="size-4 text-gray-400" />
                       ACHIEVEMENTS
                     </Link>
                     <Link 
@@ -368,7 +362,7 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                     >
-                      <Fire className="w-4 h-4 text-gray-400" />
+                      <Fire className="size-4 text-gray-400" />
                       CHALLENGES
                     </Link>
                     
@@ -381,18 +375,17 @@ export default function Navbar() {
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 text-sm tracking-wider hover:opacity-60 transition-opacity"
                       >
-                        <span className="w-4 h-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
+                        <span className="size-4 flex items-center justify-center text-gray-400 text-[10px]">⚙️</span>
                         ADMIN
                       </Link>
                     )}
-                    <button
-                      onClick={() => {
+                    <button type="button" onClick={() => {
                         handleSignOut();
                         setMobileMenuOpen(false);
                       }}
                       className="flex items-center gap-3 text-sm tracking-wider text-red-600 hover:opacity-60 transition-opacity"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="size-4" />
                       SIGN OUT
                     </button>
                   </>
@@ -425,10 +418,11 @@ export default function Navbar() {
             <div className="border-b border-gray-100">
               <div className="container mx-auto px-4">
                 <div className="flex items-center gap-4 h-20">
-                  <MagnifyingGlass className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                  <MagnifyingGlass className="size-6 text-gray-400 flex-shrink-0" />
                   <input
                     ref={searchInputRef}
                     type="text"
+                    aria-label="Search products"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -439,15 +433,14 @@ export default function Navbar() {
                     placeholder="Search for products..."
                     className="flex-1 text-xl md:text-2xl font-light outline-none placeholder:text-gray-300"
                   />
-                  <button
-                    onClick={() => {
+                  <button type="button" onClick={() => {
                       setSearchOpen(false);
                       setSearchQuery("");
                     }}
                     className="p-2 hover:bg-gray-100 transition rounded-full"
                     aria-label="Close search"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="size-6" />
                   </button>
                 </div>
               </div>
@@ -478,7 +471,7 @@ export default function Navbar() {
                                 alt={product.name}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
-                              />
+                               sizes="(max-width: 768px) 100vw, 50vw" />
                               {product.isNew && (
                                 <span className="absolute top-2 left-2 px-2 py-0.5 bg-blue-500 text-white text-[10px] tracking-wider">
                                   NEW
@@ -491,17 +484,16 @@ export default function Navbar() {
                         ))}
                       </div>
                       {searchResults.length === 8 && (
-                        <button
-                          onClick={() => handleSearch(searchQuery)}
+                        <button aria-label="arrow right" type="button" onClick={() => handleSearch(searchQuery)}
                           className="mt-8 flex items-center gap-2 text-sm tracking-wider hover:gap-4 transition-all"
                         >
-                          VIEW ALL RESULTS <ArrowRight className="w-4 h-4" />
+                          VIEW ALL RESULTS <ArrowRight className="size-4" />
                         </button>
                       )}
                     </>
                   ) : (
                     <div className="text-center py-16">
-                      <MagnifyingGlass className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                      <MagnifyingGlass className="size-16 text-gray-200 mx-auto mb-4" />
                       <p className="text-gray-500">No products found for "{searchQuery}"</p>
                       <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
                     </div>
@@ -514,28 +506,25 @@ export default function Navbar() {
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <p className="text-xs tracking-wider text-gray-500 flex items-center gap-2">
-                          <Clock className="w-4 h-4" /> RECENT SEARCHES
+                          <Clock className="size-4" /> RECENT SEARCHES
                         </p>
-                        <button
-                          onClick={clearRecentSearches}
-                          className="text-xs text-gray-400 hover:text-black transition"
-                        >
+                        <button type="button" onClick={clearRecentSearches}
+                          className="text-xs text-gray-400 hover:text-black transition">
                           Clear all
                         </button>
                       </div>
                       <div className="space-y-3">
-                        {recentSearches.map((query, index) => (
-                          <button
-                            key={index}
+                        {recentSearches.map((query) => (
+                          <button type="button" key={query}
                             onClick={() => {
                               setSearchQuery(query);
                               handleSearch(query);
                             }}
                             className="flex items-center gap-3 w-full text-left hover:bg-gray-50 p-2 -mx-2 transition group"
                           >
-                            <MagnifyingGlass className="w-4 h-4 text-gray-400" />
+                            <MagnifyingGlass className="size-4 text-gray-400" />
                             <span className="flex-1">{query}</span>
-                            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-black transition" />
+                            <ArrowRight className="size-4 text-gray-300 group-hover:text-black transition" />
                           </button>
                         ))}
                       </div>
@@ -545,17 +534,16 @@ export default function Navbar() {
                   {/* Popular Categories */}
                   <div>
                     <p className="text-xs tracking-wider text-gray-500 flex items-center gap-2 mb-4">
-                      <Tag className="w-4 h-4" /> POPULAR CATEGORIES
+                      <Tag className="size-4" /> POPULAR CATEGORIES
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {popularCategories.map((category) => (
-                        <button
-                          key={category}
+                        <button type="button" key={category}
                           onClick={() => {
                             setSearchQuery(category);
                             handleSearch(category);
                           }}
-                          className="px-4 py-2 border border-gray-200 text-sm tracking-wider hover:border-black hover:bg-black hover:text-white transition"
+                          className="px-4 py-2 border border-gray-200 text-sm tracking-wider hover:border-black hover:bg-gray-950 hover:text-white transition"
                         >
                           {category.toUpperCase()}
                         </button>
@@ -585,7 +573,7 @@ export default function Navbar() {
                                   alt={product.name}
                                   fill
                                   className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
+                                 sizes="(max-width: 768px) 100vw, 50vw" />
                               </div>
                               <p className="text-sm font-medium group-hover:underline">{product.name}</p>
                               <p className="text-sm text-gray-500">${product.price}</p>

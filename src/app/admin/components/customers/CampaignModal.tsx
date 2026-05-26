@@ -65,9 +65,9 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -81,8 +81,8 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
               <h2 className="text-xl font-light tracking-tight">{campaignInfo[type].title}</h2>
               <p className="text-sm text-gray-500 mt-1">{campaignInfo[type].description}</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -90,17 +90,15 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
         <div className="p-6 space-y-6">
           {sent ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" weight="fill" />
+              <div className="size-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="size-8 text-green-600" weight="fill" />
               </div>
               <h3 className="text-lg font-medium mb-2">Campaign Sent!</h3>
               <p className="text-gray-500">
                 Successfully sent to {recipients.length} recipient{recipients.length > 1 ? "s" : ""}
               </p>
-              <button
-                onClick={onClose}
-                className="mt-6 bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800"
-              >
+              <button type="button" onClick={onClose}
+                className="mt-6 bg-gray-950 text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800">
                 CLOSE
               </button>
             </div>
@@ -113,7 +111,7 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
                 </label>
                 <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-1">
                   {recipients.slice(0, 5).map((r, i) => (
-                    <p key={i} className="text-sm text-gray-600">{r.email}</p>
+                    <p key={r.email} className="text-sm text-gray-600">{r.email}</p>
                   ))}
                   {recipients.length > 5 && (
                     <p className="text-sm text-gray-400">+{recipients.length - 5} more</p>
@@ -123,8 +121,8 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
 
               {/* Subject Line */}
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">SUBJECT LINE</label>
-                <input
+                <label htmlFor="CampaignModal-subject-line-15" className="block text-xs tracking-wider text-gray-500 mb-2">SUBJECT LINE</label>
+                <input aria-label="SUBJECT LINE" id="CampaignModal-subject-line-15"
                   type="text"
                   value={customSubject || campaignInfo[type].defaultSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
@@ -135,8 +133,8 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
 
               {type === "custom" && (
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">MESSAGE</label>
-                  <textarea
+                  <label htmlFor="CampaignModal-message-16" className="block text-xs tracking-wider text-gray-500 mb-2">MESSAGE</label>
+                  <textarea aria-label="MESSAGE" id="CampaignModal-message-16"
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     rows={4}
@@ -148,24 +146,22 @@ export function CampaignModal({ isOpen, onClose, type, recipients, onSend }: Cam
 
               {error && (
                 <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                  <XCircle className="w-4 h-4" />
+                  <XCircle className="size-4" />
                   {error}
                 </div>
               )}
 
-              <button
-                onClick={handleSend}
+              <button type="button" onClick={handleSend}
                 disabled={sending}
-                className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
+                className="w-full bg-gray-950 text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
                 {sending ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    SENDING...
+                    <SpinnerGap className="size-4 animate-spin" />
+                    SENDING…
                   </>
                 ) : (
                   <>
-                    <PaperPlaneTilt className="w-4 h-4" />
+                    <PaperPlaneTilt className="size-4" />
                     SEND CAMPAIGN
                   </>
                 )}

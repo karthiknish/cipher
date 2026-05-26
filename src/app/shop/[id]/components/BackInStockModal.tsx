@@ -67,9 +67,9 @@ export default function BackInStockModal({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" 
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/60 z-50 flex items-center justify-center p-4" 
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
@@ -80,16 +80,16 @@ export default function BackInStockModal({
         <div className="p-6 border-b border-gray-100">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 flex items-center justify-center">
-                <Bell className="w-5 h-5 text-amber-600" />
+              <div className="size-10 bg-amber-100 flex items-center justify-center">
+                <Bell className="size-5 text-amber-600" />
               </div>
               <div>
                 <h2 className="text-lg font-light tracking-tight">NOTIFY ME</h2>
                 <p className="text-xs text-gray-500">Get alerted when back in stock</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -98,15 +98,15 @@ export default function BackInStockModal({
           {/* Product Preview */}
           <div className="flex items-center gap-4 p-4 bg-gray-50 mb-6">
             <div className="w-16 h-20 bg-gray-200 relative overflow-hidden flex-shrink-0">
-              <Image src={product.image} alt={product.name} fill className="object-cover" />
+              <Image src={product.image} alt={product.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
             </div>
             <div>
               <h3 className="font-medium">{product.name}</h3>
-              {selectedSize && (
+              {selectedSize ? (
                 <p className="text-sm text-gray-500">Size: {selectedSize}</p>
-              )}
+              ) : null}
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <Warning className="w-3 h-3" /> Currently out of stock
+                <Warning className="size-3" /> Currently out of stock
               </p>
             </div>
           </div>
@@ -117,8 +117,8 @@ export default function BackInStockModal({
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-6"
             >
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="size-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="size-8 text-green-600" />
               </div>
               <h3 className="font-medium mb-2">You&apos;re on the list!</h3>
               <p className="text-sm text-gray-500">
@@ -128,12 +128,12 @@ export default function BackInStockModal({
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">
+                <label htmlFor="BackInStockModal-field-36" className="block text-xs tracking-wider text-gray-500 mb-2">
                   EMAIL ADDRESS
                 </label>
                 <div className="relative">
-                  <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
+                  <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                  <input aria-label="EMAIL ADDRESS" id="BackInStockModal-field-36"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -147,15 +147,15 @@ export default function BackInStockModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-gray-950 text-white py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" /> SUBSCRIBING...
+                    <SpinnerGap className="size-4 animate-spin" /> SUBSCRIBING…
                   </>
                 ) : (
                   <>
-                    <Bell className="w-4 h-4" /> NOTIFY ME
+                    <Bell className="size-4" /> NOTIFY ME
                   </>
                 )}
               </button>

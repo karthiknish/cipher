@@ -33,7 +33,12 @@ export default function SpinWheel() {
   const [selectedSegment, setSelectedSegment] = useState<WheelSegment | null>(null);
   const [copied, setCopied] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showWheel) setNow(Date.now());
+  }, [showWheel, result]);
 
   const segmentAngle = 360 / segments.length;
 
@@ -102,35 +107,36 @@ export default function SpinWheel() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget && !isSpinning) {
-            handleClose();
-          }
-        }}
+        className="fixed inset-0 bg-gray-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+        role="presentation"
       >
+        <button
+          type="button"
+          aria-label="Close spin wheel"
+          className="absolute inset-0 w-full h-full cursor-default"
+          disabled={isSpinning}
+          onClick={handleClose}
+        />
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.8, opacity: 0 }}
           transition={{ type: "spring", damping: 25 }}
-          className="relative bg-white max-w-lg w-full p-6 md:p-8"
+          className="relative z-10 bg-white max-w-lg w-full p-6 md:p-8"
         >
           {/* Close Button */}
-          <button
-            onClick={handleClose}
+          <button aria-label="x" type="button" onClick={handleClose}
             disabled={isSpinning}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 transition disabled:opacity-50"
-          >
-            <X className="w-5 h-5" />
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 transition disabled:opacity-50">
+            <X className="size-5" />
           </button>
 
           {/* Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Sparkle className="w-5 h-5" />
+              <Sparkle className="size-5" />
               <span className="text-xs tracking-[0.2em] text-gray-500">WELCOME GIFT</span>
-              <Sparkle className="w-5 h-5" />
+              <Sparkle className="size-5" />
             </div>
             <h2 className="text-2xl md:text-3xl font-light tracking-tight">
               SPIN TO WIN
@@ -144,21 +150,21 @@ export default function SpinWheel() {
           <div className="relative flex justify-center mb-6">
             {/* Pointer */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
-              <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[20px] border-l-transparent border-r-transparent border-t-black" />
+              <div className="size-0 border-l-[12px] border-r-[12px] border-t-[20px] border-l-transparent border-r-transparent border-t-black" />
             </div>
 
             {/* Wheel */}
-            <div className="relative w-64 h-64 md:w-72 md:h-72">
+            <div className="relative size-64 md:size-72">
               <motion.div
                 ref={wheelRef}
-                className="w-full h-full"
+                className="size-full"
                 animate={{ rotate: rotation }}
                 transition={{
                   duration: 5,
                   ease: [0.2, 0.8, 0.2, 1],
                 }}
               >
-                <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
+                <svg viewBox="0 0 200 200" className="size-full drop-shadow-2xl">
                   {/* Wheel segments */}
                   {segments.map((segment, index) => {
                     const startAngle = (index / segments.length) * 360 - 90;
@@ -208,19 +214,17 @@ export default function SpinWheel() {
               </motion.div>
 
               {/* Center Button */}
-              <button
-                onClick={handleSpin}
+              <button type="button" onClick={handleSpin}
                 disabled={isSpinning || !canSpinToday || requiresLogin}
-                className="absolute inset-0 m-auto w-20 h-20 md:w-24 md:h-24 rounded-full bg-white border-4 border-black flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-50 shadow-lg z-10"
-              >
+                className="absolute inset-0 m-auto size-20 md:size-24 rounded-full bg-white border-4 border-black flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-50 shadow-lg z-10">
                 {isSpinning ? (
-                  <SpinnerGap className="w-8 h-8 animate-spin" />
+                  <SpinnerGap className="size-8 animate-spin" />
                 ) : isLoading ? (
-                  <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+                  <SpinnerGap className="size-8 animate-spin text-gray-400" />
                 ) : requiresLogin ? (
-                  <SignIn className="w-8 h-8" />
+                  <SignIn className="size-8" />
                 ) : !canSpinToday ? (
-                  <Gift className="w-8 h-8" />
+                  <Gift className="size-8" />
                 ) : (
                   <span className="text-xs font-bold tracking-wider">SPIN</span>
                 )}
@@ -247,11 +251,11 @@ export default function SpinWheel() {
                 ) : (
                   <div>
                     <div className="flex items-center justify-center gap-2 mb-3">
-                      <Confetti className="w-6 h-6 text-amber-500" />
+                      <Confetti className="size-6 text-amber-500" />
                       <p className="text-lg font-medium">
                         {hasSpun && !isSpinning ? "Your Reward" : "Congratulations!"}
                       </p>
-                      <Confetti className="w-6 h-6 text-amber-500" />
+                      <Confetti className="size-6 text-amber-500" />
                     </div>
                     <p className="text-gray-600 mb-4">
                       You won <span className="font-bold">{result.segment.label}</span>
@@ -264,32 +268,29 @@ export default function SpinWheel() {
                         <span className="text-2xl font-bold tracking-[0.15em]">
                           {result.code}
                         </span>
-                        <button
-                          onClick={handleCopyCode}
+                        <button type="button" onClick={handleCopyCode}
                           className="p-2 hover:bg-gray-200 transition"
-                          title="Copy code"
-                        >
+                          aria-label="Copy code" title="Copy code">
                           {copied ? (
-                            <Check className="w-5 h-5 text-green-600" />
+                            <Check className="size-5 text-green-600" />
                           ) : (
-                            <Copy className="w-5 h-5" />
+                            <Copy className="size-5" />
                           )}
                         </button>
                       </div>
                       <p className="text-xs text-gray-400 mt-2">
-                        {result.expiresAt > Date.now() 
+                        {now !== null && result.expiresAt > now
                           ? `Expires ${new Date(result.expiresAt).toLocaleDateString()}`
                           : "Expired"
                         }
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => {
+                    <button type="button" onClick={() => {
                         handleCopyCode();
                         handleClose();
                       }}
-                      className="w-full bg-black text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
+                      className="w-full bg-gray-950 text-white py-3 text-sm tracking-wider hover:bg-gray-800 transition"
                     >
                       COPY & START SHOPPING
                     </button>
@@ -303,16 +304,16 @@ export default function SpinWheel() {
           {!showResult && (
             <div className="text-center text-sm text-gray-500">
               {isLoading ? (
-                <p>Loading...</p>
+                <p>Loading…</p>
               ) : requiresLogin ? (
                 <div>
                   <p className="mb-4">Sign in to spin the wheel and win exclusive rewards!</p>
                   <Link
                     href="/login"
                     onClick={handleClose}
-                    className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 transition"
+                    className="inline-flex items-center gap-2 bg-gray-950 text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 transition"
                   >
-                    <SignIn className="w-4 h-4" />
+                    <SignIn className="size-4" />
                     SIGN IN TO SPIN
                   </Link>
                   <p className="text-xs mt-4 text-gray-400">
@@ -338,10 +339,10 @@ export default function SpinWheel() {
           )}
 
           {/* Decorative Elements */}
-          <div className="absolute -top-2 -left-2 w-4 h-4 bg-black" />
-          <div className="absolute -top-2 -right-2 w-4 h-4 bg-black" />
-          <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-black" />
-          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-black" />
+          <div className="absolute -top-2 -left-2 size-4 bg-gray-950" />
+          <div className="absolute -top-2 -right-2 size-4 bg-gray-950" />
+          <div className="absolute -bottom-2 -left-2 size-4 bg-gray-950" />
+          <div className="absolute -bottom-2 -right-2 size-4 bg-gray-950" />
         </motion.div>
 
         {/* Floating Trigger (shown when wheel is dismissed but reward not used) */}

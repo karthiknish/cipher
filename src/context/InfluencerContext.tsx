@@ -1,20 +1,7 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  doc, 
-  onSnapshot, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  getDocs, 
-  increment,
-  serverTimestamp,
-  Timestamp
-} from "firebase/firestore";
+import { createContext, use, useMemo, ReactNode, useCallback } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useAuth } from "./AuthContext";
 
 export interface Influencer {
@@ -157,113 +144,66 @@ const TIER_COMMISSION_RATES: Record<Influencer["tier"], number> = {
 
 const InfluencerContext = createContext<InfluencerContextType | undefined>(undefined);
 
+function mapInfluencer(i: Record<string, unknown>): Influencer {
+  return {
+    ...(i as Omit<Influencer, "joinedAt" | "lastActiveAt" | "tier" | "socialLinks">),
+    socialLinks: (i.socialLinks ?? {}) as Influencer["socialLinks"],
+    tier: String(i.tier) as Influencer["tier"],
+    joinedAt: new Date(Number(i.joinedAt)),
+    lastActiveAt: new Date(Number(i.lastActiveAt)),
+  };
+}
+
 export function InfluencerProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [influencers, setInfluencers] = useState<Influencer[]>([]);
-  const [currentInfluencer, setCurrentInfluencer] = useState<Influencer | null>(null);
-  const [sales, setSales] = useState<InfluencerSale[]>([]);
-  const [applications, setApplications] = useState<InfluencerApplication[]>([]);
-  const [loading, setLoading] = useState(true);
+  const convexInfluencers = useQuery(api.influencers.list);
+  const convexApplications = useQuery(api.influencers.listApplications);
+  const patchMut = useMutation(api.influencers.patchInfluencer);
+  const trackClickMut = useMutation(api.influencers.trackClick);
+  const recordSaleMut = useMutation(api.influencers.recordSale);
+  const applyMut = useMutation(api.influencers.apply);
+  const approveMut = useMutation(api.influencers.approveApplication);
+  const rejectMut = useMutation(api.influencers.rejectApplication);
+  const markPaidMut = useMutation(api.influencers.markSalePaid);
 
-  // Subscribe to influencers
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "influencers"),
-      (snapshot) => {
-        const data: Influencer[] = [];
-        snapshot.forEach((doc) => {
-          const docData = doc.data();
-          data.push({
-            ...docData,
-            id: doc.id,
-            joinedAt: docData.joinedAt?.toDate() || new Date(),
-            lastActiveAt: docData.lastActiveAt?.toDate() || new Date(),
-          } as Influencer);
-        });
-        setInfluencers(data);
-        setLoading(false);
-        
-        // Check if current user is an influencer
-        if (user) {
-          const userInfluencer = data.find(i => i.userId === user.uid);
-          setCurrentInfluencer(userInfluencer || null);
-        }
-      },
-      (error) => {
-        console.error("Error fetching influencers:", error);
-        setLoading(false);
-      }
-    );
-    return () => unsubscribe();
-  }, [user]);
+  const influencers = useMemo(
+    () => (convexInfluencers ?? []).map(mapInfluencer),
+    [convexInfluencers]
+  );
+  const loading = convexInfluencers === undefined;
 
-  // Subscribe to sales for current influencer
-  useEffect(() => {
-    if (!currentInfluencer) {
-      setSales([]);
-      return;
-    }
+  const currentInfluencer = useMemo(
+    () => (user ? influencers.find((i) => i.userId === user.uid) ?? null : null),
+    [influencers, user]
+  );
 
-    const q = query(
-      collection(db, "influencerSales"),
-      where("influencerId", "==", currentInfluencer.id)
-    );
+  const convexSales = useQuery(
+    api.influencers.listSales,
+    currentInfluencer ? { influencerId: currentInfluencer.id } : "skip"
+  );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: InfluencerSale[] = [];
-      snapshot.forEach((doc) => {
-        const docData = doc.data();
-        data.push({
-          ...docData,
-          id: doc.id,
-          createdAt: docData.createdAt?.toDate() || new Date(),
-          paidAt: docData.paidAt?.toDate(),
-        } as InfluencerSale);
-      });
-      setSales(data.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
-    }, (error) => {
-      // Permission denied is expected for non-admin users
-      if (error.code !== "permission-denied") {
-        console.error("Error fetching influencer sales:", error);
-      }
-      setSales([]);
-    });
+  const sales: InfluencerSale[] = useMemo(
+    () =>
+      (convexSales ?? []).map((s) => ({
+        ...s,
+        status: s.status as InfluencerSale["status"],
+        createdAt: new Date(s.createdAt),
+        paidAt: s.paidAt ? new Date(s.paidAt) : undefined,
+      })),
+    [convexSales]
+  );
 
-    return () => unsubscribe();
-  }, [currentInfluencer]);
-
-  // Subscribe to applications (for admin) - only set up if user is authenticated
-  useEffect(() => {
-    if (!user) {
-      setApplications([]);
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      collection(db, "influencerApplications"),
-      (snapshot) => {
-        const data: InfluencerApplication[] = [];
-        snapshot.forEach((doc) => {
-          const docData = doc.data();
-          data.push({
-            ...docData,
-            id: doc.id,
-            submittedAt: docData.submittedAt?.toDate() || new Date(),
-            reviewedAt: docData.reviewedAt?.toDate(),
-          } as InfluencerApplication);
-        });
-        setApplications(data.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()));
-      },
-      (error) => {
-        // Permission denied is expected for non-admin users
-        if (error.code !== "permission-denied") {
-          console.error("Error fetching applications:", error);
-        }
-        setApplications([]);
-      }
-    );
-    return () => unsubscribe();
-  }, [user]);
+  const applications: InfluencerApplication[] = useMemo(
+    () =>
+      (convexApplications ?? []).map((a) => ({
+        ...a,
+        status: a.status as InfluencerApplication["status"],
+        socialLinks: a.socialLinks as InfluencerApplication["socialLinks"],
+        submittedAt: new Date(a.submittedAt),
+        reviewedAt: a.reviewedAt ? new Date(a.reviewedAt) : undefined,
+      })),
+    [convexApplications]
+  );
 
   const getInfluencerByUsername = useCallback((username: string): Influencer | null => {
     return influencers.find(i => i.username.toLowerCase() === username.toLowerCase()) || null;
@@ -276,10 +216,7 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   const updateCuratedProducts = async (productIds: string[]): Promise<boolean> => {
     if (!currentInfluencer) return false;
     try {
-      await updateDoc(doc(db, "influencers", currentInfluencer.id), {
-        curatedProducts: productIds,
-        lastActiveAt: serverTimestamp(),
-      });
+      await patchMut({ id: currentInfluencer.id, patch: { curatedProducts: productIds } });
       return true;
     } catch (error) {
       console.error("Error updating curated products:", error);
@@ -290,9 +227,9 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   const updateFeaturedProducts = async (productIds: string[]): Promise<boolean> => {
     if (!currentInfluencer) return false;
     try {
-      await updateDoc(doc(db, "influencers", currentInfluencer.id), {
-        featuredProducts: productIds.slice(0, 4), // Max 4 featured
-        lastActiveAt: serverTimestamp(),
+      await patchMut({
+        id: currentInfluencer.id,
+        patch: { featuredProducts: productIds.slice(0, 4) },
       });
       return true;
     } catch (error) {
@@ -304,11 +241,19 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (updates: Partial<Influencer>): Promise<boolean> => {
     if (!currentInfluencer) return false;
     try {
-      const { id, userId, totalEarnings, pendingEarnings, totalSales, totalClicks, totalConversions, ...safeUpdates } = updates;
-      await updateDoc(doc(db, "influencers", currentInfluencer.id), {
-        ...safeUpdates,
-        lastActiveAt: serverTimestamp(),
-      });
+      const {
+        id: _id,
+        userId: _userId,
+        totalEarnings: _te,
+        pendingEarnings: _pe,
+        totalSales: _ts,
+        totalClicks: _tc,
+        totalConversions: _tconv,
+        joinedAt: _ja,
+        lastActiveAt: _la,
+        ...safeUpdates
+      } = updates;
+      await patchMut({ id: currentInfluencer.id, patch: safeUpdates });
       return true;
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -319,10 +264,9 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   const goLive = async (streamUrl: string): Promise<boolean> => {
     if (!currentInfluencer) return false;
     try {
-      await updateDoc(doc(db, "influencers", currentInfluencer.id), {
-        isLive: true,
-        liveStreamUrl: streamUrl,
-        lastActiveAt: serverTimestamp(),
+      await patchMut({
+        id: currentInfluencer.id,
+        patch: { isLive: true, liveStreamUrl: streamUrl },
       });
       return true;
     } catch (error) {
@@ -334,10 +278,9 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   const endLive = async (): Promise<boolean> => {
     if (!currentInfluencer) return false;
     try {
-      await updateDoc(doc(db, "influencers", currentInfluencer.id), {
-        isLive: false,
-        liveStreamUrl: null,
-        lastActiveAt: serverTimestamp(),
+      await patchMut({
+        id: currentInfluencer.id,
+        patch: { isLive: false, liveStreamUrl: undefined },
       });
       return true;
     } catch (error) {
@@ -346,26 +289,15 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const trackClick = async (influencerId: string, productId?: string, source: string = "direct"): Promise<void> => {
+  const trackClick = async (
+    influencerId: string,
+    productId?: string,
+    source: string = "direct"
+  ): Promise<void> => {
     try {
-      const clickId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      await setDoc(doc(db, "influencerClicks", clickId), {
-        influencerId,
-        productId,
-        source,
-        timestamp: serverTimestamp(),
-        converted: false,
-      });
-      
-      // Update influencer click count
-      await updateDoc(doc(db, "influencers", influencerId), {
-        totalClicks: increment(1),
-      });
-      
-      // Store in session for conversion tracking
+      await trackClickMut({ influencerId, productId, source });
       if (typeof window !== "undefined") {
         sessionStorage.setItem("influencer_ref", influencerId);
-        sessionStorage.setItem("influencer_click_id", clickId);
       }
     } catch (error) {
       console.error("Error tracking click:", error);
@@ -373,48 +305,26 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
   };
 
   const recordSale = async (
-    influencerId: string, 
-    orderId: string, 
-    orderTotal: number, 
+    influencerId: string,
+    orderId: string,
+    orderTotal: number,
     products: InfluencerSale["products"],
     customerEmail: string
   ): Promise<void> => {
     try {
-      const influencer = getInfluencerById(influencerId);
-      if (!influencer) return;
-
-      const commission = (orderTotal * influencer.commissionRate) / 100;
-      const saleId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      await setDoc(doc(db, "influencerSales", saleId), {
+      const clickLegacyId =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("influencer_click_id") ?? undefined
+          : undefined;
+      await recordSaleMut({
         influencerId,
         orderId,
         orderTotal,
-        commission,
         products,
         customerEmail,
-        status: "pending",
-        createdAt: serverTimestamp(),
+        clickLegacyId,
       });
-
-      // Update influencer stats
-      await updateDoc(doc(db, "influencers", influencerId), {
-        totalSales: increment(1),
-        totalConversions: increment(1),
-        pendingEarnings: increment(commission),
-      });
-
-      // Mark click as converted if exists
-      const clickId = typeof window !== "undefined" ? sessionStorage.getItem("influencer_click_id") : null;
-      if (clickId) {
-        try {
-          await updateDoc(doc(db, "influencerClicks", clickId), {
-            converted: true,
-            orderId,
-          });
-        } catch {
-          // Click may not exist
-        }
+      if (typeof window !== "undefined") {
         sessionStorage.removeItem("influencer_ref");
         sessionStorage.removeItem("influencer_click_id");
       }
@@ -425,43 +335,7 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
 
   const approveApplication = async (applicationId: string): Promise<boolean> => {
     try {
-      const application = applications.find(a => a.id === applicationId);
-      if (!application) return false;
-
-      // Create influencer profile
-      const influencerId = `inf_${Date.now()}`;
-      await setDoc(doc(db, "influencers", influencerId), {
-        userId: application.userId,
-        username: application.username,
-        displayName: application.name,
-        bio: application.bio,
-        avatar: "",
-        socialLinks: application.socialLinks,
-        commissionRate: TIER_COMMISSION_RATES.bronze,
-        tier: "bronze",
-        isActive: true,
-        isVerified: false,
-        curatedProducts: [],
-        featuredProducts: [],
-        totalEarnings: 0,
-        pendingEarnings: 0,
-        totalSales: 0,
-        totalClicks: 0,
-        totalConversions: 0,
-        conversionRate: 0,
-        joinedAt: serverTimestamp(),
-        lastActiveAt: serverTimestamp(),
-        isLive: false,
-        followers: application.followerCount,
-      });
-
-      // Update application status
-      await updateDoc(doc(db, "influencerApplications", applicationId), {
-        status: "approved",
-        reviewedAt: serverTimestamp(),
-        reviewedBy: user?.uid,
-      });
-
+      await approveMut({ applicationId, reviewedBy: user?.uid });
       return true;
     } catch (error) {
       console.error("Error approving application:", error);
@@ -471,12 +345,7 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
 
   const rejectApplication = async (applicationId: string, notes?: string): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "influencerApplications", applicationId), {
-        status: "rejected",
-        reviewedAt: serverTimestamp(),
-        reviewedBy: user?.uid,
-        notes,
-      });
+      await rejectMut({ applicationId, notes, reviewedBy: user?.uid });
       return true;
     } catch (error) {
       console.error("Error rejecting application:", error);
@@ -484,11 +353,14 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateInfluencerTier = async (influencerId: string, tier: Influencer["tier"]): Promise<boolean> => {
+  const updateInfluencerTier = async (
+    influencerId: string,
+    tier: Influencer["tier"]
+  ): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "influencers", influencerId), {
-        tier,
-        commissionRate: TIER_COMMISSION_RATES[tier],
+      await patchMut({
+        id: influencerId,
+        patch: { tier, commissionRate: TIER_COMMISSION_RATES[tier] },
       });
       return true;
     } catch (error) {
@@ -499,8 +371,9 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
 
   const updateCommissionRate = async (influencerId: string, rate: number): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "influencers", influencerId), {
-        commissionRate: Math.min(30, Math.max(5, rate)), // 5-30% range
+      await patchMut({
+        id: influencerId,
+        patch: { commissionRate: Math.min(30, Math.max(5, rate)) },
       });
       return true;
     } catch (error) {
@@ -513,10 +386,7 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
     try {
       const influencer = getInfluencerById(influencerId);
       if (!influencer) return false;
-      
-      await updateDoc(doc(db, "influencers", influencerId), {
-        isActive: !influencer.isActive,
-      });
+      await patchMut({ id: influencerId, patch: { isActive: !influencer.isActive } });
       return true;
     } catch (error) {
       console.error("Error toggling active status:", error);
@@ -526,20 +396,7 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
 
   const markSaleAsPaid = async (saleId: string): Promise<boolean> => {
     try {
-      const sale = sales.find(s => s.id === saleId);
-      if (!sale) return false;
-
-      await updateDoc(doc(db, "influencerSales", saleId), {
-        status: "paid",
-        paidAt: serverTimestamp(),
-      });
-
-      // Move from pending to total earnings
-      await updateDoc(doc(db, "influencers", sale.influencerId), {
-        pendingEarnings: increment(-sale.commission),
-        totalEarnings: increment(sale.commission),
-      });
-
+      await markPaidMut({ saleId });
       return true;
     } catch (error) {
       console.error("Error marking sale as paid:", error);
@@ -547,26 +404,17 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const applyAsInfluencer = async (application: Omit<InfluencerApplication, "id" | "status" | "submittedAt">): Promise<boolean> => {
+  const applyAsInfluencer = async (
+    application: Omit<InfluencerApplication, "id" | "status" | "submittedAt">
+  ): Promise<boolean> => {
     try {
-      // Check if username is taken
       const existingInfluencer = getInfluencerByUsername(application.username);
-      if (existingInfluencer) {
-        throw new Error("Username already taken");
-      }
-
-      // Check for existing application
-      const existingApp = applications.find(a => a.userId === application.userId && a.status === "pending");
-      if (existingApp) {
-        throw new Error("You already have a pending application");
-      }
-
-      const appId = `app_${Date.now()}`;
-      await setDoc(doc(db, "influencerApplications", appId), {
-        ...application,
-        status: "pending",
-        submittedAt: serverTimestamp(),
-      });
+      if (existingInfluencer) throw new Error("Username already taken");
+      const existingApp = applications.find(
+        (a) => a.userId === application.userId && a.status === "pending"
+      );
+      if (existingApp) throw new Error("You already have a pending application");
+      await applyMut(application);
       return true;
     } catch (error) {
       console.error("Error submitting application:", error);
@@ -592,9 +440,8 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
     return influencers.filter(i => i.isLive && i.isActive);
   }, [influencers]);
 
-  return (
-    <InfluencerContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         influencers,
         currentInfluencer,
         sales,
@@ -619,15 +466,19 @@ export function InfluencerProvider({ children }: { children: ReactNode }) {
         applyAsInfluencer,
         getInfluencerStats,
         getLiveInfluencers,
-      }}
-    >
+      }),
+    [applications, applyAsInfluencer, approveApplication, currentInfluencer, endLive, getInfluencerById, getInfluencerByUsername, getInfluencerStats, getLiveInfluencers, goLive, influencers, loading, markSaleAsPaid, recordSale, rejectApplication, sales, toggleInfluencerActive, trackClick, updateCommissionRate, updateCuratedProducts, updateFeaturedProducts, updateInfluencerTier, updateProfile]
+  );
+
+  return (
+    <InfluencerContext.Provider value={contextValue}>
       {children}
     </InfluencerContext.Provider>
   );
 }
 
 export function useInfluencer() {
-  const context = useContext(InfluencerContext);
+  const context = use(InfluencerContext);
   if (context === undefined) {
     throw new Error("useInfluencer must be used within an InfluencerProvider");
   }

@@ -25,7 +25,7 @@ export default function NotFound() {
               animate={{ rotate: 10 }}
               transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
             >
-              <Compass className="w-16 h-16 md:w-24 md:h-24 text-black" />
+              <Compass className="size-16 md:size-24 text-black" />
             </motion.div>
           </div>
         </motion.div>
@@ -54,16 +54,16 @@ export default function NotFound() {
         >
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition"
+            className="inline-flex items-center justify-center gap-2 bg-gray-950 text-white px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-900 transition"
           >
-            <House className="w-4 h-4" />
+            <House className="size-4" />
             GO HOME
           </Link>
           <Link
             href="/shop"
-            className="inline-flex items-center justify-center gap-2 border border-black px-8 py-4 text-sm tracking-wider font-medium hover:bg-black hover:text-white transition"
+            className="inline-flex items-center justify-center gap-2 border border-black px-8 py-4 text-sm tracking-wider font-medium hover:bg-gray-950 hover:text-white transition"
           >
-            <MagnifyingGlass className="w-4 h-4" />
+            <MagnifyingGlass className="size-4" />
             BROWSE SHOP
           </Link>
         </motion.div>
@@ -75,11 +75,10 @@ export default function NotFound() {
           transition={{ delay: 0.6 }}
           className="mt-12"
         >
-          <button
-            onClick={() => window.history.back()}
+          <button aria-label="arrow left" type="button" onClick={() => window.history.back()}
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black transition"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="size-4" />
             Go back to previous page
           </button>
         </motion.div>
@@ -94,7 +93,7 @@ export default function NotFound() {
           {[...Array(5)].map((_, i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 bg-gray-200 rounded-full"
+              className="size-2 bg-gray-200 rounded-full"
               animate={{ 
                 scale: [1, 1.5, 1],
                 backgroundColor: ["#e5e7eb", "#000", "#e5e7eb"]

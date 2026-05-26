@@ -51,8 +51,8 @@ export default function FeaturesSection() {
               transition={staggerDelay(i, 0.1)}
               className="text-center p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group"
             >
-              <div className="w-16 h-16 bg-black text-white rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <feature.icon className="w-7 h-7" />
+              <div className="size-16 bg-gray-950 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <feature.icon className="size-7" />
               </div>
               <h3 className="text-lg font-medium mb-3">{feature.title}</h3>
               <p className="text-gray-500 text-sm">{feature.description}</p>

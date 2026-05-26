@@ -101,12 +101,12 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
             alt={event.title}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+           sizes="(max-width: 768px) 100vw, 50vw" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950/90 via-gray-950/40 to-transparent" />
           
           {/* Type Badge */}
           <div className={`absolute top-6 left-6 px-4 py-2 ${typeConfig.color} text-white text-xs tracking-wider font-medium flex items-center gap-2`}>
-            <TypeIcon weight="bold" className="w-4 h-4" />
+            <TypeIcon weight="bold" className="size-4" />
             {typeConfig.label.toUpperCase()}
           </div>
 
@@ -120,7 +120,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           {/* Content */}
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="flex items-center gap-3 text-white/80 text-sm mb-3">
-              <Calendar weight="bold" className="w-4 h-4" />
+              <Calendar weight="bold" className="size-4" />
               <span>{formatDate(startDate)} • {formatTime(startDate)}</span>
             </div>
             
@@ -129,7 +129,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
             </h2>
             
             <div className="flex items-center gap-2 text-white/80 mb-6">
-              <MapPin weight="bold" className="w-4 h-4" />
+              <MapPin weight="bold" className="size-4" />
               <span>{event.location.name}, {event.location.city}</span>
             </div>
             
@@ -137,7 +137,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
               <div className="flex items-center gap-4">
                 {/* Capacity */}
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-white/60" />
+                  <Users className="size-4 text-white/60" />
                   <span className="text-white/80 text-sm">{event.rsvpCount}/{event.capacity}</span>
                 </div>
                 {/* Capacity Bar */}
@@ -149,8 +149,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
                 </div>
               </div>
               
-              <button
-                onClick={handleRSVP}
+              <button type="button" onClick={handleRSVP}
                 disabled={!eligibility.eligible && !isRSVPd}
                 className={`px-8 py-3 text-sm tracking-wider font-medium transition ${
                   isRSVPd 
@@ -158,11 +157,10 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
                     : eligibility.eligible
                       ? "bg-white text-black hover:bg-gray-100"
                       : "bg-white/20 text-white/50 cursor-not-allowed"
-                }`}
-              >
+                }`}>
                 {isRSVPd ? (
                   <span className="flex items-center gap-2">
-                    <Check weight="bold" className="w-4 h-4" />
+                    <Check weight="bold" className="size-4" />
                     GOING
                   </span>
                 ) : isFull ? "JOIN WAITLIST" : "RSVP NOW"}
@@ -181,14 +179,14 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           className="flex gap-4 p-4 bg-white border border-gray-100 hover:border-black transition group"
           whileHover={{ y: -2 }}
         >
-          <div className="relative w-20 h-20 flex-shrink-0">
+          <div className="relative size-20 flex-shrink-0">
             <Image
               src={event.imageUrl}
               alt={event.title}
               fill
               className="object-cover"
-            />
-            <div className={`absolute top-1 left-1 w-2 h-2 rounded-full ${typeConfig.color}`} />
+             sizes="(max-width: 768px) 100vw, 50vw" />
+            <div className={`absolute top-1 left-1 size-2 rounded-full ${typeConfig.color}`} />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -199,7 +197,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           
           {isRSVPd && (
             <div className="flex-shrink-0">
-              <Check weight="bold" className="w-5 h-5 text-green-600" />
+              <Check weight="bold" className="size-5 text-green-600" />
             </div>
           )}
         </motion.div>
@@ -224,7 +222,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
             alt={event.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+           sizes="(max-width: 768px) 100vw, 50vw" />
           
           {/* Date Badge */}
           <div className="absolute top-4 left-4 bg-white px-3 py-2 text-center">
@@ -236,7 +234,7 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           
           {/* Type Badge */}
           <div className={`absolute top-4 right-4 px-3 py-1 ${typeConfig.color} text-white text-xs tracking-wider font-medium flex items-center gap-1.5`}>
-            <TypeIcon weight="bold" className="w-3 h-3" />
+            <TypeIcon weight="bold" className="size-3" />
             {typeConfig.label}
           </div>
           
@@ -255,12 +253,12 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           </h3>
           
           <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <MapPin weight="bold" className="w-4 h-4" />
+            <MapPin weight="bold" className="size-4" />
             <span>{event.location.name}, {event.location.city}</span>
           </div>
           
           <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <Clock weight="bold" className="w-4 h-4" />
+            <Clock weight="bold" className="size-4" />
             <span>{formatTime(startDate)} - {formatTime(endDate)}</span>
           </div>
           
@@ -274,27 +272,25 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
             </div>
             <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
               <div 
-                className={`h-full transition-all ${capacityPercent >= 90 ? "bg-red-500" : capacityPercent >= 70 ? "bg-yellow-500" : "bg-black"}`}
+                className={`h-full transition-all ${capacityPercent >= 90 ? "bg-red-500" : capacityPercent >= 70 ? "bg-yellow-500" : "bg-gray-950"}`}
                 style={{ width: `${capacityPercent}%` }}
               />
             </div>
           </div>
           
           {/* RSVP Button */}
-          <button
-            onClick={handleRSVP}
+          <button type="button" onClick={handleRSVP}
             disabled={!eligibility.eligible && !isRSVPd}
             className={`w-full mt-3 py-3 text-sm tracking-wider font-medium transition ${
               isRSVPd 
                 ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100" 
                 : eligibility.eligible
-                  ? "bg-black text-white hover:bg-gray-900"
+                  ? "bg-gray-950 text-white hover:bg-gray-900"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
-          >
+            }`}>
             {isRSVPd ? (
               <span className="flex items-center justify-center gap-2">
-                <Check weight="bold" className="w-4 h-4" />
+                <Check weight="bold" className="size-4" />
                 YOU'RE GOING
               </span>
             ) : !eligibility.eligible ? (

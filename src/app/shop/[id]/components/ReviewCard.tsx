@@ -69,12 +69,12 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
             <StarRating rating={review.rating} />
             {review.verifiedPurchase && (
               <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                <CheckCircle className="w-3 h-3" weight="fill" /> Verified Purchase
+                <CheckCircle className="size-3" weight="fill" /> Verified Purchase
               </span>
             )}
             {review.featured && (
               <span className="flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
-                <Star className="w-3 h-3" weight="fill" /> Featured
+                <Star className="size-3" weight="fill" /> Featured
               </span>
             )}
           </div>
@@ -94,17 +94,17 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
       {allMedia.length > 0 && (
         <div className="flex gap-2 mb-4 flex-wrap">
           {allMedia.map((media, i) => (
-            <button
-              key={i}
+            <button type="button" key={media.url}
               onClick={() => openLightbox(i)}
-              className="relative w-20 h-20 bg-gray-100 overflow-hidden group"
+              aria-label={media.type === "video" ? "Open review video" : "Open review image"}
+              className="relative size-20 bg-gray-100 overflow-hidden group"
             >
               {media.type === "video" ? (
                 <>
-                  <video src={media.url} className="w-full h-full object-cover" muted />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition">
-                    <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center">
-                      <div className="w-0 h-0 border-l-[8px] border-l-black border-y-[5px] border-y-transparent ml-1" />
+                  <video src={media.url} className="size-full object-cover" muted aria-label="Review video thumbnail" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-950/30 group-hover:bg-gray-950/40 transition">
+                    <div className="size-8 bg-white/90 rounded-full flex items-center justify-center">
+                      <div className="size-0 border-l-[8px] border-l-black border-y-[5px] border-y-transparent ml-1" />
                     </div>
                   </div>
                 </>
@@ -114,7 +114,7 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
                   alt={`Review media ${i + 1}`} 
                   fill 
                   className="object-cover group-hover:scale-105 transition" 
-                />
+                 sizes="(max-width: 768px) 100vw, 50vw" />
               )}
             </button>
           ))}
@@ -125,7 +125,7 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
       {review.adminReply && (
         <div className="bg-gray-50 border-l-2 border-black p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-medium bg-black text-white px-2 py-0.5">CIPHER TEAM</span>
+            <span className="text-xs font-medium bg-gray-950 text-white px-2 py-0.5">CIPHER TEAM</span>
             <span className="text-xs text-gray-400">
               {new Date(review.adminReply.createdAt).toLocaleDateString()}
             </span>
@@ -137,8 +137,7 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400">By {review.userName}</p>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => handleVote(true)}
+          <button type="button" onClick={() => handleVote(true)}
             disabled={isVoting}
             className={`flex items-center gap-1 text-xs transition ${
               userVote === "helpful" 
@@ -146,11 +145,10 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
                 : "text-gray-400 hover:text-black"
             }`}
           >
-            <ThumbsUp className={`w-3 h-3 ${userVote === "helpful" ? "fill-current" : ""}`} /> 
+            <ThumbsUp className={`size-3 ${userVote === "helpful" ? "fill-current" : ""}`} /> 
             Helpful ({review.helpful})
           </button>
-          <button 
-            onClick={() => handleVote(false)}
+          <button type="button" onClick={() => handleVote(false)}
             disabled={isVoting}
             className={`flex items-center gap-1 text-xs transition ${
               userVote === "not-helpful" 
@@ -158,7 +156,7 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
                 : "text-gray-400 hover:text-black"
             }`}
           >
-            <ThumbsUp className={`w-3 h-3 rotate-180 ${userVote === "not-helpful" ? "fill-current" : ""}`} /> 
+            <ThumbsUp className={`size-3 rotate-180 ${userVote === "not-helpful" ? "fill-current" : ""}`} /> 
             ({review.notHelpful || 0})
           </button>
         </div>
@@ -171,35 +169,32 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
-            onClick={() => setLightboxOpen(false)}
-          >
-            <button
-              onClick={() => setLightboxOpen(false)}
+            className="fixed inset-0 bg-gray-950/90 z-50 flex items-center justify-center"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setLightboxOpen(false)} />
+            <button aria-label="x" type="button" onClick={() => setLightboxOpen(false)}
               className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full z-10"
             >
-              <X className="w-6 h-6" />
+              <X className="size-6" />
             </button>
 
             {allMedia.length > 1 && (
               <>
-                <button
-                  onClick={(e) => {
+                <button type="button" onClick={(e) => {
                     e.stopPropagation();
                     setLightboxIndex((prev) => (prev - 1 + allMedia.length) % allMedia.length);
                   }}
                   className="absolute left-4 p-2 text-white hover:bg-white/10 rounded-full"
                 >
-                  <ArrowLeft className="w-6 h-6" />
+                  <ArrowLeft className="size-6" />
                 </button>
-                <button
-                  onClick={(e) => {
+                <button type="button" onClick={(e) => {
                     e.stopPropagation();
                     setLightboxIndex((prev) => (prev + 1) % allMedia.length);
                   }}
                   className="absolute right-4 p-2 text-white hover:bg-white/10 rounded-full"
                 >
-                  <ArrowRight className="w-6 h-6" />
+                  <ArrowRight className="size-6" />
                 </button>
               </>
             )}
@@ -217,7 +212,8 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
                   src={allMedia[lightboxIndex].url}
                   controls
                   autoPlay
-                  className="w-full h-full object-contain"
+                  aria-label="Review video"
+                  className="size-full object-contain"
                 />
               ) : (
                 <div className="relative w-full h-[70vh]">
@@ -226,20 +222,20 @@ export default function ReviewCard({ review, onVote }: ReviewCardProps) {
                     alt="Review media"
                     fill
                     className="object-contain"
-                  />
+                   sizes="(max-width: 768px) 100vw, 50vw" />
                 </div>
               )}
             </motion.div>
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {allMedia.map((_, i) => (
-                <button
-                  key={i}
+              {allMedia.map((media, i) => (
+                <button type="button" key={media.url}
+                  aria-label={`View media ${i + 1}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setLightboxIndex(i);
                   }}
-                  className={`w-2 h-2 rounded-full transition ${
+                  className={`size-2 rounded-full transition ${
                     i === lightboxIndex ? "bg-white" : "bg-white/40"
                   }`}
                 />

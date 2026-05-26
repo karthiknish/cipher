@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence, fadeIn, expandCollapse } from "@/lib/motion";
 import Image from "next/image";
 import { 
@@ -24,7 +24,7 @@ interface StoreLocatorProps {
 }
 
 const STORE_TYPE_CONFIG = {
-  flagship: { label: "Flagship Store", color: "bg-black" },
+  flagship: { label: "Flagship Store", color: "bg-gray-950" },
   popup: { label: "Pop-Up", color: "bg-purple-500" },
   partner: { label: "Partner Store", color: "bg-blue-500" },
 };
@@ -37,6 +37,11 @@ export function StoreLocator({
   const { stores, getPickupStores, userLocation, requestLocationPermission } = useLocalScene();
   const [expandedStore, setExpandedStore] = useState<string | null>(null);
   const [locationRequested, setLocationRequested] = useState(false);
+  const [todayIndex, setTodayIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setTodayIndex(new Date().getDay());
+  }, []);
 
   const displayStores = mode === "selector" ? getPickupStores() : stores.filter(s => s.isActive);
 
@@ -88,13 +93,11 @@ export function StoreLocator({
           className="bg-gray-50 p-4 flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-gray-400" />
+            <MapPin className="size-5 text-gray-400" />
             <p className="text-sm text-gray-600">Enable location for distance info</p>
           </div>
-          <button 
-            onClick={handleRequestLocation}
-            className="text-sm font-medium hover:underline"
-          >
+          <button type="button" onClick={handleRequestLocation}
+            className="text-sm font-medium hover:underline">
             Enable
           </button>
         </motion.div>
@@ -122,18 +125,27 @@ export function StoreLocator({
               {/* Main Row */}
               <div 
                 className={`p-4 ${mode === "selector" ? "cursor-pointer" : ""}`}
+                role={mode === "selector" ? "button" : undefined}
+                tabIndex={mode === "selector" ? 0 : undefined}
                 onClick={() => mode === "selector" && onSelectStore?.(store)}
+                onKeyDown={(e) => {
+                  if (mode === "selector" && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    onSelectStore?.(store);
+                  }
+                }}
+                aria-label={mode === "selector" ? `Select ${store.name}` : undefined}
               >
                 <div className="flex gap-4">
                   {/* Store Image */}
                   {store.imageUrl && (
-                    <div className="relative w-20 h-20 flex-shrink-0">
+                    <div className="relative size-20 flex-shrink-0">
                       <Image
                         src={store.imageUrl}
                         alt={store.name}
                         fill
                         className="object-cover"
-                      />
+                       sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                   )}
                   
@@ -154,11 +166,11 @@ export function StoreLocator({
                       {mode === "selector" && (
                         <div className="flex-shrink-0">
                           {isSelected ? (
-                            <div className="w-6 h-6 bg-black flex items-center justify-center">
-                              <Check className="w-4 h-4 text-white" weight="bold" />
+                            <div className="size-6 bg-gray-950 flex items-center justify-center">
+                              <Check className="size-4 text-white" weight="bold" />
                             </div>
                           ) : (
-                            <div className="w-6 h-6 border-2 border-gray-300" />
+                            <div className="size-6 border-2 border-gray-300" />
                           )}
                         </div>
                       )}
@@ -166,7 +178,7 @@ export function StoreLocator({
                     
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center gap-1.5 text-sm">
-                        <Clock className="w-4 h-4 text-gray-400" />
+                        <Clock className="size-4 text-gray-400" />
                         <span className={isOpen ? "text-green-600" : "text-gray-500"}>
                           {isOpen ? "Open now" : getCurrentDayHours(store)}
                         </span>
@@ -174,14 +186,14 @@ export function StoreLocator({
                       
                       {store.exclusiveProductIds.length > 0 && (
                         <div className="flex items-center gap-1.5 text-sm text-purple-600">
-                          <Lightning className="w-4 h-4" />
+                          <Lightning className="size-4" />
                           <span>{store.exclusiveProductIds.length} exclusives</span>
                         </div>
                       )}
                       
                       {store.hasPickup && (
                         <div className="flex items-center gap-1.5 text-sm text-blue-600">
-                          <Package className="w-4 h-4" />
+                          <Package className="size-4" />
                           <span>Pickup</span>
                         </div>
                       )}
@@ -191,15 +203,14 @@ export function StoreLocator({
                 
                 {/* Expand/Collapse Button */}
                 {mode === "display" && (
-                  <button
-                    onClick={(e) => {
+                  <button type="button" onClick={(e) => {
                       e.stopPropagation();
                       setExpandedStore(isExpanded ? null : store.id);
                     }}
                     className="w-full mt-3 pt-3 border-t border-gray-100 flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-black transition"
                   >
                     {isExpanded ? "Less info" : "More info"}
-                    <CaretDown className={`w-4 h-4 transition ${isExpanded ? "rotate-180" : ""}`} />
+                    <CaretDown className={`size-4 transition ${isExpanded ? "rotate-180" : ""}`} />
                   </button>
                 )}
               </div>
@@ -220,7 +231,7 @@ export function StoreLocator({
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                           {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
                             const hours = store.hours[day];
-                            const isToday = day === getDayName(new Date().getDay());
+                            const isToday = todayIndex !== null && day === getDayName(todayIndex);
                             return (
                               <div key={day} className={`flex justify-between ${isToday ? "font-medium" : ""}`}>
                                 <span className="capitalize">{day.slice(0, 3)}</span>
@@ -243,11 +254,11 @@ export function StoreLocator({
                         <h4 className="text-xs tracking-wider text-gray-500 mb-2">CONTACT</h4>
                         <div className="space-y-2 text-sm">
                           <a href={`tel:${store.phone}`} className="flex items-center gap-2 hover:underline">
-                            <Phone className="w-4 h-4 text-gray-400" />
+                            <Phone className="size-4 text-gray-400" />
                             {store.phone}
                           </a>
                           <a href={`mailto:${store.email}`} className="flex items-center gap-2 hover:underline">
-                            <Envelope className="w-4 h-4 text-gray-400" />
+                            <Envelope className="size-4 text-gray-400" />
                             {store.email}
                           </a>
                         </div>
@@ -259,17 +270,16 @@ export function StoreLocator({
                           href={getDirectionsUrl(store)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-black text-white text-sm font-medium hover:bg-gray-900 transition"
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-950 text-white text-sm font-medium hover:bg-gray-900 transition"
                         >
-                          <NavigationArrow className="w-4 h-4" />
+                          <NavigationArrow className="size-4" />
                           Get Directions
                         </a>
                         {store.hasPickup && (
-                          <button
-                            onClick={() => onSelectStore?.(store)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 border border-black text-sm font-medium hover:bg-black hover:text-white transition"
+                          <button aria-label="storefront" type="button" onClick={() => onSelectStore?.(store)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 border border-black text-sm font-medium hover:bg-gray-950 hover:text-white transition"
                           >
-                            <Storefront className="w-4 h-4" />
+                            <Storefront className="size-4" />
                             Shop This Store
                           </button>
                         )}
@@ -285,7 +295,7 @@ export function StoreLocator({
 
       {displayStores.length === 0 && (
         <div className="text-center py-12">
-          <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <MapPin className="size-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">No stores available for pickup</p>
         </div>
       )}

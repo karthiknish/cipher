@@ -44,7 +44,7 @@ export default function YouMayAlsoLike({ currentProductId }: YouMayAlsoLikeProps
   return (
     <div className="mt-16 border-t border-gray-200 pt-12">
       <div className="flex items-center gap-2 mb-2">
-        <Sparkle className="w-5 h-5 text-amber-500" />
+        <Sparkle className="size-5 text-amber-500" />
         <h2 className="text-xl font-light tracking-tight">YOU MAY ALSO LIKE</h2>
       </div>
       <p className="text-sm text-gray-500 mb-8">AI-powered recommendations based on your style</p>
@@ -65,8 +65,8 @@ export default function YouMayAlsoLike({ currentProductId }: YouMayAlsoLikeProps
                   alt={product.name} 
                   fill 
                   className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                 sizes="(max-width: 768px) 100vw, 50vw" />
+                <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/10 transition-colors" />
                 <div className="absolute top-2 right-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium">
                   AI PICK
                 </div>
@@ -78,11 +78,10 @@ export default function YouMayAlsoLike({ currentProductId }: YouMayAlsoLikeProps
                 <h3 className="font-medium text-sm">{product.name}</h3>
                 <p className="text-sm text-gray-600">${product.price}</p>
               </div>
-              <button 
-                onClick={() => handleQuickAdd(product)}
-                className="p-2 border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+              <button aria-label="shopping bag" type="button" onClick={() => handleQuickAdd(product)}
+                className="p-2 border border-gray-200 hover:border-black hover:bg-gray-950 hover:text-white transition"
               >
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingBag className="size-4" />
               </button>
             </div>
           </motion.div>

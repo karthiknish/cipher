@@ -18,6 +18,8 @@ import {
   Trophy,
   Medal,
   Article,
+  CalendarBlank,
+  Ticket,
 } from "@phosphor-icons/react";
 
 export type AdminTab = 
@@ -35,7 +37,9 @@ export type AdminTab =
   | "loyalty"
   | "challenges"
   | "achievements"
-  | "blog";
+  | "blog"
+  | "events"
+  | "promos";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -44,7 +48,7 @@ interface AdminLayoutProps {
   actions?: React.ReactNode;
 }
 
-const navItems: { key: AdminTab; label: string; href: string; icon: React.ElementType }[] = [
+const navItems: { key: AdminTab; label: string; href: string; icon: React.ElementType; comingSoon?: boolean }[] = [
   { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", icon: SquaresFour },
   { key: "products", label: "Products", href: "/admin/products", icon: Package },
   { key: "bundles", label: "Bundles", href: "/admin/bundles", icon: Stack },
@@ -57,9 +61,11 @@ const navItems: { key: AdminTab; label: string; href: string; icon: React.Elemen
   { key: "analytics", label: "Analytics", href: "/admin/analytics", icon: ChartLineUp },
   { key: "reviews", label: "Reviews", href: "/admin/reviews", icon: Star },
   { key: "loyalty", label: "Loyalty", href: "/admin/loyalty", icon: Gift },
-  { key: "challenges", label: "Challenges", href: "/admin/challenges", icon: Trophy },
-  { key: "achievements", label: "Achievements", href: "/admin/achievements", icon: Medal },
+  { key: "challenges", label: "Challenges", href: "/admin/challenges", icon: Trophy, comingSoon: true },
+  { key: "achievements", label: "Achievements", href: "/admin/achievements", icon: Medal, comingSoon: true },
   { key: "blog", label: "Blog", href: "/admin/blog", icon: Article },
+  { key: "events", label: "Events", href: "/admin/events", icon: CalendarBlank },
+  { key: "promos", label: "Promo Codes", href: "/admin/promos", icon: Ticket },
 ];
 
 export default function AdminLayout({ children, title, activeTab, actions }: AdminLayoutProps) {
@@ -68,15 +74,15 @@ export default function AdminLayout({ children, title, activeTab, actions }: Adm
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-black text-white">
+      <header className="bg-gray-950 text-white">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/admin" className="flex items-center gap-2 hover:opacity-80 transition">
-                <SquaresFour className="w-6 h-6" />
+                <SquaresFour className="size-6" />
                 <span className="text-lg font-light tracking-tight">ADMIN</span>
               </Link>
-              <CaretRight className="w-4 h-4 text-white/40" />
+              <CaretRight className="size-4 text-white/40" />
               <h1 className="text-lg font-light">{title}</h1>
             </div>
             <div className="flex items-center gap-4">
@@ -85,7 +91,7 @@ export default function AdminLayout({ children, title, activeTab, actions }: Adm
                 href="/admin/design-voting"
                 className="hidden md:flex items-center gap-2 border border-white/30 px-4 py-2 text-xs tracking-wider hover:bg-white/10 transition"
               >
-                <Crown className="w-4 h-4" />
+                <Crown className="size-4" />
                 DESIGN VOTING
               </Link>
             </div>
@@ -100,17 +106,27 @@ export default function AdminLayout({ children, title, activeTab, actions }: Adm
             {navItems.map((item) => {
               const isActive = activeTab === item.key || pathname === item.href;
               const Icon = item.icon;
+              const className = `flex items-center gap-2 px-3 py-2 text-xs tracking-wider whitespace-nowrap rounded-lg transition ${
+                isActive
+                  ? "bg-gray-950 text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-black"
+              }`;
+              if (item.comingSoon) {
+                return (
+                  <span
+                    key={item.key}
+                    title="Preview only — full admin tools coming soon"
+                    className={`${className} opacity-60 cursor-not-allowed`}
+                  >
+                    <Icon className="size-4" />
+                    {item.label.toUpperCase()}
+                    <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">SOON</span>
+                  </span>
+                );
+              }
               return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 text-xs tracking-wider whitespace-nowrap rounded-lg transition ${
-                    isActive
-                      ? "bg-black text-white"
-                      : "bg-white border border-gray-200 text-gray-600 hover:border-black"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
+                <Link key={item.key} href={item.href} className={className}>
+                  <Icon className="size-4" />
                   {item.label.toUpperCase()}
                 </Link>
               );
@@ -125,17 +141,29 @@ export default function AdminLayout({ children, title, activeTab, actions }: Adm
               {navItems.map((item) => {
                 const isActive = activeTab === item.key || pathname === item.href;
                 const Icon = item.icon;
+                const className = `flex items-center gap-3 px-4 py-3 text-sm transition border-l-2 ${
+                  isActive
+                    ? "bg-gray-50 border-black text-black font-medium"
+                    : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-black"
+                }`;
+                if (item.comingSoon) {
+                  return (
+                    <span
+                      key={item.key}
+                      title="Preview only — full admin tools coming soon"
+                      className={`${className} opacity-60 cursor-not-allowed justify-between`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon className="size-4" />
+                        {item.label}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Soon</span>
+                    </span>
+                  );
+                }
                 return (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 text-sm transition border-l-2 ${
-                      isActive
-                        ? "bg-gray-50 border-black text-black font-medium"
-                        : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-black"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
+                  <Link key={item.key} href={item.href} className={className}>
+                    <Icon className="size-4" />
                     {item.label}
                   </Link>
                 );

@@ -19,16 +19,15 @@ export default function CompareDrawer() {
       className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40"
     >
       {/* Collapsed View */}
-      <button 
-        onClick={() => setIsExpanded(!isExpanded)}
+      <button type="button" onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
       >
         <div className="flex items-center gap-3">
-          <Scales className="w-5 h-5" />
+          <Scales className="size-5" />
           <span className="font-medium">Compare ({compareItems.length}/3)</span>
         </div>
         <motion.div animate={{ rotate: isExpanded ? 180 : 0 }}>
-          <ArrowRight className="w-5 h-5 rotate-90" />
+          <ArrowRight className="size-5 rotate-90" />
         </motion.div>
       </button>
 
@@ -46,10 +45,8 @@ export default function CompareDrawer() {
                 <p className="text-sm text-gray-500">
                   {canAddMore ? `Add ${3 - compareItems.length} more to compare` : "Compare up to 3 products"}
                 </p>
-                <button 
-                  onClick={clearCompare}
-                  className="text-xs text-red-600 hover:underline"
-                >
+                <button type="button" onClick={clearCompare}
+                  className="text-xs text-red-600 hover:underline">
                   Clear All
                 </button>
               </div>
@@ -57,14 +54,13 @@ export default function CompareDrawer() {
               <div className="grid grid-cols-3 gap-4">
                 {compareItems.map((item) => (
                   <div key={item.id} className="relative border border-gray-200 p-4">
-                    <button 
-                      onClick={() => removeFromCompare(item.id)}
+                    <button aria-label="x" type="button" onClick={() => removeFromCompare(item.id)}
                       className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded-full transition"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="size-4" />
                     </button>
                     <div className="relative aspect-square bg-gray-100 mb-3">
-                      <Image src={item.image} alt={item.name} fill className="object-cover" />
+                      <Image src={item.image} alt={item.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                     </div>
                     <h4 className="font-medium text-sm mb-1 truncate">{item.name}</h4>
                     <p className="text-sm text-gray-600">${item.price}</p>

@@ -34,7 +34,7 @@ export function CustomerSegments({ customerSegments }: CustomerSegmentsProps) {
           className={`p-4 border border-gray-200 ${segment.color.split(" ")[0]}`}
         >
           <div className="flex items-center gap-2 mb-2">
-            <segment.icon className={`w-4 h-4 ${segment.color.split(" ")[1]}`} />
+            <segment.icon className={`size-4 ${segment.color.split(" ")[1]}`} />
             <span className={`text-xs font-medium ${segment.color.split(" ")[1]}`}>{segment.label}</span>
           </div>
           <p className="text-2xl font-medium">

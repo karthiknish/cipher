@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 
 export interface RecentlyViewedItem {
   id: string;
@@ -25,7 +25,7 @@ const RecentlyViewedContext = createContext<RecentlyViewedContextType>({
   clearRecentlyViewed: () => {},
 });
 
-export const useRecentlyViewed = () => useContext(RecentlyViewedContext);
+export const useRecentlyViewed = () => use(RecentlyViewedContext);
 
 export const RecentlyViewedProvider = ({ children }: { children: ReactNode }) => {
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedItem[]>([]);
@@ -68,14 +68,17 @@ export const RecentlyViewedProvider = ({ children }: { children: ReactNode }) =>
     setRecentlyViewed([]);
   }, []);
 
-  return (
-    <RecentlyViewedContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         recentlyViewed,
         addToRecentlyViewed,
         clearRecentlyViewed,
-      }}
-    >
+      }),
+    [addToRecentlyViewed, clearRecentlyViewed, recentlyViewed]
+  );
+
+  return (
+    <RecentlyViewedContext.Provider value={contextValue}>
       {children}
     </RecentlyViewedContext.Provider>
   );

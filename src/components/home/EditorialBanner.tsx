@@ -12,8 +12,8 @@ export default function EditorialBanner() {
         alt="Editorial"
         fill
         className="object-cover"
-      />
-      <div className="absolute inset-0 bg-black/50" />
+       sizes="(max-width: 768px) 100vw, 50vw" />
+      <div className="absolute inset-0 bg-gray-950/50" />
       <div className="absolute inset-0 flex items-center justify-center text-center text-white px-4">
         <motion.div
           {...viewportAnimations.fadeUp}
@@ -31,7 +31,7 @@ export default function EditorialBanner() {
             className="group inline-flex items-center gap-3 bg-white text-black px-10 py-4 text-sm tracking-wider font-medium hover:bg-white/90 transition-all rounded-full"
           >
             DISCOVER
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </motion.div>
       </div>

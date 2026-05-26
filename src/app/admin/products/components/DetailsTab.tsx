@@ -39,8 +39,8 @@ export function DetailsTab({
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-          <ListBullets className="w-5 h-5 text-white" />
+        <div className="size-10 bg-gray-950 rounded-lg flex items-center justify-center">
+          <ListBullets className="size-5 text-white" />
         </div>
         <div>
           <h2 className="text-lg font-medium">Details & SEO</h2>
@@ -51,10 +51,10 @@ export function DetailsTab({
       <div className="grid grid-cols-2 gap-8">
         <div className="space-y-6">
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="DetailsTab-field-13" className="block text-xs tracking-wider text-gray-500 mb-2">
               MATERIAL
             </label>
-            <input
+            <input aria-label="MATERIAL" id="DetailsTab-field-13"
               type="text"
               value={formData.material || ""}
               onChange={(e) =>
@@ -66,10 +66,10 @@ export function DetailsTab({
           </div>
 
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="DetailsTab-field-14" className="block text-xs tracking-wider text-gray-500 mb-2">
               CARE INSTRUCTIONS
             </label>
-            <textarea
+            <textarea aria-label="CARE INSTRUCTIONS" id="DetailsTab-field-14"
               value={formData.careInstructions || ""}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -87,14 +87,14 @@ export function DetailsTab({
         <div className="space-y-6">
           {/* Tags */}
           <div>
-            <label className="block text-xs tracking-wider text-gray-500 mb-2">
+            <label htmlFor="DetailsTab-field-4" className="block text-xs tracking-wider text-gray-500 mb-2">
               TAGS
               <span className="text-gray-400 font-normal ml-2">
                 ({formData.tags?.length || 0} tags)
               </span>
             </label>
             <div className="flex gap-2 mb-3">
-              <input
+              <input id="DetailsTab-field-4" aria-label="field"
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
@@ -111,9 +111,9 @@ export function DetailsTab({
                 type="button"
                 onClick={addTag}
                 disabled={!newTag.trim()}
-                className="px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-50"
+                className="px-4 py-3 bg-gray-950 text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-50"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="size-4" />
               </button>
             </div>
 
@@ -124,14 +124,14 @@ export function DetailsTab({
                     key={tag}
                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 rounded-full text-sm"
                   >
-                    <Tag className="w-3 h-3 text-gray-400" />
+                    <Tag className="size-3 text-gray-400" />
                     {tag}
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
                       className="ml-1 text-gray-400 hover:text-red-500"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="size-3" />
                     </button>
                   </span>
                 ))}

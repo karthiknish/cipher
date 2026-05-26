@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+import { getConvexServerClient, api } from "@/lib/convex-server";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
 import { rateLimitedResponse, badRequestResponse, requireAuth, forbiddenResponse, parseJsonBody, sanitizeString, isValidEmail, publicErrorMessage } from "@/lib/api-auth";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "CIPHER <noreply@cipherstreet.com>";
 
 // Email campaign types
 type CampaignType = 
@@ -39,7 +44,7 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
           <p style="font-size: 32px; font-weight: 600; letter-spacing: 4px; margin-bottom: 10px;">COMEBACK20</p>
           <p style="color: #666;">20% off your entire order</p>
         </div>
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher.store'}/shop" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher-omega-three.vercel.app'}/shop" 
            style="display: inline-block; background: #000; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 12px; letter-spacing: 2px;">
           SHOP NOW
         </a>
@@ -68,7 +73,7 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
           <p style="font-size: 14px; color: #d4af37; margin: 0;">VIP EARLY ACCESS CODE</p>
           <p style="font-size: 24px; font-weight: 600; letter-spacing: 4px; margin: 10px 0;">VIPFIRST</p>
         </div>
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher.store'}/shop?collection=new" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher-omega-three.vercel.app'}/shop?collection=new" 
            style="display: inline-block; background: #d4af37; color: #000; padding: 16px 40px; text-decoration: none; font-size: 12px; letter-spacing: 2px; font-weight: 600;">
           SHOP EARLY ACCESS
         </a>
@@ -105,7 +110,7 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
           <p style="font-size: 24px; font-weight: 600; margin: 0;">FREE SHIPPING</p>
           <p style="color: #666; margin-top: 5px;">Use code: FREESHIP</p>
         </div>
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher.store'}/cart" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher-omega-three.vercel.app'}/cart" 
            style="display: inline-block; background: #000; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 12px; letter-spacing: 2px;">
           COMPLETE PURCHASE
         </a>
@@ -132,7 +137,7 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
             <p style="color: #666; font-size: 12px; margin: 5px 0 0;">Off Welcome Back</p>
           </div>
         </div>
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher.store'}/shop" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://cipher-omega-three.vercel.app'}/shop" 
            style="display: inline-block; background: #000; color: #fff; padding: 16px 40px; text-decoration: none; font-size: 12px; letter-spacing: 2px;">
           SEE WHAT'S NEW
         </a>
@@ -148,49 +153,64 @@ const EMAIL_TEMPLATES: Record<CampaignType, { subject: string; getContent: (data
   },
 };
 
-// Simulate sending email (in production, integrate with SendGrid, Mailchimp, etc.)
 async function sendEmail(
-  to: string, 
-  subject: string, 
-  _htmlContent: string
+  to: string,
+  subject: string,
+  htmlContent: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  void _htmlContent;
-  // In production, replace with actual email service integration:
-  // - SendGrid: @sendgrid/mail
-  // - Mailchimp Transactional: @mailchimp/mailchimp_transactional
-  // - AWS SES: @aws-sdk/client-ses
-  // - Resend: resend
-  
-  console.log(`[Email Campaign] Sending to: ${to}`);
-  console.log(`[Email Campaign] Subject: ${subject}`);
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Simulate 95% success rate
-  if (Math.random() > 0.05) {
-    return { 
-      success: true, 
-      messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` 
+  if (!resend) {
+    console.warn("[Email Campaign] RESEND_API_KEY not configured — email not sent");
+    return {
+      success: false,
+      error: "Email service not configured (RESEND_API_KEY)",
     };
   }
-  
-  return { success: false, error: "Simulated delivery failure" };
+
+  try {
+    const sendResult = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject,
+      html: htmlContent,
+    });
+
+    if (sendResult.error) {
+      console.error("[Email Campaign] Resend error:", sendResult.error);
+      return { success: false, error: sendResult.error.message || "Send failed" };
+    }
+
+    return { success: true, messageId: sendResult.data?.id };
+  } catch (err) {
+    console.error("[Email Campaign] Send failed:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Send failed",
+    };
+  }
 }
 
-// Log campaign to Firestore for tracking
 async function logCampaign(
   type: CampaignType,
   recipients: string[],
-  results: Array<{ email: string; success: boolean; messageId?: string }>
+  results: Array<{ email: string; success: boolean; messageId?: string; error?: string }>
 ) {
-  // In production, save to Firestore
-  console.log(`[Email Campaign] Logged campaign:`, {
-    type,
-    recipientCount: recipients.length,
-    successCount: results.filter(r => r.success).length,
-    timestamp: new Date().toISOString(),
-  });
+  const successCount = results.filter((r) => r.success).length;
+  try {
+    const convex = getConvexServerClient();
+    await convex.mutation(api.emailCampaigns.logCampaign, {
+      type,
+      recipientCount: recipients.length,
+      subject: type,
+      metadata: {
+        successCount,
+        failureCount: recipients.length - successCount,
+        recipients: recipients.slice(0, 50),
+        results: results.slice(0, 50),
+      },
+    });
+  } catch (err) {
+    console.error("[Email Campaign] Failed to log campaign:", err);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -237,28 +257,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const results: Array<{ email: string; success: boolean; messageId?: string; error?: string }> = [];
+    const results = await Promise.all(
+      recipients.map(async (recipient) => {
+        if (!recipient?.email || !isValidEmail(recipient.email)) {
+          return {
+            email: String(recipient?.email || ""),
+            success: false,
+            error: "Invalid recipient email",
+          };
+        }
 
-    for (const recipient of recipients) {
-      if (!recipient?.email || !isValidEmail(recipient.email)) {
-        results.push({ email: String(recipient?.email || ""), success: false, error: "Invalid recipient email" });
-        continue;
-      }
+        const safeSubject =
+          typeof (customSubject || template.subject) === "string"
+            ? sanitizeString(String(customSubject || template.subject), 200)
+            : "Cipher";
 
-      const safeSubject = typeof (customSubject || template.subject) === "string"
-        ? sanitizeString(String(customSubject || template.subject), 200)
-        : "Cipher";
+        const content =
+          type === "custom"
+            ? customContent || ""
+            : template.getContent(recipient.customData || {});
 
-      const content = type === "custom" 
-        ? customContent || "" 
-        : template.getContent(recipient.customData || {});
+        const safeContent =
+          typeof content === "string" ? content.slice(0, 200_000) : "";
 
-      // Basic guardrail against huge payloads
-      const safeContent = typeof content === "string" ? content.slice(0, 200_000) : "";
-
-      const result = await sendEmail(recipient.email, safeSubject, safeContent);
-      results.push({ email: recipient.email, ...result });
-    }
+        const result = await sendEmail(recipient.email, safeSubject, safeContent);
+        return { email: recipient.email, ...result };
+      })
+    );
 
     // Log the campaign
     await logCampaign(type, recipients.map(r => r.email), results);
@@ -299,15 +324,35 @@ export async function GET(request: NextRequest) {
     return forbiddenResponse("Admin access required");
   }
 
+  let totalSent = 0;
+  let lastCampaign: { type: string; createdAt: unknown } | null = null;
+
+  try {
+    const convex = getConvexServerClient();
+    const campaigns = await convex.query(api.emailCampaigns.listRecent, { limit: 100 });
+    campaigns.forEach((doc) => {
+      const meta = doc.metadata as { successCount?: number } | undefined;
+      totalSent += typeof meta?.successCount === "number" ? meta.successCount : 0;
+    });
+    if (campaigns.length > 0) {
+      const latest = campaigns[0];
+      lastCampaign = {
+        type: String(latest.type || "unknown"),
+        createdAt: latest.createdAt ?? null,
+      };
+    }
+  } catch (err) {
+    console.error("[Email Campaign] Failed to load stats:", err);
+  }
+
   return NextResponse.json({
-    templates: Object.keys(EMAIL_TEMPLATES).map(key => ({
+    templates: Object.keys(EMAIL_TEMPLATES).map((key) => ({
       type: key,
       subject: EMAIL_TEMPLATES[key as CampaignType].subject,
     })),
     stats: {
-      // In production, fetch from Firestore
-      totalSent: 0,
-      lastCampaign: null,
+      totalSent,
+      lastCampaign,
     },
   });
 }

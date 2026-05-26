@@ -21,7 +21,7 @@ export default function LiveStatsTicker() {
   }, []);
   
   return (
-    <div className="bg-black text-white py-2 overflow-hidden">
+    <div className="bg-gray-950 text-white py-2 overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStat}
@@ -33,7 +33,7 @@ export default function LiveStatsTicker() {
         >
           {(() => {
             const Icon = STATS[currentStat].icon;
-            return <Icon className="w-4 h-4 text-white/60" />;
+            return <Icon className="size-4 text-white/60" />;
           })()}
           <span className="text-white/80">{STATS[currentStat].text}</span>
         </motion.div>

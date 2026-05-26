@@ -20,7 +20,7 @@ export function CLVPredictionsTable({
   const [sortBy, setSortBy] = useState<SortBy>("clv");
 
   // Sort predictions
-  const sortedPredictions = [...clvPredictions].sort((a, b) => {
+  const sortedPredictions = clvPredictions.toSorted((a, b) => {
     switch (sortBy) {
       case "clv":
         return b.predictedCLV - a.predictedCLV;
@@ -35,18 +35,17 @@ export function CLVPredictionsTable({
 
   return (
     <div className="bg-white border border-gray-200">
-      <button
-        onClick={() => setExpandedSection(expandedSection === "predictions" ? null : "predictions")}
+      <button type="button" onClick={() => setExpandedSection(expandedSection === "predictions" ? null : "predictions")}
         className="w-full p-6 border-b border-gray-100 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <ChartLineUp className="w-5 h-5 text-purple-600" />
+          <ChartLineUp className="size-5 text-purple-600" />
           <div className="text-left">
             <h3 className="font-medium">CLV Predictions & Churn Risk</h3>
             <p className="text-xs text-gray-500 mt-1">Detailed analysis for each customer</p>
           </div>
         </div>
-        {expandedSection === "predictions" ? <CaretUp className="w-5 h-5" /> : <CaretDown className="w-5 h-5" />}
+        {expandedSection === "predictions" ? <CaretUp className="size-5" /> : <CaretDown className="size-5" />}
       </button>
       
       <AnimatePresence>
@@ -59,21 +58,18 @@ export function CLVPredictionsTable({
           >
             {/* Sort Options */}
             <div className="p-4 border-b border-gray-100 flex gap-2">
-              <button
-                onClick={() => setSortBy("clv")}
-                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "clv" ? "bg-black text-white" : "border border-gray-200 hover:border-black"}`}
+              <button type="button" onClick={() => setSortBy("clv")}
+                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "clv" ? "bg-gray-950 text-white" : "border border-gray-200 hover:border-black"}`}
               >
                 BY CLV
               </button>
-              <button
-                onClick={() => setSortBy("churn")}
-                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "churn" ? "bg-black text-white" : "border border-gray-200 hover:border-black"}`}
+              <button type="button" onClick={() => setSortBy("churn")}
+                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "churn" ? "bg-gray-950 text-white" : "border border-gray-200 hover:border-black"}`}
               >
                 BY CHURN RISK
               </button>
-              <button
-                onClick={() => setSortBy("spent")}
-                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "spent" ? "bg-black text-white" : "border border-gray-200 hover:border-black"}`}
+              <button type="button" onClick={() => setSortBy("spent")}
+                className={`px-3 py-1.5 text-xs tracking-wider ${sortBy === "spent" ? "bg-gray-950 text-white" : "border border-gray-200 hover:border-black"}`}
               >
                 BY SPENT
               </button>
@@ -92,8 +88,8 @@ export function CLVPredictionsTable({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {sortedPredictions.slice(0, 15).map((prediction, i) => (
-                    <tr key={i} className="hover:bg-gray-50 transition">
+                  {sortedPredictions.slice(0, 15).map((prediction) => (
+                    <tr key={prediction.customer.email} className="hover:bg-gray-50 transition">
                       <td className="py-3 px-6">
                         <p className="text-sm font-medium">{prediction.customer.email}</p>
                         <p className="text-xs text-gray-500">
@@ -110,7 +106,7 @@ export function CLVPredictionsTable({
                       </td>
                       <td className="py-3 px-6">
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                          <div className={`size-2 rounded-full ${
                             prediction.churnRisk === "high" ? "bg-red-500" :
                             prediction.churnRisk === "medium" ? "bg-amber-500" :
                             "bg-green-500"
@@ -132,19 +128,17 @@ export function CLVPredictionsTable({
                       </td>
                       <td className="py-3 px-6">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => onViewDetails(prediction)}
+                          <button type="button" onClick={() => onViewDetails(prediction)}
                             className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black"
                             title="View Details"
                           >
-                            <ChartLineUp className="w-4 h-4" />
+                            <ChartLineUp className="size-4" />
                           </button>
-                          <button
-                            onClick={() => onSendEmail(prediction.customer)}
+                          <button type="button" onClick={() => onSendEmail(prediction.customer)}
                             className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black"
                             title="Send Email"
                           >
-                            <Envelope className="w-4 h-4" />
+                            <Envelope className="size-4" />
                           </button>
                         </div>
                       </td>

@@ -1,8 +1,10 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
-import { db, collection, doc, setDoc, getDoc, serverTimestamp, firebaseConfigured } from "@/lib/firebase";
-import { onSnapshot, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { createContext, use, useState, useEffect, useCallback, useRef, ReactNode, useMemo } from "react";
+import { useQuery, useMutation, useConvex } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useAuth } from "./AuthContext";
+
+const convexEnabled = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 // ============================================
 // Types
@@ -174,7 +176,7 @@ interface CustomerBehaviorContextType {
 const CustomerBehaviorContext = createContext<CustomerBehaviorContextType | undefined>(undefined);
 
 export function useCustomerBehavior(): CustomerBehaviorContextType {
-  const context = useContext(CustomerBehaviorContext);
+  const context = use(CustomerBehaviorContext);
   if (!context) {
     throw new Error("useCustomerBehavior must be used within CustomerBehaviorProvider");
   }
@@ -302,6 +304,15 @@ function predictNextPurchase(profile: Partial<CustomerProfile>): Date | undefine
 
 export function CustomerBehaviorProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const convex = useConvex();
+  const upsertSessionMut = useMutation(api.customerBehavior.upsertSession);
+  const upsertProfileMut = useMutation(api.customerBehavior.upsertProfile);
+  const logBehaviorMut = useMutation(api.customerBehavior.logBehaviorEvent);
+  const convexProfile = useQuery(
+    api.customerBehavior.getProfile,
+    user?.uid ? { userId: user.uid } : "skip"
+  );
+
   const [currentProfile, setCurrentProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -325,104 +336,75 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
       source: getTrafficSource(),
     };
     
-    // Save session start to Firestore
-    if (firebaseConfigured) {
-      const sessionDoc = doc(db, "customerBehavior", "sessions", "active", sessionId);
-      // Filter out undefined values - Firestore doesn't accept them
-      const sessionData: Record<string, unknown> = {
+    if (convexEnabled && sessionRef.current) {
+      upsertSessionMut({
         sessionId: sessionRef.current.sessionId,
-        startTime: serverTimestamp(),
-        pagesViewed: sessionRef.current.pagesViewed,
-        productsViewed: sessionRef.current.productsViewed,
-        searchQueries: sessionRef.current.searchQueries,
-        cartActions: sessionRef.current.cartActions,
-        device: sessionRef.current.device,
-      };
-      if (user?.uid) sessionData.userId = user.uid;
-      if (sessionRef.current.source) sessionData.source = sessionRef.current.source;
-      
-      setDoc(sessionDoc, sessionData).catch(console.error);
+        userId: user?.uid,
+        status: "active",
+        data: sessionRef.current,
+      }).catch(console.error);
     }
-    
-    // Cleanup on unmount
+
     return () => {
-      if (sessionRef.current && firebaseConfigured) {
-        const endSession = async () => {
-          const sessionDoc = doc(db, "customerBehavior", "sessions", "completed", sessionRef.current!.sessionId);
-          const endData: Record<string, unknown> = {
-            sessionId: sessionRef.current!.sessionId,
-            endTime: serverTimestamp(),
-            pagesViewed: sessionRef.current!.pagesViewed,
-            productsViewed: sessionRef.current!.productsViewed,
-            searchQueries: sessionRef.current!.searchQueries,
-            cartActions: sessionRef.current!.cartActions,
-            device: sessionRef.current!.device,
-          };
-          if (sessionRef.current!.userId) endData.userId = sessionRef.current!.userId;
-          if (sessionRef.current!.source) endData.source = sessionRef.current!.source;
-          
-          await setDoc(sessionDoc, endData).catch(console.error);
-        };
-        endSession();
+      if (sessionRef.current && convexEnabled) {
+        const session = sessionRef.current;
+        upsertSessionMut({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          status: "completed",
+          data: { ...session, endTime: new Date() },
+        }).catch(console.error);
       }
     };
-  }, [user?.uid]);
-  
-  // Load current user profile
+  }, [user?.uid, upsertSessionMut]);
+
   useEffect(() => {
-    if (!user?.uid || !firebaseConfigured) {
+    if (!user?.uid || !convexEnabled) {
       setCurrentProfile(null);
       setLoading(false);
       return;
     }
-    
-    const profileRef = doc(db, "customerBehavior", "profiles", "users", user.uid);
-    const unsubscribe = onSnapshot(profileRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setCurrentProfile({
-          ...data,
-          userId: user.uid,
-          firstSeen: data.firstSeen?.toDate?.() || new Date(),
-          lastSeen: data.lastSeen?.toDate?.() || new Date(),
-        } as CustomerProfile);
-      } else {
-        // Create new profile
-        const newProfile: Partial<CustomerProfile> = {
-          userId: user.uid,
-          email: user.email || undefined,
-          firstSeen: new Date(),
-          lastSeen: new Date(),
-          totalSessions: 1,
-          totalPageViews: 0,
-          totalProductViews: 0,
-          totalPurchases: 0,
-          totalSpent: 0,
-          averageOrderValue: 0,
-          favoriteCategories: [],
-          browsedProducts: [],
-          purchasedProducts: [],
-          abandonedCarts: 0,
-          conversionRate: 0,
-          customerSegment: "new_visitor",
-          behaviorScore: 0,
-          churnRisk: "low",
-          lifetimeValueTier: "bronze",
-        };
-        
-        setDoc(profileRef, {
-          ...newProfile,
-          firstSeen: serverTimestamp(),
-          lastSeen: serverTimestamp(),
-        }).catch(console.error);
-        
-        setCurrentProfile(newProfile as CustomerProfile);
-      }
+
+    if (convexProfile === undefined) return;
+
+    if (convexProfile) {
+      const p = convexProfile as CustomerProfile;
+      setCurrentProfile({
+        ...p,
+        userId: user.uid,
+        firstSeen: p.firstSeen ? new Date(p.firstSeen) : new Date(),
+        lastSeen: p.lastSeen ? new Date(p.lastSeen) : new Date(),
+      });
       setLoading(false);
-    });
-    
-    return () => unsubscribe();
-  }, [user?.uid, user?.email]);
+      return;
+    }
+
+    const newProfile: CustomerProfile = {
+      userId: user.uid,
+      email: user.email || undefined,
+      firstSeen: new Date(),
+      lastSeen: new Date(),
+      totalSessions: 1,
+      totalPageViews: 0,
+      totalProductViews: 0,
+      totalPurchases: 0,
+      totalSpent: 0,
+      averageOrderValue: 0,
+      favoriteCategories: [],
+      browsedProducts: [],
+      purchasedProducts: [],
+      abandonedCarts: 0,
+      conversionRate: 0,
+      customerSegment: "new_visitor",
+      behaviorScore: 0,
+      churnRisk: "low",
+      lifetimeValueTier: "bronze",
+    };
+
+    upsertProfileMut({ userId: user.uid, profile: newProfile }).catch(console.error);
+    setCurrentProfile(newProfile);
+    setLoading(false);
+  }, [user?.uid, user?.email, convexProfile, upsertProfileMut]);
   
   // Track product view
   const trackProductView = useCallback((productId: string, productName: string, category: string) => {
@@ -433,81 +415,75 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
       sessionRef.current.productsViewed.push(productId);
     }
     
-    if (!user?.uid || !firebaseConfigured) return;
-    
-    // Update profile with product interaction
-    const profileRef = doc(db, "customerBehavior", "profiles", "users", user.uid);
-    getDoc(profileRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        const browsedProducts: ProductInteraction[] = data.browsedProducts || [];
-        
-        const existingIndex = browsedProducts.findIndex(p => p.productId === productId);
-        if (existingIndex >= 0) {
-          browsedProducts[existingIndex].views++;
-          browsedProducts[existingIndex].lastViewed = new Date();
-        } else {
-          browsedProducts.push({
-            productId,
-            productName,
-            category,
-            views: 1,
-            lastViewed: new Date(),
-            addedToCart: false,
-            purchased: false,
-            timeSpent: 0,
-          });
-        }
-        
-        // Update category preferences
-        const categories: CategoryPreference[] = data.favoriteCategories || [];
-        const catIndex = categories.findIndex(c => c.category === category);
-        if (catIndex >= 0) {
-          categories[catIndex].views++;
-          categories[catIndex].score = categories[catIndex].views * 1 + categories[catIndex].purchases * 5;
-        } else {
-          categories.push({ category, views: 1, purchases: 0, score: 1 });
-        }
-        
-        // Sort by score
-        categories.sort((a, b) => b.score - a.score);
-        
-        setDoc(profileRef, {
-          browsedProducts: browsedProducts.slice(0, 100), // Keep last 100
-          favoriteCategories: categories.slice(0, 10), // Keep top 10
-          totalProductViews: (data.totalProductViews || 0) + 1,
-          lastSeen: serverTimestamp(),
-        }, { merge: true }).catch(console.error);
+    if (user?.uid && convexEnabled && currentProfile) {
+      const browsedProducts = [...(currentProfile.browsedProducts || [])];
+      const existingIndex = browsedProducts.findIndex((p) => p.productId === productId);
+      if (existingIndex >= 0) {
+        browsedProducts[existingIndex].views++;
+        browsedProducts[existingIndex].lastViewed = new Date();
+      } else {
+        browsedProducts.push({
+          productId,
+          productName,
+          category,
+          views: 1,
+          lastViewed: new Date(),
+          addedToCart: false,
+          purchased: false,
+          timeSpent: 0,
+        });
       }
-    });
-    
-    // Log to analytics collection
-    const analyticsRef = doc(collection(db, "customerBehavior", "analytics", "productViews"));
-    const productViewData: Record<string, unknown> = {
-      userId: user.uid,
-      productId,
-      productName,
-      category,
-      timestamp: serverTimestamp(),
-    };
-    if (sessionRef.current?.sessionId) productViewData.sessionId = sessionRef.current.sessionId;
-    setDoc(analyticsRef, productViewData).catch(console.error);
-  }, [user?.uid]);
+      const categories = [...(currentProfile.favoriteCategories || [])];
+      const catIndex = categories.findIndex((c) => c.category === category);
+      if (catIndex >= 0) {
+        categories[catIndex].views++;
+        categories[catIndex].score =
+          categories[catIndex].views * 1 + categories[catIndex].purchases * 5;
+      } else {
+        categories.push({ category, views: 1, purchases: 0, score: 1 });
+      }
+      categories.sort((a, b) => b.score - a.score);
+      const updated: CustomerProfile = {
+        ...currentProfile,
+        browsedProducts: browsedProducts.slice(0, 100),
+        favoriteCategories: categories.slice(0, 10),
+        totalProductViews: currentProfile.totalProductViews + 1,
+        lastSeen: new Date(),
+      };
+      setCurrentProfile(updated);
+      upsertProfileMut({ userId: user.uid, profile: updated }).catch(console.error);
+    }
+
+    if (convexEnabled) {
+      logBehaviorMut({
+        category: "productViews",
+        payload: {
+          userId: user?.uid,
+          productId,
+          productName,
+          category,
+          sessionId: sessionRef.current?.sessionId,
+        },
+      }).catch(console.error);
+    }
+  }, [user?.uid, currentProfile, upsertProfileMut, logBehaviorMut]);
   
   // Track page time
-  const trackPageTime = useCallback((pagePath: string, timeSpent: number) => {
-    if (!user?.uid || !firebaseConfigured) return;
-    
-    const analyticsRef = doc(collection(db, "customerBehavior", "analytics", "pageTime"));
-    const pageTimeData: Record<string, unknown> = {
-      userId: user.uid,
-      pagePath,
-      timeSpent,
-      timestamp: serverTimestamp(),
-    };
-    if (sessionRef.current?.sessionId) pageTimeData.sessionId = sessionRef.current.sessionId;
-    setDoc(analyticsRef, pageTimeData).catch(console.error);
-  }, [user?.uid]);
+  const trackPageTime = useCallback(
+    (pagePath: string, timeSpent: number) => {
+      if (!user?.uid || !convexEnabled) return;
+      logBehaviorMut({
+        category: "pageTime",
+        payload: {
+          userId: user.uid,
+          pagePath,
+          timeSpent,
+          sessionId: sessionRef.current?.sessionId,
+        },
+      }).catch(console.error);
+    },
+    [user?.uid, logBehaviorMut]
+  );
   
   // Track search
   const trackSearch = useCallback((queryText: string) => {
@@ -515,17 +491,16 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
       sessionRef.current.searchQueries.push(queryText);
     }
     
-    if (!firebaseConfigured) return;
-    
-    const analyticsRef = doc(collection(db, "customerBehavior", "analytics", "searches"));
-    const searchData: Record<string, unknown> = {
-      userId: user?.uid || "anonymous",
-      query: queryText,
-      timestamp: serverTimestamp(),
-    };
-    if (sessionRef.current?.sessionId) searchData.sessionId = sessionRef.current.sessionId;
-    setDoc(analyticsRef, searchData).catch(console.error);
-  }, [user?.uid]);
+    if (!convexEnabled) return;
+    logBehaviorMut({
+      category: "searches",
+      payload: {
+        userId: user?.uid || "anonymous",
+        query: queryText,
+        sessionId: sessionRef.current?.sessionId,
+      },
+    }).catch(console.error);
+  }, [user?.uid, logBehaviorMut]);
   
   // Track cart action
   const trackCartAction = useCallback((action: CartAction["action"], productId: string, productName: string, quantity: number) => {
@@ -541,69 +516,59 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
       sessionRef.current.cartActions.push(cartAction);
     }
     
-    if (!firebaseConfigured) return;
-    
-    // Log cart action
-    const analyticsRef = doc(collection(db, "customerBehavior", "analytics", "cartActions"));
-    const cartData: Record<string, unknown> = {
-      userId: user?.uid || "anonymous",
-      action: cartAction.action,
-      productId: cartAction.productId,
-      productName: cartAction.productName,
-      quantity: cartAction.quantity,
-      timestamp: serverTimestamp(),
-    };
-    if (sessionRef.current?.sessionId) cartData.sessionId = sessionRef.current.sessionId;
-    setDoc(analyticsRef, cartData).catch(console.error);
-    
-    // Update product interaction if user is logged in
-    if (user?.uid && action === "add") {
-      const profileRef = doc(db, "customerBehavior", "profiles", "users", user.uid);
-      getDoc(profileRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          const browsedProducts: ProductInteraction[] = data.browsedProducts || [];
-          const existingIndex = browsedProducts.findIndex(p => p.productId === productId);
-          if (existingIndex >= 0) {
-            browsedProducts[existingIndex].addedToCart = true;
-          }
-          setDoc(profileRef, { browsedProducts }, { merge: true }).catch(console.error);
-        }
-      });
+    if (!convexEnabled) return;
+
+    logBehaviorMut({
+      category: "cartActions",
+      payload: {
+        userId: user?.uid || "anonymous",
+        ...cartAction,
+        sessionId: sessionRef.current?.sessionId,
+      },
+    }).catch(console.error);
+
+    if (user?.uid && action === "add" && currentProfile) {
+      const browsedProducts = currentProfile.browsedProducts.map((p) =>
+        p.productId === productId ? { ...p, addedToCart: true } : p
+      );
+      const updated = { ...currentProfile, browsedProducts };
+      setCurrentProfile(updated);
+      upsertProfileMut({ userId: user.uid, profile: updated }).catch(console.error);
     }
-  }, [user?.uid]);
+  }, [user?.uid, currentProfile, upsertProfileMut, logBehaviorMut]);
   
   // Track checkout step
-  const trackCheckoutStep = useCallback((step: string) => {
-    if (!firebaseConfigured) return;
-    
-    const analyticsRef = doc(collection(db, "customerBehavior", "analytics", "checkoutSteps"));
-    const checkoutData: Record<string, unknown> = {
-      userId: user?.uid || "anonymous",
-      step,
-      timestamp: serverTimestamp(),
-    };
-    if (sessionRef.current?.sessionId) checkoutData.sessionId = sessionRef.current.sessionId;
-    setDoc(analyticsRef, checkoutData).catch(console.error);
-  }, [user?.uid]);
+  const trackCheckoutStep = useCallback(
+    (step: string) => {
+      if (!convexEnabled) return;
+      logBehaviorMut({
+        category: "checkoutSteps",
+        payload: {
+          userId: user?.uid || "anonymous",
+          step,
+          sessionId: sessionRef.current?.sessionId,
+        },
+      }).catch(console.error);
+    },
+    [user?.uid, logBehaviorMut]
+  );
   
   // Get customer profile
-  const getCustomerProfile = useCallback(async (userId: string): Promise<CustomerProfile | null> => {
-    if (!firebaseConfigured) return null;
-    
-    const profileRef = doc(db, "customerBehavior", "profiles", "users", userId);
-    const snapshot = await getDoc(profileRef);
-    
-    if (!snapshot.exists()) return null;
-    
-    const data = snapshot.data();
-    return {
-      ...data,
-      userId,
-      firstSeen: data.firstSeen?.toDate?.() || new Date(),
-      lastSeen: data.lastSeen?.toDate?.() || new Date(),
-    } as CustomerProfile;
-  }, []);
+  const getCustomerProfile = useCallback(
+    async (userId: string): Promise<CustomerProfile | null> => {
+      if (!convexEnabled) return null;
+      const data = await convex.query(api.customerBehavior.getProfile, { userId });
+      if (!data) return null;
+      const p = data as CustomerProfile;
+      return {
+        ...p,
+        userId,
+        firstSeen: p.firstSeen ? new Date(p.firstSeen) : new Date(),
+        lastSeen: p.lastSeen ? new Date(p.lastSeen) : new Date(),
+      };
+    },
+    [convex]
+  );
   
   // Update customer segment
   const updateCustomerSegment = useCallback(async (userId: string): Promise<CustomerSegment> => {
@@ -616,38 +581,39 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
     const lifetimeValueTier = calculateLifetimeTier(profile.totalSpent);
     const predictedNextPurchase = predictNextPurchase(profile);
     
-    if (firebaseConfigured) {
-      const profileRef = doc(db, "customerBehavior", "profiles", "users", userId);
-      await setDoc(profileRef, {
-        customerSegment: segment,
-        behaviorScore,
-        churnRisk,
-        lifetimeValueTier,
-        predictedNextPurchase,
-        lastUpdated: serverTimestamp(),
-      }, { merge: true });
+    if (convexEnabled) {
+      await upsertProfileMut({
+        userId,
+        profile: {
+          ...profile,
+          customerSegment: segment,
+          behaviorScore,
+          churnRisk,
+          lifetimeValueTier,
+          predictedNextPurchase,
+        },
+      });
     }
-    
+
     return segment;
-  }, [getCustomerProfile]);
+  }, [getCustomerProfile, upsertProfileMut]);
   
   // Get aggregated insights
   const getAggregatedInsights = useCallback(async (): Promise<AggregatedInsights> => {
-    if (!firebaseConfigured) {
+    if (!convexEnabled) {
       return getEmptyInsights();
     }
-    
+
     try {
-      // Get all profiles
-      const profilesRef = collection(db, "customerBehavior", "profiles", "users");
-      const profilesSnapshot = await getDocs(profilesRef);
-      
-      const profiles: CustomerProfile[] = profilesSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        userId: doc.id,
-        firstSeen: doc.data().firstSeen?.toDate?.() || new Date(),
-        lastSeen: doc.data().lastSeen?.toDate?.() || new Date(),
-      })) as CustomerProfile[];
+      const rawProfiles = await convex.query(api.customerBehavior.listProfiles, {});
+      const profiles: CustomerProfile[] = rawProfiles.map((data) => {
+        const p = data as CustomerProfile;
+        return {
+          ...p,
+          firstSeen: p.firstSeen ? new Date(p.firstSeen) : new Date(),
+          lastSeen: p.lastSeen ? new Date(p.lastSeen) : new Date(),
+        };
+      });
       
       // Calculate aggregated metrics
       const totalCustomers = profiles.length;
@@ -879,37 +845,45 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
   }, [getCustomerProfile]);
   
   // Get customers by segment
-  const getCustomersBySegment = useCallback(async (segment: CustomerSegment): Promise<CustomerProfile[]> => {
-    if (!firebaseConfigured) return [];
-    
-    const profilesRef = collection(db, "customerBehavior", "profiles", "users");
-    const q = query(profilesRef, where("customerSegment", "==", segment), limit(100));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => ({
-      ...doc.data(),
-      userId: doc.id,
-      firstSeen: doc.data().firstSeen?.toDate?.() || new Date(),
-      lastSeen: doc.data().lastSeen?.toDate?.() || new Date(),
-    })) as CustomerProfile[];
-  }, []);
+  const getCustomersBySegment = useCallback(
+    async (segment: CustomerSegment): Promise<CustomerProfile[]> => {
+      if (!convexEnabled) return [];
+      const rawProfiles = await convex.query(api.customerBehavior.listProfiles, {});
+      return rawProfiles
+        .map((data) => {
+          const p = data as CustomerProfile;
+          return {
+            ...p,
+            firstSeen: p.firstSeen ? new Date(p.firstSeen) : new Date(),
+            lastSeen: p.lastSeen ? new Date(p.lastSeen) : new Date(),
+          };
+        })
+        .filter((p) => (p.customerSegment || determineSegment(p)) === segment)
+        .slice(0, 100);
+    },
+    [convex]
+  );
+
+  const getRecentBehavior = useCallback(
+    async (limitCount: number = 50): Promise<BrowsingSession[]> => {
+      if (!convexEnabled) return [];
+      const sessions = await convex.query(api.customerBehavior.listCompletedSessions, {
+        limit: limitCount,
+      });
+      return sessions.map((data) => {
+        const s = data as BrowsingSession;
+        return {
+          ...s,
+          startTime: s.startTime ? new Date(s.startTime) : new Date(),
+          endTime: s.endTime ? new Date(s.endTime) : new Date(),
+        };
+      });
+    },
+    [convex]
+  );
   
-  // Get recent behavior
-  const getRecentBehavior = useCallback(async (limitCount: number = 50): Promise<BrowsingSession[]> => {
-    if (!firebaseConfigured) return [];
-    
-    const sessionsRef = collection(db, "customerBehavior", "sessions", "completed");
-    const q = query(sessionsRef, orderBy("endTime", "desc"), limit(limitCount));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => ({
-      ...doc.data(),
-      startTime: doc.data().startTime?.toDate?.() || new Date(),
-      endTime: doc.data().endTime?.toDate?.() || new Date(),
-    })) as BrowsingSession[];
-  }, []);
-  
-  const value: CustomerBehaviorContextType = {
+  const contextValue = useMemo(
+    () => ({
     currentProfile,
     loading,
     trackProductView,
@@ -924,10 +898,12 @@ export function CustomerBehaviorProvider({ children }: { children: ReactNode }) 
     getPurchasePredictions,
     getCustomersBySegment,
     getRecentBehavior,
-  };
-  
+    }),
+    [currentProfile, generateInsights, getAggregatedInsights, getCustomerProfile, getCustomersBySegment, getPurchasePredictions, getRecentBehavior, loading, trackCartAction, trackCheckoutStep, trackPageTime, trackProductView, trackSearch, updateCustomerSegment]
+  );
+
   return (
-    <CustomerBehaviorContext.Provider value={value}>
+    <CustomerBehaviorContext.Provider value={contextValue}>
       {children}
     </CustomerBehaviorContext.Provider>
   );

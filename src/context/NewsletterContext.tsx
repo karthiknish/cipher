@@ -1,20 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  deleteDoc, 
-  doc, 
-  query, 
-  orderBy, 
-  where,
-  updateDoc,
-  Timestamp,
-  serverTimestamp
-} from "firebase/firestore";
+import { createContext, use, useState, useEffect, ReactNode, useMemo } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useAuth } from "./AuthContext";
 
 // ============================================================================
@@ -86,7 +74,7 @@ interface NewsletterContextType {
 const NewsletterContext = createContext<NewsletterContextType | undefined>(undefined);
 
 export const useNewsletter = () => {
-  const context = useContext(NewsletterContext);
+  const context = use(NewsletterContext);
   if (!context) {
     throw new Error("useNewsletter must be used within a NewsletterProvider");
   }
@@ -98,56 +86,57 @@ export const useNewsletter = () => {
 // ============================================================================
 
 export function NewsletterProvider({ children }: { children: ReactNode }) {
-  const { user, userRole } = useAuth();
-  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
-  const [campaigns, setCampaigns] = useState<NewsletterCampaign[]>([]);
-  const [loading, setLoading] = useState(false);
-
+  const { userRole } = useAuth();
   const isAdmin = userRole?.isAdmin ?? false;
+  const convexSubs = useQuery(
+    api.newsletter.listSubscribers,
+    isAdmin ? {} : "skip"
+  );
+  const convexCampaigns = useQuery(
+    api.newsletter.listCampaigns,
+    isAdmin ? {} : "skip"
+  );
+  const subscribeMut = useMutation(api.newsletter.subscribe);
+  const unsubscribeMut = useMutation(api.newsletter.unsubscribe);
+  const updateSubscriberMut = useMutation(api.newsletter.updateSubscriber);
+  const removeSubscriberMut = useMutation(api.newsletter.removeSubscriber);
+  const createCampaignMut = useMutation(api.newsletter.createCampaign);
+  const updateCampaignMut = useMutation(api.newsletter.updateCampaign);
+  const removeCampaignMut = useMutation(api.newsletter.removeCampaign);
 
-  // Load subscribers for admin
-  useEffect(() => {
-    if (isAdmin) {
-      loadAllSubscribers();
-      loadCampaigns();
-    }
-  }, [isAdmin]);
+  const subscribers: NewsletterSubscriber[] = (convexSubs ?? []).map((s) => ({
+    id: s.id,
+    email: s.email,
+    source: s.source as NewsletterSubscriber["source"],
+    status: s.status as NewsletterSubscriber["status"],
+    subscribedAt: new Date(s.subscribedAt),
+    unsubscribedAt: s.unsubscribedAt ? new Date(s.unsubscribedAt) : undefined,
+    tags: s.tags,
+    firstName: s.firstName,
+    lastName: s.lastName,
+    promoCodeSent: s.promoCodeSent,
+  }));
 
-  const loadAllSubscribers = async () => {
-    setLoading(true);
-    try {
-      const q = query(collection(db, "newsletter_subscribers"), orderBy("subscribedAt", "desc"));
-      const snapshot = await getDocs(q);
-      const subs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        subscribedAt: doc.data().subscribedAt?.toDate() || new Date(),
-        unsubscribedAt: doc.data().unsubscribedAt?.toDate(),
-      })) as NewsletterSubscriber[];
-      setSubscribers(subs);
-    } catch (error) {
-      console.error("Error loading subscribers:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const campaigns: NewsletterCampaign[] = (convexCampaigns ?? []).map((c) => ({
+    id: c.id,
+    subject: c.subject,
+    previewText: c.previewText,
+    content: c.content,
+    status: c.status as NewsletterCampaign["status"],
+    scheduledFor: c.scheduledFor ? new Date(c.scheduledFor) : undefined,
+    sentAt: c.sentAt ? new Date(c.sentAt) : undefined,
+    recipientCount: c.recipientCount,
+    openCount: c.openCount,
+    clickCount: c.clickCount,
+    createdAt: new Date(c.createdAt),
+    createdBy: c.createdBy,
+    tags: c.tags,
+  }));
 
-  const loadCampaigns = async () => {
-    try {
-      const q = query(collection(db, "newsletter_campaigns"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      const camps = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        sentAt: doc.data().sentAt?.toDate(),
-        scheduledFor: doc.data().scheduledFor?.toDate(),
-      })) as NewsletterCampaign[];
-      setCampaigns(camps);
-    } catch (error) {
-      console.error("Error loading campaigns:", error);
-    }
-  };
+  const loading = isAdmin && (convexSubs === undefined || convexCampaigns === undefined);
+
+  const loadAllSubscribers = async () => {};
+  const loadCampaigns = async () => {};
 
   const subscribe = async (
     email: string, 
@@ -161,39 +150,11 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Check if already subscribed
-      const q = query(collection(db, "newsletter_subscribers"), where("email", "==", email.toLowerCase()));
-      const existing = await getDocs(q);
-      
-      if (!existing.empty) {
-        const existingDoc = existing.docs[0];
-        const data = existingDoc.data();
-        
-        if (data.status === "active") {
-          return { success: false, message: "You're already subscribed!" };
-        } else {
-          // Reactivate subscription
-          await updateDoc(doc(db, "newsletter_subscribers", existingDoc.id), {
-            status: "active",
-            subscribedAt: serverTimestamp(),
-            unsubscribedAt: null,
-          });
-          return { success: true, message: "Welcome back! Your subscription has been reactivated." };
-        }
-      }
-
-      // Create new subscriber
-      await addDoc(collection(db, "newsletter_subscribers"), {
+      return await subscribeMut({
         email: email.toLowerCase(),
         source,
-        status: "active",
-        subscribedAt: serverTimestamp(),
-        tags: ["new"],
-        firstName: firstName || "",
-        promoCodeSent: false,
+        firstName,
       });
-
-      return { success: true, message: "Thanks for subscribing! Check your email for 10% off." };
     } catch (error) {
       console.error("Error subscribing:", error);
       return { success: false, message: "Something went wrong. Please try again." };
@@ -202,28 +163,19 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
 
   const unsubscribe = async (email: string): Promise<boolean> => {
     try {
-      const q = query(collection(db, "newsletter_subscribers"), where("email", "==", email.toLowerCase()));
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) return false;
-
-      await updateDoc(doc(db, "newsletter_subscribers", snapshot.docs[0].id), {
-        status: "unsubscribed",
-        unsubscribedAt: serverTimestamp(),
-      });
-
-      if (isAdmin) await loadAllSubscribers();
-      return true;
+      return await unsubscribeMut({ email: email.toLowerCase() });
     } catch (error) {
       console.error("Error unsubscribing:", error);
       return false;
     }
   };
 
-  const updateSubscriber = async (id: string, updates: Partial<NewsletterSubscriber>): Promise<boolean> => {
+  const updateSubscriber = async (
+    id: string,
+    updates: Partial<NewsletterSubscriber>
+  ): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "newsletter_subscribers", id), updates);
-      if (isAdmin) await loadAllSubscribers();
+      await updateSubscriberMut({ id, patch: updates });
       return true;
     } catch (error) {
       console.error("Error updating subscriber:", error);
@@ -233,8 +185,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
 
   const deleteSubscriber = async (id: string): Promise<boolean> => {
     try {
-      await deleteDoc(doc(db, "newsletter_subscribers", id));
-      setSubscribers(prev => prev.filter(s => s.id !== id));
+      await removeSubscriberMut({ id });
       return true;
     } catch (error) {
       console.error("Error deleting subscriber:", error);
@@ -272,24 +223,32 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     campaign: Omit<NewsletterCampaign, "id" | "createdAt" | "openCount" | "clickCount">
   ): Promise<string | null> => {
     try {
-      const docRef = await addDoc(collection(db, "newsletter_campaigns"), {
-        ...campaign,
-        createdAt: serverTimestamp(),
-        openCount: 0,
-        clickCount: 0,
+      return await createCampaignMut({
+        subject: campaign.subject,
+        previewText: campaign.previewText,
+        content: campaign.content,
+        status: campaign.status,
+        scheduledFor: campaign.scheduledFor?.getTime(),
+        recipientCount: campaign.recipientCount,
+        createdBy: campaign.createdBy,
+        tags: campaign.tags,
       });
-      await loadCampaigns();
-      return docRef.id;
     } catch (error) {
       console.error("Error creating campaign:", error);
       return null;
     }
   };
 
-  const updateCampaign = async (id: string, updates: Partial<NewsletterCampaign>): Promise<boolean> => {
+  const updateCampaign = async (
+    id: string,
+    updates: Partial<NewsletterCampaign>
+  ): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, "newsletter_campaigns", id), updates);
-      await loadCampaigns();
+      const patch: Record<string, unknown> = { ...updates };
+      if (updates.scheduledFor)
+        patch.scheduledFor = updates.scheduledFor.getTime();
+      if (updates.sentAt) patch.sentAt = updates.sentAt.getTime();
+      await updateCampaignMut({ id, patch });
       return true;
     } catch (error) {
       console.error("Error updating campaign:", error);
@@ -299,8 +258,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
 
   const deleteCampaign = async (id: string): Promise<boolean> => {
     try {
-      await deleteDoc(doc(db, "newsletter_campaigns", id));
-      setCampaigns(prev => prev.filter(c => c.id !== id));
+      await removeCampaignMut({ id });
       return true;
     } catch (error) {
       console.error("Error deleting campaign:", error);
@@ -319,8 +277,8 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     return header + rows;
   };
 
-  return (
-    <NewsletterContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       subscribers,
       campaigns,
       loading,
@@ -335,7 +293,12 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
       deleteCampaign,
       loadAllSubscribers,
       exportSubscribers,
-    }}>
+    }),
+    [campaigns, createCampaign, deleteCampaign, deleteSubscriber, exportSubscribers, getStats, getSubscriberByEmail, loadAllSubscribers, loading, subscribe, subscribers, unsubscribe, updateCampaign, updateSubscriber]
+  );
+
+  return (
+    <NewsletterContext.Provider value={contextValue}>
       {children}
     </NewsletterContext.Provider>
   );

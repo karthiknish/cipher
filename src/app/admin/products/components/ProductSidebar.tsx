@@ -32,16 +32,15 @@ export function ProductSidebar({
         </div>
         <nav className="p-2">
           {TABS.map((tab) => (
-            <button
-              key={tab.id}
+            <button type="button" key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition ${
                 activeTab === tab.id
-                  ? "bg-black text-white"
+                  ? "bg-gray-950 text-white"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
-              <tab.icon className="w-4 h-4" />
+              <tab.icon className="size-4" />
               {tab.label}
             </button>
           ))}
@@ -56,7 +55,7 @@ export function ProductSidebar({
                 <img
                   src={formData.image}
                   alt="Preview"
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 size-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "https://placehold.co/600x800/1a1a1a/ffffff?text=Error";
@@ -69,7 +68,7 @@ export function ProductSidebar({
                 )}
                 {formData.featured && (
                   <Star
-                    className="absolute top-2 right-2 w-4 h-4 text-amber-400"
+                    className="absolute top-2 right-2 size-4 text-amber-400"
                     weight="fill"
                   />
                 )}

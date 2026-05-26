@@ -31,13 +31,13 @@ export default function AITryOnSection() {
   }, [isHovering]);
 
   return (
-    <section className="py-20 md:py-32 bg-black text-white overflow-hidden relative">
+    <section className="py-20 md:py-32 bg-gray-950 text-white overflow-hidden relative">
       <div className="w-full px-6 md:px-12 relative z-10">
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center max-w-7xl mx-auto">
           {/* Left Content */}
           <motion.div {...viewportAnimations.fadeLeft}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-full mb-6">
-              <Sparkle className="w-4 h-4 text-white" weight="fill" />
+              <Sparkle className="size-4 text-white" weight="fill" />
               <span className="text-sm tracking-wider text-white/80">AI-POWERED TECHNOLOGY</span>
             </div>
             
@@ -63,8 +63,8 @@ export default function AITryOnSection() {
                   transition={{ delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group hover:bg-white/10 transition-colors">
-                    <step.icon className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                  <div className="size-12 mx-auto mb-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group hover:bg-white/10 transition-colors">
+                    <step.icon className="size-5 text-white/70 group-hover:text-white transition-colors" />
                   </div>
                   <p className="text-sm font-medium text-white mb-1">{step.label}</p>
                   <p className="text-xs text-white/40">{step.description}</p>
@@ -79,10 +79,10 @@ export default function AITryOnSection() {
                 className="group inline-flex items-center justify-center gap-3 bg-white text-black hover:bg-white/90 px-8 py-4 text-sm tracking-wider font-medium transition-all rounded-full"
               >
                 TRY IT NOW
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="inline-flex items-center justify-center gap-3 border border-white/20 text-white px-8 py-4 text-sm tracking-wider hover:bg-white/5 transition-all rounded-full">
-                <Play className="w-4 h-4" weight="fill" />
+              <button aria-label="play" type="button" className="inline-flex items-center justify-center gap-3 border border-white/20 text-white px-8 py-4 text-sm tracking-wider hover:bg-white/5 transition-all rounded-full">
+                <Play className="size-4" weight="fill" />
                 WATCH DEMO
               </button>
             </div>
@@ -124,11 +124,11 @@ export default function AITryOnSection() {
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-white/5">
                       <div className="flex items-center gap-2">
-                        <Sparkle className="w-5 h-5 text-white" weight="fill" />
+                        <Sparkle className="size-5 text-white" weight="fill" />
                         <span className="text-sm font-medium">Virtual Try-On</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <div className="size-2 rounded-full bg-green-500 animate-pulse" />
                         <span className="text-xs text-white/40">Live</span>
                       </div>
                     </div>
@@ -143,7 +143,7 @@ export default function AITryOnSection() {
                             transition={{ duration: 3, repeat: Infinity }}
                             className="w-32 h-40 bg-white/10 rounded-t-full border border-white/10 flex items-end justify-center pb-4"
                           >
-                            <User className="w-16 h-16 text-white/20" weight="thin" />
+                            <User className="size-16 text-white/20" weight="thin" />
                           </motion.div>
                           
                           {/* Overlay effect - simulating try-on */}
@@ -170,18 +170,17 @@ export default function AITryOnSection() {
                       />
 
                       {/* Corner decorations */}
-                      <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-white/30" />
-                      <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-white/30" />
-                      <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-white/30" />
-                      <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-white/30" />
+                      <div className="absolute top-2 left-2 size-4 border-l-2 border-t-2 border-white/30" />
+                      <div className="absolute top-2 right-2 size-4 border-r-2 border-t-2 border-white/30" />
+                      <div className="absolute bottom-2 left-2 size-4 border-l-2 border-b-2 border-white/30" />
+                      <div className="absolute bottom-2 right-2 size-4 border-r-2 border-b-2 border-white/30" />
                     </div>
 
                     {/* Product selector */}
                     <div className="p-4 border-t border-white/5">
                       <div className="flex items-center gap-3">
                         {SHOWCASE_ITEMS.map((item, index) => (
-                          <button
-                            key={item.id}
+                          <button type="button" key={item.id}
                             onClick={() => setActiveIndex(index)}
                             className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
                               index === activeIndex
@@ -204,16 +203,16 @@ export default function AITryOnSection() {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute -top-6 -right-6 bg-white text-black px-5 py-3 rounded-2xl text-sm font-medium shadow-xl flex items-center gap-2"
               >
-                <Lightning className="w-4 h-4" weight="fill" />
+                <Lightning className="size-4" weight="fill" />
                 AI-Powered
               </motion.div>
 
               <motion.div
                 animate={{ y: [0, 8, 0], rotate: [0, -2, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                className="absolute -bottom-4 -left-4 bg-black text-white px-5 py-3 rounded-2xl text-sm font-medium shadow-xl border border-white/20 flex items-center gap-2"
+                className="absolute -bottom-4 -left-4 bg-gray-950 text-white px-5 py-3 rounded-2xl text-sm font-medium shadow-xl border border-white/20 flex items-center gap-2"
               >
-                <Check className="w-4 h-4 text-green-500" weight="bold" />
+                <Check className="size-4 text-green-500" weight="bold" />
                 Instant Results
               </motion.div>
 
@@ -221,9 +220,9 @@ export default function AITryOnSection() {
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="absolute top-1/2 -left-6 -translate-y-1/2 w-12 h-12 bg-black border border-white/20 rounded-full flex items-center justify-center shadow-xl"
+                className="absolute top-1/2 -left-6 -translate-y-1/2 size-12 bg-gray-950 border border-white/20 rounded-full flex items-center justify-center shadow-xl"
               >
-                <Camera className="w-5 h-5 text-white" />
+                <Camera className="size-5 text-white" />
               </motion.div>
             </div>
 
@@ -231,7 +230,7 @@ export default function AITryOnSection() {
             <div className="flex items-center justify-center gap-3 mt-8">
               <span className="text-xs text-white/30 tracking-wider">POWERED BY</span>
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                <Sparkle className="w-4 h-4 text-white" weight="fill" />
+                <Sparkle className="size-4 text-white" weight="fill" />
                 <span className="text-sm font-medium">Gemini AI</span>
               </div>
             </div>

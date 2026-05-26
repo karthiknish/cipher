@@ -1,22 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, use, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db } from "@/lib/firebase";
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit as firestoreLimit,
-  getDocs,
-  Timestamp,
-  increment,
-  onSnapshot
-} from "firebase/firestore";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 // Tier Definitions
 export type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
@@ -311,73 +297,68 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
     return { current, progress, pointsToNext };
   }, [calculateTier, getNextTier]);
 
-  // Initialize or fetch loyalty profile
+  const convexProfile = useQuery(api.loyalty.getMine, user ? {} : "skip");
+  const upsertLoyalty = useMutation(api.loyalty.upsert);
+
   useEffect(() => {
     if (!user) {
       setProfile(null);
       setLoading(false);
       return;
     }
+    if (convexProfile === undefined) return;
 
-    const loyaltyRef = doc(db, "loyalty", user.uid);
-    
-    const unsubscribe = onSnapshot(loyaltyRef, async (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data() as LoyaltyProfile;
-        
-        // Update tier if needed
-        const newTier = calculateTier(data.lifetimePoints);
-        const tierProgress = getTierProgress(data.lifetimePoints);
-        
-        if (newTier !== data.currentTier) {
-          await updateDoc(loyaltyRef, { 
-            currentTier: newTier,
-            tierProgress: tierProgress.progress,
-            pointsToNextTier: tierProgress.pointsToNext
-          });
-        }
-        
-        setProfile({
-          ...data,
-          currentTier: newTier,
-          tierProgress: tierProgress.progress,
-          pointsToNextTier: tierProgress.pointsToNext
-        });
-      } else {
-        // Create new loyalty profile
-        const referralCode = generateReferralCode();
-        const newProfile: LoyaltyProfile = {
-          userId: user.uid,
-          totalPoints: POINTS_CONFIG.signupBonus,
-          availablePoints: POINTS_CONFIG.signupBonus,
-          lifetimePoints: POINTS_CONFIG.signupBonus,
-          currentTier: "bronze",
-          tierProgress: getTierProgress(POINTS_CONFIG.signupBonus).progress,
-          pointsToNextTier: getTierProgress(POINTS_CONFIG.signupBonus).pointsToNext,
-          joinedAt: Date.now(),
-          lastActivityAt: Date.now(),
-          referralCode,
-          referralCount: 0,
-          transactions: [{
+    if (convexProfile) {
+      const data = convexProfile as LoyaltyProfile;
+      const newTier = calculateTier(data.lifetimePoints);
+      const tierProgress = getTierProgress(data.lifetimePoints);
+      const updated = {
+        ...data,
+        currentTier: newTier,
+        tierProgress: tierProgress.progress,
+        pointsToNextTier: tierProgress.pointsToNext,
+      };
+      setProfile(updated);
+      if (newTier !== data.currentTier) {
+        upsertLoyalty({ profile: updated }).catch(() => {});
+      }
+    } else {
+      const referralCode = generateReferralCode();
+      const tierProgress = getTierProgress(POINTS_CONFIG.signupBonus);
+      const newProfile: LoyaltyProfile = {
+        userId: user.uid,
+        totalPoints: POINTS_CONFIG.signupBonus,
+        availablePoints: POINTS_CONFIG.signupBonus,
+        lifetimePoints: POINTS_CONFIG.signupBonus,
+        currentTier: "bronze",
+        tierProgress: tierProgress.progress,
+        pointsToNextTier: tierProgress.pointsToNext,
+        joinedAt: Date.now(),
+        lastActivityAt: Date.now(),
+        referralCode,
+        referralCount: 0,
+        transactions: [
+          {
             id: `signup-${Date.now()}`,
             userId: user.uid,
             type: "signup",
             points: POINTS_CONFIG.signupBonus,
             description: "Welcome bonus for joining CIPHER Rewards",
             createdAt: Date.now(),
-          }],
-          redeemedRewards: [],
-        };
-        
-        await setDoc(loyaltyRef, newProfile);
-        setProfile(newProfile);
-      }
-      
-      setLoading(false);
-    });
+          },
+        ],
+        redeemedRewards: [],
+      };
+      setProfile(newProfile);
+      upsertLoyalty({ profile: newProfile }).catch(() => {});
+    }
+    setLoading(false);
+  }, [user, convexProfile, calculateTier, generateReferralCode, getTierProgress, upsertLoyalty]);
 
-    return () => unsubscribe();
-  }, [user, calculateTier, generateReferralCode, getTierProgress]);
+  const saveProfile = async (next: LoyaltyProfile) => {
+    setProfile(next);
+    await upsertLoyalty({ profile: next });
+  };
 
   // Earn points
   const earnPoints = async (
@@ -415,13 +396,12 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
     };
     
-    const loyaltyRef = doc(db, "loyalty", user.uid);
     const tierProgress = getTierProgress(profile.lifetimePoints + earnedPoints);
-    
-    await updateDoc(loyaltyRef, {
-      totalPoints: increment(earnedPoints),
-      availablePoints: increment(earnedPoints),
-      lifetimePoints: increment(earnedPoints),
+    await saveProfile({
+      ...profile,
+      totalPoints: profile.totalPoints + earnedPoints,
+      availablePoints: profile.availablePoints + earnedPoints,
+      lifetimePoints: profile.lifetimePoints + earnedPoints,
       currentTier: tierProgress.current,
       tierProgress: tierProgress.progress,
       pointsToNextTier: tierProgress.pointsToNext,
@@ -474,139 +454,115 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
     };
     
-    const loyaltyRef = doc(db, "loyalty", user.uid);
-    await updateDoc(loyaltyRef, {
-      availablePoints: increment(-reward.pointsCost),
-      lastActivityAt: Date.now(),
-      transactions: [...profile.transactions, transaction],
-      redeemedRewards: [...profile.redeemedRewards, redeemedReward],
-    });
-    
-    // Also store in rewards collection for easy lookup
-    const rewardRef = doc(db, "rewards", code);
-    await setDoc(rewardRef, {
+    const redeemedWithMeta = {
       ...redeemedReward,
       rewardType: reward.type,
       rewardValue: reward.value,
+    } as RedeemedReward & { rewardType: string; rewardValue: number };
+
+    await saveProfile({
+      ...profile,
+      availablePoints: profile.availablePoints - reward.pointsCost,
+      lastActivityAt: Date.now(),
+      transactions: [...profile.transactions, transaction],
+      redeemedRewards: [
+        ...profile.redeemedRewards,
+        redeemedWithMeta as RedeemedReward,
+      ],
     });
-    
+
     return redeemedReward;
   };
 
-  // Use reward code
-  const useReward = async (rewardCode: string): Promise<{ valid: boolean; value: number; type: string } | null> => {
-    const rewardRef = doc(db, "rewards", rewardCode);
-    const rewardSnap = await getDoc(rewardRef);
-    
-    if (!rewardSnap.exists()) return null;
-    
-    const rewardData = rewardSnap.data();
-    
-    if (rewardData.isUsed) return { valid: false, value: 0, type: rewardData.rewardType };
-    if (rewardData.expiresAt < Date.now()) return { valid: false, value: 0, type: rewardData.rewardType };
-    
-    // Mark as used
-    await updateDoc(rewardRef, {
-      isUsed: true,
-      usedAt: Date.now(),
-    });
-    
-    // Update user's loyalty profile
-    if (user && profile) {
-      const loyaltyRef = doc(db, "loyalty", user.uid);
-      const updatedRewards = profile.redeemedRewards.map(r => 
-        r.code === rewardCode ? { ...r, isUsed: true, usedAt: Date.now() } : r
-      );
-      await updateDoc(loyaltyRef, { redeemedRewards: updatedRewards });
-    }
-    
-    return {
-      valid: true,
-      value: rewardData.rewardValue,
-      type: rewardData.rewardType,
-    };
+  const useReward = async (
+    rewardCode: string
+  ): Promise<{ valid: boolean; value: number; type: string } | null> => {
+    if (!profile) return null;
+    const rewardData = profile.redeemedRewards.find(
+      (r) => r.code === rewardCode
+    ) as (RedeemedReward & { rewardType?: string; rewardValue?: number }) | undefined;
+    if (!rewardData) return null;
+    const rewardType = rewardData.rewardType ?? "discount";
+    const rewardValue = rewardData.rewardValue ?? 0;
+    if (rewardData.isUsed)
+      return { valid: false, value: 0, type: rewardType };
+    if (rewardData.expiresAt < Date.now())
+      return { valid: false, value: 0, type: rewardType };
+    const updatedRewards = profile.redeemedRewards.map((r) =>
+      r.code === rewardCode ? { ...r, isUsed: true, usedAt: Date.now() } : r
+    );
+    await saveProfile({ ...profile, redeemedRewards: updatedRewards });
+    return { valid: true, value: rewardValue, type: rewardType };
   };
 
-  // Apply referral code
   const applyReferralCode = async (code: string): Promise<boolean> => {
     if (!user || !profile) return false;
-    
-    // Find the referrer
-    const loyaltyQuery = query(
-      collection(db, "loyalty"),
-      where("referralCode", "==", code.toUpperCase())
-    );
-    
-    const querySnap = await getDocs(loyaltyQuery);
-    if (querySnap.empty) return false;
-    
-    const referrerDoc = querySnap.docs[0];
-    const referrerId = referrerDoc.id;
-    
-    // Can't refer yourself
-    if (referrerId === user.uid) return false;
-    
-    // Give points to referrer
-    const referrerRef = doc(db, "loyalty", referrerId);
-    const referrerData = referrerDoc.data() as LoyaltyProfile;
-    
+    const { ConvexHttpClient } = await import("convex/browser");
+    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const referrerData = (await client.query(api.loyalty.getByReferralCode, {
+      code,
+    })) as LoyaltyProfile | null;
+    if (!referrerData || referrerData.userId === user.uid) return false;
+
     const referrerTransaction: PointsTransaction = {
       id: `referral-${Date.now()}`,
-      userId: referrerId,
+      userId: referrerData.userId,
       type: "referral",
       points: POINTS_CONFIG.referralPoints,
       description: "Referral bonus - A friend joined using your code!",
       createdAt: Date.now(),
     };
-    
-    await updateDoc(referrerRef, {
-      totalPoints: increment(POINTS_CONFIG.referralPoints),
-      availablePoints: increment(POINTS_CONFIG.referralPoints),
-      lifetimePoints: increment(POINTS_CONFIG.referralPoints),
-      referralCount: increment(1),
-      lastActivityAt: Date.now(),
-      transactions: [...referrerData.transactions, referrerTransaction],
+    await upsertLoyalty({
+      profile: {
+        ...referrerData,
+        totalPoints: referrerData.totalPoints + POINTS_CONFIG.referralPoints,
+        availablePoints:
+          referrerData.availablePoints + POINTS_CONFIG.referralPoints,
+        lifetimePoints:
+          referrerData.lifetimePoints + POINTS_CONFIG.referralPoints,
+        referralCount: referrerData.referralCount + 1,
+        lastActivityAt: Date.now(),
+        transactions: [...referrerData.transactions, referrerTransaction],
+      },
     });
-    
-    // Give points to new user
+
     const userTransaction: PointsTransaction = {
       id: `referral-bonus-${Date.now()}`,
       userId: user.uid,
       type: "referral",
-      points: POINTS_CONFIG.referralPoints / 2, // New user gets half
+      points: POINTS_CONFIG.referralPoints / 2,
       description: "Referral bonus - Thanks for joining with a friend's code!",
       createdAt: Date.now(),
     };
-    
-    const loyaltyRef = doc(db, "loyalty", user.uid);
-    await updateDoc(loyaltyRef, {
-      totalPoints: increment(POINTS_CONFIG.referralPoints / 2),
-      availablePoints: increment(POINTS_CONFIG.referralPoints / 2),
-      lifetimePoints: increment(POINTS_CONFIG.referralPoints / 2),
+    await saveProfile({
+      ...profile,
+      totalPoints: profile.totalPoints + POINTS_CONFIG.referralPoints / 2,
+      availablePoints:
+        profile.availablePoints + POINTS_CONFIG.referralPoints / 2,
+      lifetimePoints:
+        profile.lifetimePoints + POINTS_CONFIG.referralPoints / 2,
       lastActivityAt: Date.now(),
       transactions: [...profile.transactions, userTransaction],
     });
-    
     return true;
   };
 
-  // Set birthday
   const setBirthday = async (birthday: string) => {
-    if (!user) return;
-    
-    const loyaltyRef = doc(db, "loyalty", user.uid);
-    await updateDoc(loyaltyRef, { birthday });
+    if (!user || !profile) return;
+    await saveProfile({ ...profile, birthday });
   };
 
-  // Admin: Adjust points
-  const adjustPoints = async (userId: string, points: number, reason: string) => {
-    const loyaltyRef = doc(db, "loyalty", userId);
-    const loyaltySnap = await getDoc(loyaltyRef);
-    
-    if (!loyaltySnap.exists()) return;
-    
-    const loyaltyData = loyaltySnap.data() as LoyaltyProfile;
-    
+  const adjustPoints = async (
+    userId: string,
+    points: number,
+    reason: string
+  ) => {
+    const { ConvexHttpClient } = await import("convex/browser");
+    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const loyaltyData = (await client.query(api.loyalty.getByUserId, {
+      userId,
+    })) as LoyaltyProfile | null;
+    if (!loyaltyData) return;
     const transaction: PointsTransaction = {
       id: `adjustment-${Date.now()}`,
       userId,
@@ -615,36 +571,32 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
       description: reason,
       createdAt: Date.now(),
     };
-    
-    const newAvailable = Math.max(0, loyaltyData.availablePoints + points);
-    const newTotal = Math.max(0, loyaltyData.totalPoints + points);
-    const newLifetime = points > 0 
-      ? loyaltyData.lifetimePoints + points 
-      : loyaltyData.lifetimePoints;
-    
-    await updateDoc(loyaltyRef, {
-      totalPoints: newTotal,
-      availablePoints: newAvailable,
-      lifetimePoints: newLifetime,
-      lastActivityAt: Date.now(),
-      transactions: [...loyaltyData.transactions, transaction],
+    await upsertLoyalty({
+      profile: {
+        ...loyaltyData,
+        totalPoints: Math.max(0, loyaltyData.totalPoints + points),
+        availablePoints: Math.max(0, loyaltyData.availablePoints + points),
+        lifetimePoints:
+          points > 0
+            ? loyaltyData.lifetimePoints + points
+            : loyaltyData.lifetimePoints,
+        lastActivityAt: Date.now(),
+        transactions: [...loyaltyData.transactions, transaction],
+      },
     });
   };
 
-  // Admin: Get all loyalty profiles
   const getAllLoyaltyProfiles = async (): Promise<LoyaltyProfile[]> => {
-    const loyaltyQuery = query(
-      collection(db, "loyalty"),
-      orderBy("lifetimePoints", "desc"),
-      firestoreLimit(100)
+    const { ConvexHttpClient } = await import("convex/browser");
+    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const list = await client.query(api.loyalty.listAll, {});
+    return (list as LoyaltyProfile[]).sort(
+      (a, b) => b.lifetimePoints - a.lifetimePoints
     );
-    
-    const querySnap = await getDocs(loyaltyQuery);
-    return querySnap.docs.map(doc => doc.data() as LoyaltyProfile);
   };
 
-  return (
-    <LoyaltyContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       profile,
       loading,
       tierConfig: TIER_CONFIG,
@@ -660,14 +612,19 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
       getTierProgress,
       adjustPoints,
       getAllLoyaltyProfiles,
-    }}>
+    }),
+    [adjustPoints, applyReferralCode, calculateTier, earnPoints, generateReferralCode, getAllLoyaltyProfiles, getNextTier, getTierProgress, loading, profile, redeemReward, setBirthday, useReward]
+  );
+
+  return (
+    <LoyaltyContext.Provider value={contextValue}>
       {children}
     </LoyaltyContext.Provider>
   );
 }
 
 export function useLoyalty() {
-  const context = useContext(LoyaltyContext);
+  const context = use(LoyaltyContext);
   if (context === undefined) {
     throw new Error("useLoyalty must be used within a LoyaltyProvider");
   }

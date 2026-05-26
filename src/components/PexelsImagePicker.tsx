@@ -151,9 +151,9 @@ export default function PexelsImagePicker({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
+        className="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        role="presentation"
+      ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -164,17 +164,15 @@ export default function PexelsImagePicker({
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <ImageIcon className="w-6 h-6" />
+              <ImageIcon className="size-6" />
               <div>
                 <h2 className="text-lg font-bold">Select Cover Image</h2>
                 <p className="text-xs text-gray-500">Powered by Pexels</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 transition"
-            >
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose}
+              className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
 
@@ -182,8 +180,8 @@ export default function PexelsImagePicker({
           <div className="p-4 border-b border-gray-100">
             <form onSubmit={handleSearch} className="flex gap-2">
               <div className="flex-1 relative">
-                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                <input aria-label="Search for images..."
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -193,7 +191,7 @@ export default function PexelsImagePicker({
               </div>
               <button
                 type="submit"
-                className="px-6 py-3 bg-black text-white text-sm tracking-wider hover:bg-gray-800 transition"
+                className="px-6 py-3 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-800 transition"
               >
                 SEARCH
               </button>
@@ -202,12 +200,11 @@ export default function PexelsImagePicker({
             {/* Quick Categories */}
             <div className="flex flex-wrap gap-2 mt-3">
               {CURATED_CATEGORIES.map((category) => (
-                <button
-                  key={category}
+                <button type="button" key={category}
                   onClick={() => handleCategoryClick(category)}
                   className={`px-3 py-1 text-xs border transition ${
                     query === category
-                      ? "bg-black text-white border-black"
+                      ? "bg-gray-950 text-white border-black"
                       : "border-gray-200 hover:border-black"
                   }`}
                 >
@@ -222,8 +219,7 @@ export default function PexelsImagePicker({
             {error ? (
               <div className="text-center py-12">
                 <p className="text-red-500 mb-4">{error}</p>
-                <button
-                  onClick={() => fetchPhotos("", 1)}
+                <button type="button" onClick={() => fetchPhotos("", 1)}
                   className="text-sm underline"
                 >
                   Try Again
@@ -231,14 +227,13 @@ export default function PexelsImagePicker({
               </div>
             ) : loading && photos.length === 0 ? (
               <div className="flex items-center justify-center py-20">
-                <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+                <SpinnerGap className="size-8 animate-spin text-gray-400" />
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {photos.map((photo) => (
-                    <button
-                      key={photo.id}
+                    <button type="button" key={photo.id}
                       onClick={() => setSelectedPhoto(photo)}
                       className={`relative aspect-[4/3] overflow-hidden group transition-all ${
                         selectedPhoto?.id === photo.id
@@ -251,14 +246,14 @@ export default function PexelsImagePicker({
                         alt={photo.alt || "Pexels photo"}
                         fill
                         className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition" />
+                       sizes="(max-width: 768px) 100vw, 50vw" />
+                      <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/20 transition" />
                       {selectedPhoto?.id === photo.id && (
-                        <div className="absolute top-2 right-2 w-8 h-8 bg-black text-white flex items-center justify-center">
-                          <Check className="w-5 h-5" />
+                        <div className="absolute top-2 right-2 size-8 bg-gray-950 text-white flex items-center justify-center">
+                          <Check className="size-5" />
                         </div>
                       )}
-                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition">
+                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-gray-950/70 to-transparent opacity-0 group-hover:opacity-100 transition">
                         <p className="text-white text-xs truncate">
                           by {photo.photographer}
                         </p>
@@ -270,13 +265,11 @@ export default function PexelsImagePicker({
                 {/* Load More */}
                 {photos.length < totalResults && (
                   <div className="text-center mt-6">
-                    <button
-                      onClick={loadMore}
+                    <button type="button" onClick={loadMore}
                       disabled={loading}
-                      className="px-6 py-3 border border-black text-sm tracking-wider hover:bg-black hover:text-white transition disabled:opacity-50"
-                    >
+                      className="px-6 py-3 border border-black text-sm tracking-wider hover:bg-gray-950 hover:text-white transition disabled:opacity-50">
                       {loading ? (
-                        <SpinnerGap className="w-5 h-5 animate-spin inline" />
+                        <SpinnerGap className="size-5 animate-spin inline" />
                       ) : (
                         "LOAD MORE"
                       )}
@@ -303,17 +296,13 @@ export default function PexelsImagePicker({
                 )}
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="px-6 py-2 border border-gray-300 text-sm tracking-wider hover:bg-gray-100 transition"
-                >
+                <button type="button" onClick={onClose}
+                  className="px-6 py-2 border border-gray-300 text-sm tracking-wider hover:bg-gray-100 transition">
                   CANCEL
                 </button>
-                <button
-                  onClick={handleSelect}
+                <button type="button" onClick={handleSelect}
                   disabled={!selectedPhoto}
-                  className="px-6 py-2 bg-black text-white text-sm tracking-wider hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  className="px-6 py-2 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed">
                   USE IMAGE
                 </button>
               </div>

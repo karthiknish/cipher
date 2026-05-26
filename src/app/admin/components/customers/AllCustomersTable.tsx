@@ -35,11 +35,11 @@ export function AllCustomersTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {customers.slice(0, 10).map((customer, i) => {
+            {customers.slice(0, 10).map((customer) => {
               const { segment, segmentColor } = getSegmentForCustomer(customer, clvPredictions);
 
               return (
-                <tr key={i} className="hover:bg-gray-50 transition">
+                <tr key={customer.email} className="hover:bg-gray-50 transition">
                   <td className="py-3 px-6 text-sm">{customer.email}</td>
                   <td className="py-3 px-6 text-sm">{customer.orders}</td>
                   <td className="py-3 px-6 text-sm font-medium">${customer.totalSpent.toFixed(0)}</td>
@@ -51,11 +51,10 @@ export function AllCustomersTable({
                     <span className={`px-2 py-1 text-xs ${segmentColor}`}>{segment}</span>
                   </td>
                   <td className="py-3 px-6">
-                    <button
-                      onClick={() => onSendEmail(customer)}
+                    <button type="button" aria-label={`Email ${customer.email}`} onClick={() => onSendEmail(customer)}
                       className="p-2 hover:bg-gray-100 rounded-lg"
                     >
-                      <Envelope className="w-4 h-4 text-gray-500" />
+                      <Envelope className="size-4 text-gray-500" />
                     </button>
                   </td>
                 </tr>

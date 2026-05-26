@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { createContext, use, useState, useCallback, useEffect, ReactNode, useMemo } from "react";
 import { useProducts, Product } from "./ProductContext";
 import { useAuth } from "./AuthContext";
 import { useRecentlyViewed } from "./RecentlyViewedContext";
@@ -62,7 +62,7 @@ const RecommendationContext = createContext<RecommendationContextType>({
   trackProductInteraction: () => {},
 });
 
-export const useRecommendations = () => useContext(RecommendationContext);
+export const useRecommendations = () => use(RecommendationContext);
 
 export const RecommendationProvider = ({ children }: { children: ReactNode }) => {
   const { products, getProduct } = useProducts();
@@ -304,8 +304,8 @@ export const RecommendationProvider = ({ children }: { children: ReactNode }) =>
       .slice(0, limit);
   }, [products]);
 
-  return (
-    <RecommendationContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       getRecommendationsForProduct,
       getPersonalizedRecommendations,
       getTrendingProducts,
@@ -313,7 +313,12 @@ export const RecommendationProvider = ({ children }: { children: ReactNode }) =>
       getComplementaryProducts,
       getSimilarProducts,
       trackProductInteraction,
-    }}>
+    }),
+    [getComplementaryProducts, getNewArrivals, getPersonalizedRecommendations, getRecommendationsForProduct, getSimilarProducts, getTrendingProducts, trackProductInteraction]
+  );
+
+  return (
+    <RecommendationContext.Provider value={contextValue}>
       {children}
     </RecommendationContext.Provider>
   );

@@ -47,22 +47,22 @@ export function InfluencersTab({
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 p-6">
-          <UserCirclePlus className="w-5 h-5 text-purple-500 mb-2" />
+          <UserCirclePlus className="size-5 text-purple-500 mb-2" />
           <p className="text-2xl font-medium">{influencers.filter(i => i.isActive).length}</p>
           <p className="text-xs text-gray-500 tracking-wider">ACTIVE CREATORS</p>
         </div>
         <div className="bg-white border border-gray-200 p-6">
-          <Clock className="w-5 h-5 text-amber-500 mb-2" />
+          <Clock className="size-5 text-amber-500 mb-2" />
           <p className="text-2xl font-medium">{pendingApplications.length}</p>
           <p className="text-xs text-gray-500 tracking-wider">PENDING APPLICATIONS</p>
         </div>
         <div className="bg-white border border-gray-200 p-6">
-          <Broadcast className="w-5 h-5 text-red-500 mb-2" />
+          <Broadcast className="size-5 text-red-500 mb-2" />
           <p className="text-2xl font-medium">{influencers.filter(i => i.isLive).length}</p>
           <p className="text-xs text-gray-500 tracking-wider">LIVE NOW</p>
         </div>
         <div className="bg-white border border-gray-200 p-6">
-          <CurrencyDollar className="w-5 h-5 text-green-500 mb-2" />
+          <CurrencyDollar className="size-5 text-green-500 mb-2" />
           <p className="text-2xl font-medium">
             ${influencers.reduce((sum, i) => sum + i.totalEarnings, 0).toFixed(0)}
           </p>
@@ -74,7 +74,7 @@ export function InfluencersTab({
       {pendingApplications.length > 0 && (
         <div className="bg-white border border-gray-200">
           <div className="border-b border-gray-200 p-4 flex items-center gap-3">
-            <Warning className="w-5 h-5 text-amber-500" />
+            <Warning className="size-5 text-amber-500" />
             <h3 className="font-medium">Pending Applications</h3>
             <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full">
               {pendingApplications.length}
@@ -90,17 +90,17 @@ export function InfluencersTab({
                   <div className="flex items-center gap-2 mt-2">
                     {app.socialLinks?.instagram && (
                       <a href={app.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500">
-                        <InstagramLogo className="w-4 h-4" />
+                        <InstagramLogo className="size-4" />
                       </a>
                     )}
                     {app.socialLinks?.tiktok && (
                       <a href={app.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-black">
-                        <TiktokLogo className="w-4 h-4" />
+                        <TiktokLogo className="size-4" />
                       </a>
                     )}
                     {app.socialLinks?.youtube && (
                       <a href={app.socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-500">
-                        <YoutubeLogo className="w-4 h-4" />
+                        <YoutubeLogo className="size-4" />
                       </a>
                     )}
                   </div>
@@ -109,18 +109,16 @@ export function InfluencersTab({
                   <p className="line-clamp-2">{app.bio}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onApproveApplication(app.id)}
+                  <button aria-label="check circle" type="button" onClick={() => onApproveApplication(app.id)}
                     className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white text-sm hover:bg-green-700"
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="size-4" />
                     Approve
                   </button>
-                  <button
-                    onClick={() => onRejectApplication(app.id)}
+                  <button aria-label="x circle" type="button" onClick={() => onRejectApplication(app.id)}
                     className="flex items-center gap-1 px-4 py-2 bg-red-600 text-white text-sm hover:bg-red-700"
                   >
-                    <XCircle className="w-4 h-4" />
+                    <XCircle className="size-4" />
                     Reject
                   </button>
                 </div>
@@ -161,11 +159,11 @@ export function InfluencersTab({
                   <tr key={inf.id} className="hover:bg-gray-50">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                        <div className="size-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                           {inf.avatar ? (
                             <Image src={inf.avatar} alt={inf.displayName} width={40} height={40} className="object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-300 text-white font-bold">
+                            <div className="size-full flex items-center justify-center bg-gray-300 text-white font-bold">
                               {inf.displayName.charAt(0)}
                             </div>
                           )}
@@ -211,7 +209,7 @@ export function InfluencersTab({
                     <td className="p-4">
                       {inf.isLive ? (
                         <span className="flex items-center gap-1 text-xs text-red-600">
-                          <Broadcast className="w-3 h-3 animate-pulse" weight="fill" />
+                          <Broadcast className="size-3 animate-pulse" weight="fill" />
                           LIVE
                         </span>
                       ) : inf.isActive ? (
@@ -226,7 +224,7 @@ export function InfluencersTab({
                         target="_blank"
                         className="text-xs text-gray-500 hover:text-black flex items-center gap-1"
                       >
-                        <Eye className="w-3 h-3" />
+                        <Eye className="size-3" />
                         View
                       </Link>
                     </td>

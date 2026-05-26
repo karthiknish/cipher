@@ -1,8 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
-import { db, auth } from "@/lib/firebase";
-import { doc, setDoc, updateDoc, deleteDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { createContext, use, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useAuth } from "./AuthContext";
 
 export interface CartItem {
   id: string;
@@ -35,7 +35,7 @@ const CART_STORAGE_KEY = "cipher_cart";
 const CART_SESSION_KEY = "cipher_cart_session";
 const FREE_SHIPPING_THRESHOLD = 150;
 const TAX_RATE = 0.08; // 8% tax
-const SYNC_DEBOUNCE = 5000; // 5 seconds debounce for Firebase sync
+const SYNC_DEBOUNCE = 5000; // 5 seconds debounce for abandoned-cart sync
 
 const CartContext = createContext<CartContextType>({
   cart: [],
@@ -50,7 +50,7 @@ const CartContext = createContext<CartContextType>({
   total: 0,
 });
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => use(CartContext);
 
 // Generate or retrieve session ID for tracking anonymous carts
 function getSessionId(): string {
@@ -65,6 +65,9 @@ function getSessionId(): string {
 }
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  const upsertAbandonedCart = useMutation(api.abandonedCarts.upsert);
+  const markRecoveredMutation = useMutation(api.abandonedCarts.markRecovered);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -72,19 +75,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const lastSyncRef = useRef<number>(0);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUserId(user.uid);
-        setCurrentEmail(user.email);
-      } else {
-        setCurrentUserId(null);
-        setCurrentEmail(null);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+    if (user) {
+      setCurrentUserId(user.uid);
+      setCurrentEmail(user.email);
+    } else {
+      setCurrentUserId(null);
+      setCurrentEmail(null);
+    }
+  }, [user?.uid, user?.email]);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -101,55 +100,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Sync cart to Firebase for abandoned cart tracking (debounced)
-  const syncToFirebase = useCallback(async (cartItems: CartItem[], cartTotal: number) => {
-    const sessionId = getSessionId();
-    if (!sessionId) return;
+  const syncToConvex = useCallback(
+    async (cartItems: CartItem[], cartTotal: number) => {
+      const sessionId = getSessionId();
+      if (!sessionId) return;
 
-    const cartId = currentUserId || sessionId;
+      const cartKey = currentUserId || sessionId;
 
-    try {
-      if (cartItems.length === 0) {
-        // Delete the abandoned cart record if cart is empty
-        await deleteDoc(doc(db, "abandonedCarts", cartId)).catch(() => {});
-        return;
-      }
-
-      const cartRef = doc(db, "abandonedCarts", cartId);
-      const existingCart = await getDoc(cartRef);
-
-      const cartData = {
-        sessionId,
-        userId: currentUserId || null,
-        email: currentEmail || "",
-        items: cartItems.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color || null,
-          image: item.image,
-        })),
-        total: cartTotal,
-        updatedAt: serverTimestamp(),
-        abandonedAt: serverTimestamp(),
-        recovered: false,
-      };
-
-      if (existingCart.exists()) {
-        await updateDoc(cartRef, cartData);
-      } else {
-        await setDoc(cartRef, {
-          ...cartData,
-          createdAt: serverTimestamp(),
-          remindersSent: 0,
+      try {
+        await upsertAbandonedCart({
+          cartKey,
+          sessionId,
+          userId: currentUserId,
+          email: currentEmail,
+          items: cartItems.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color ?? null,
+            image: item.image,
+          })),
+          total: cartTotal,
         });
+      } catch (error) {
+        console.error("Failed to sync cart to Convex:", error);
       }
-    } catch (error) {
-      console.error("Failed to sync cart to Firebase:", error);
-    }
-  }, [currentUserId, currentEmail]);
+    },
+    [currentUserId, currentEmail, upsertAbandonedCart]
+  );
 
   // Debounced sync function
   const debouncedSync = useCallback((cartItems: CartItem[], cartTotal: number) => {
@@ -163,12 +143,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const now = Date.now();
       if (now - lastSyncRef.current >= SYNC_DEBOUNCE) {
         lastSyncRef.current = now;
-        syncToFirebase(cartItems, cartTotal);
+        syncToConvex(cartItems, cartTotal);
       }
     }, SYNC_DEBOUNCE);
-  }, [syncToFirebase]);
+  }, [syncToConvex]);
 
-  // Save cart to localStorage when it changes and sync to Firebase
+  // Save cart to localStorage when it changes and sync to Convex
   useEffect(() => {
     if (isLoaded && typeof window !== "undefined") {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -216,23 +196,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // Mark cart as recovered in Firebase when purchase is completed
   const markCartAsRecovered = useCallback(async () => {
     const sessionId = getSessionId();
-    const cartId = currentUserId || sessionId;
-    if (!cartId) return;
+    const cartKey = currentUserId || sessionId;
+    if (!cartKey) return;
 
     try {
-      const cartRef = doc(db, "abandonedCarts", cartId);
-      await updateDoc(cartRef, {
-        recovered: true,
-        recoveredAt: serverTimestamp(),
-      });
+      await markRecoveredMutation({ cartKey });
     } catch (error) {
-      // Cart may not exist in Firebase, ignore error
       console.debug("Could not mark cart as recovered:", error);
     }
-  }, [currentUserId]);
+  }, [currentUserId, markRecoveredMutation]);
 
   const clearCart = async (shouldMarkAsRecovered: boolean = false) => {
     if (shouldMarkAsRecovered) {
@@ -247,9 +221,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
   const total = Math.round((subtotal + shipping + tax) * 100) / 100;
 
-  return (
-    <CartContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         cart,
         addToCart,
         removeFromCart,
@@ -260,8 +233,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         shipping,
         tax,
         total,
-      }}
-    >
+      }),
+    [addToCart, cart, clearCart, itemCount, removeFromCart, shipping, subtotal, tax, total, updateQuantity]
+  );
+
+  return (
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );

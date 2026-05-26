@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useCallback, useMemo, ReactNode } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { X, CheckCircle, WarningCircle, Info, Warning } from "@phosphor-icons/react";
 
@@ -46,13 +46,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case "success":
-        return <CheckCircle className="w-5 h-5" weight="fill" />;
+        return <CheckCircle className="size-5" weight="fill" />;
       case "error":
-        return <WarningCircle className="w-5 h-5" weight="fill" />;
+        return <WarningCircle className="size-5" weight="fill" />;
       case "warning":
-        return <Warning className="w-5 h-5" weight="fill" />;
+        return <Warning className="size-5" weight="fill" />;
       default:
-        return <Info className="w-5 h-5" weight="fill" />;
+        return <Info className="size-5" weight="fill" />;
     }
   };
 
@@ -69,8 +69,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const contextValue = useMemo(
+    () => ({ showToast, success, error, info, warning }),
+    [showToast, success, error, info, warning]
+  );
+
   return (
-    <ToastContext.Provider value={{ showToast, success, error, info, warning }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       
       {/* Toast Container */}
@@ -87,11 +92,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <span className="flex-shrink-0 mt-0.5">{getIcon(toast.type)}</span>
               <p className="flex-1 text-sm font-medium">{toast.message}</p>
-              <button
-                onClick={() => removeToast(toast.id)}
+              <button aria-label="x" type="button" onClick={() => removeToast(toast.id)}
                 className="flex-shrink-0 hover:opacity-70 transition-opacity"
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </motion.div>
           ))}
@@ -102,7 +106,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 export function useToast() {
-  const context = useContext(ToastContext);
+  const context = use(ToastContext);
   if (!context) {
     throw new Error("useToast must be used within a ToastProvider");
   }

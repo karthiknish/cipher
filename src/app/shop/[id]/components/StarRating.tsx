@@ -17,7 +17,7 @@ export default function StarRating({
   onChange 
 }: StarRatingProps) {
   const [hover, setHover] = useState(0);
-  const sizeClasses = { sm: "w-4 h-4", md: "w-5 h-5", lg: "w-6 h-6" };
+  const sizeClasses = { sm: "size-4", md: "size-5", lg: "size-6" };
   
   return (
     <div className="flex gap-0.5">

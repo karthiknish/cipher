@@ -19,12 +19,12 @@ export function NewProductFooter({
     <div className="flex justify-between items-center mt-6 bg-white border rounded-lg p-4">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-xs text-gray-400">
-          <Info className="w-4 h-4" />
+          <Info className="size-4" />
           <span>Fields marked with * are required</span>
         </div>
         {hasUnsavedChanges && (
           <div className="flex items-center gap-1.5 text-xs text-amber-600">
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+            <div className="size-2 bg-amber-500 rounded-full animate-pulse" />
             <span>Auto-saved draft</span>
           </div>
         )}
@@ -36,18 +36,16 @@ export function NewProductFooter({
         >
           Discard
         </Link>
-        <button
-          onClick={onSubmit}
+        <button type="button" onClick={onSubmit}
           disabled={isSubmitting || !canSubmit}
-          className="px-8 py-2 bg-black text-white text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center gap-2 rounded"
-        >
+          className="px-8 py-2 bg-gray-950 text-white text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center gap-2 rounded">
           {isSubmitting ? (
             <>
-              <SpinnerGap className="w-4 h-4 animate-spin" /> CREATING...
+              <SpinnerGap className="size-4 animate-spin" /> CREATING…
             </>
           ) : (
             <>
-              <FloppyDisk className="w-4 h-4" /> CREATE PRODUCT
+              <FloppyDisk className="size-4" /> CREATE PRODUCT
             </>
           )}
         </button>

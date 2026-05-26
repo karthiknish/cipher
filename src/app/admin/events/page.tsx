@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import AdminLayout from "../components/AdminLayout";
+import { SpinnerGap, ShieldWarning } from "@phosphor-icons/react";
 import { motion, AnimatePresence, modalOverlay, modalContent } from "@/lib/motion";
 import Image from "next/image";
 import { 
@@ -22,7 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { useLocalScene, CipherEvent, EventType, LoyaltyTier } from "@/context/LocalSceneContext";
 import { useToast } from "@/context/ToastContext";
-import { ImageUploader } from "@/components/ImageUploader";
+import ImageUploader from "@/components/ImageUploader";
 
 const EVENT_TYPE_CONFIG = {
   popup: { label: "Pop-Up", color: "bg-purple-500", icon: Lightning },
@@ -65,10 +69,13 @@ const EMPTY_EVENT: Omit<CipherEvent, "id" | "createdAt" | "rsvpCount"> = {
   createdBy: "admin"
 };
 
-export default function AdminEventsPage() {
+function AdminEventsPageContent() {
+  const { user, loading: authLoading, userRole } = useAuth();
+  const { push } = useRouter();
   const { events, createEvent, updateEvent, deleteEvent, getEventRSVPs } = useLocalScene();
   const toast = useToast();
-  
+  const isAdmin = userRole?.isAdmin ?? false;
+
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CipherEvent | null>(null);
   const [formData, setFormData] = useState<Omit<CipherEvent, "id" | "createdAt" | "rsvpCount">>(EMPTY_EVENT);
@@ -77,6 +84,29 @@ export default function AdminEventsPage() {
   const [filter, setFilter] = useState<"all" | EventType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) push("/login");
+  }, [user, authLoading, push]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <AdminLayout title="Events" activeTab="events">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ShieldWarning className="size-12 text-amber-500 mb-4" />
+          <p className="text-gray-600">Admin access required</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   const filteredEvents = events
     .filter(e => filter === "all" || e.type === filter)
@@ -159,27 +189,27 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-light tracking-tight">Events Management</h1>
-          <p className="text-gray-500 text-sm mt-1">{events.length} total events</p>
-        </div>
+    <AdminLayout
+      title="Events"
+      activeTab="events"
+      actions={
         <button
+          type="button"
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-900 transition"
+          className="flex items-center gap-2 bg-white text-black px-4 py-2 text-xs tracking-wider hover:bg-gray-100 transition"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="size-4" />
           CREATE EVENT
         </button>
-      </div>
+      }
+    >
+      <p className="text-gray-500 text-sm mb-6">{events.length} total events</p>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <input aria-label="Search events..."
             type="text"
             placeholder="Search events..."
             value={searchQuery}
@@ -188,19 +218,17 @@ export default function AdminEventsPage() {
           />
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 text-sm tracking-wider transition ${filter === "all" ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"}`}
+          <button type="button" onClick={() => setFilter("all")}
+            className={`px-4 py-2 text-sm tracking-wider transition ${filter === "all" ? "bg-gray-950 text-white" : "bg-gray-100 hover:bg-gray-200"}`}
           >
             All
           </button>
           {(Object.keys(EVENT_TYPE_CONFIG) as EventType[]).map((type) => {
             const config = EVENT_TYPE_CONFIG[type];
             return (
-              <button
-                key={type}
+              <button type="button" key={type}
                 onClick={() => setFilter(type)}
-                className={`px-4 py-2 text-sm tracking-wider transition ${filter === type ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"}`}
+                className={`px-4 py-2 text-sm tracking-wider transition ${filter === type ? "bg-gray-950 text-white" : "bg-gray-100 hover:bg-gray-200"}`}
               >
                 {config.label}
               </button>
@@ -240,10 +268,10 @@ export default function AdminEventsPage() {
                             alt={event.title}
                             fill
                             className="object-cover"
-                          />
+                           sizes="(max-width: 768px) 100vw, 50vw" />
                           {event.featured && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 flex items-center justify-center">
-                              <Star weight="fill" className="w-2.5 h-2.5 text-white" />
+                            <div className="absolute -top-1 -right-1 size-4 bg-yellow-400 flex items-center justify-center">
+                              <Star weight="fill" className="size-2.5 text-white" />
                             </div>
                           )}
                         </div>
@@ -257,7 +285,7 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs text-white ${typeConfig.color}`}>
-                        <TypeIcon weight="bold" className="w-3 h-3" />
+                        <TypeIcon weight="bold" className="size-3" />
                         {typeConfig.label}
                       </span>
                     </td>
@@ -269,7 +297,7 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-400" />
+                        <Users className="size-4 text-gray-400" />
                         <span className="text-sm">{event.rsvpCount}/{event.capacity}</span>
                         <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div 
@@ -286,26 +314,23 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleViewRSVPs(event.id)}
+                        <button type="button" onClick={() => handleViewRSVPs(event.id)}
                           className="p-2 hover:bg-gray-100 transition rounded"
                           title="View RSVPs"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="size-4" />
                         </button>
-                        <button
-                          onClick={() => handleEdit(event)}
+                        <button type="button" onClick={() => handleEdit(event)}
                           className="p-2 hover:bg-gray-100 transition rounded"
                           title="Edit"
                         >
-                          <PencilSimple className="w-4 h-4" />
+                          <PencilSimple className="size-4" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(event.id)}
+                        <button type="button" onClick={() => handleDelete(event.id)}
                           className="p-2 hover:bg-red-50 text-red-500 transition rounded"
                           title="Delete"
                         >
-                          <Trash className="w-4 h-4" />
+                          <Trash className="size-4" />
                         </button>
                       </div>
                     </td>
@@ -318,7 +343,7 @@ export default function AdminEventsPage() {
 
         {filteredEvents.length === 0 && (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Calendar className="size-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No events found</p>
           </div>
         )}
@@ -331,9 +356,9 @@ export default function AdminEventsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowForm(false)}
-          >
+            className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setShowForm(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -345,11 +370,10 @@ export default function AdminEventsPage() {
                 <h2 className="text-lg font-medium">
                   {editingEvent ? "Edit Event" : "Create Event"}
                 </h2>
-                <button
-                  onClick={() => setShowForm(false)}
+                <button aria-label="x" type="button" onClick={() => setShowForm(false)}
                   className="p-2 hover:bg-gray-100 transition rounded"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="size-5" />
                 </button>
               </div>
 
@@ -357,8 +381,8 @@ export default function AdminEventsPage() {
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs tracking-wider text-gray-500 mb-2">EVENT TITLE</label>
-                    <input
+                    <label htmlFor="page-event-title-26" className="block text-xs tracking-wider text-gray-500 mb-2">EVENT TITLE</label>
+                    <input aria-label="EVENT TITLE" id="page-event-title-26"
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -368,8 +392,8 @@ export default function AdminEventsPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-xs tracking-wider text-gray-500 mb-2">DESCRIPTION</label>
-                    <textarea
+                    <label htmlFor="page-description-27" className="block text-xs tracking-wider text-gray-500 mb-2">DESCRIPTION</label>
+                    <textarea aria-label="DESCRIPTION" id="page-description-27"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
@@ -380,8 +404,8 @@ export default function AdminEventsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">TYPE</label>
-                      <select
+                      <label htmlFor="page-type-28" className="block text-xs tracking-wider text-gray-500 mb-2">TYPE</label>
+                      <select aria-label="TYPE" id="page-type-28"
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value as EventType })}
                         className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
@@ -393,8 +417,8 @@ export default function AdminEventsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">STATUS</label>
-                      <select
+                      <label htmlFor="page-status-29" className="block text-xs tracking-wider text-gray-500 mb-2">STATUS</label>
+                      <select aria-label="STATUS" id="page-status-29"
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value as CipherEvent["status"] })}
                         className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
@@ -408,15 +432,12 @@ export default function AdminEventsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs tracking-wider text-gray-500 mb-2">EVENT IMAGE</label>
                     <ImageUploader
-                      mode="single"
                       value={formData.imageUrl}
                       onChange={(url) => setFormData({ ...formData, imageUrl: url })}
                       folder="events"
-                      aspectRatio="16/9"
-                      label="Upload Event Image"
-                      size="md"
+                      aspectRatio="video"
+                      label="Event image"
                     />
                   </div>
                 </div>
@@ -426,8 +447,8 @@ export default function AdminEventsPage() {
                   <h3 className="text-sm font-medium">Location</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">VENUE NAME</label>
-                      <input
+                      <label htmlFor="page-venue-name-30" className="block text-xs tracking-wider text-gray-500 mb-2">VENUE NAME</label>
+                      <input aria-label="VENUE NAME" id="page-venue-name-30"
                         type="text"
                         value={formData.location.name}
                         onChange={(e) => setFormData({ 
@@ -439,8 +460,8 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">ADDRESS</label>
-                      <input
+                      <label htmlFor="page-address-31" className="block text-xs tracking-wider text-gray-500 mb-2">ADDRESS</label>
+                      <input aria-label="ADDRESS" id="page-address-31"
                         type="text"
                         value={formData.location.address}
                         onChange={(e) => setFormData({ 
@@ -454,8 +475,8 @@ export default function AdminEventsPage() {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">CITY</label>
-                      <input
+                      <label htmlFor="page-city-32" className="block text-xs tracking-wider text-gray-500 mb-2">CITY</label>
+                      <input aria-label="CITY" id="page-city-32"
                         type="text"
                         value={formData.location.city}
                         onChange={(e) => setFormData({ 
@@ -467,8 +488,8 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">STATE</label>
-                      <input
+                      <label htmlFor="page-state-33" className="block text-xs tracking-wider text-gray-500 mb-2">STATE</label>
+                      <input aria-label="STATE" id="page-state-33"
                         type="text"
                         value={formData.location.state}
                         onChange={(e) => setFormData({ 
@@ -480,8 +501,8 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">ZIP</label>
-                      <input
+                      <label htmlFor="page-zip-34" className="block text-xs tracking-wider text-gray-500 mb-2">ZIP</label>
+                      <input aria-label="ZIP" id="page-zip-34"
                         type="text"
                         value={formData.location.zip}
                         onChange={(e) => setFormData({ 
@@ -500,8 +521,8 @@ export default function AdminEventsPage() {
                   <h3 className="text-sm font-medium">Date & Time</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">START</label>
-                      <input
+                      <label htmlFor="page-start-35" className="block text-xs tracking-wider text-gray-500 mb-2">START</label>
+                      <input aria-label="START" id="page-start-35"
                         type="datetime-local"
                         value={new Date(formData.startDate).toISOString().slice(0, 16)}
                         onChange={(e) => setFormData({ ...formData, startDate: new Date(e.target.value).getTime() })}
@@ -510,8 +531,8 @@ export default function AdminEventsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">END</label>
-                      <input
+                      <label htmlFor="page-end-36" className="block text-xs tracking-wider text-gray-500 mb-2">END</label>
+                      <input aria-label="END" id="page-end-36"
                         type="datetime-local"
                         value={new Date(formData.endDate).toISOString().slice(0, 16)}
                         onChange={(e) => setFormData({ ...formData, endDate: new Date(e.target.value).getTime() })}
@@ -527,8 +548,8 @@ export default function AdminEventsPage() {
                   <h3 className="text-sm font-medium">Capacity & Access</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">CAPACITY</label>
-                      <input
+                      <label htmlFor="page-capacity-37" className="block text-xs tracking-wider text-gray-500 mb-2">CAPACITY</label>
+                      <input aria-label="CAPACITY" id="page-capacity-37"
                         type="number"
                         value={formData.capacity}
                         onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
@@ -539,20 +560,22 @@ export default function AdminEventsPage() {
                     </div>
                     <div className="flex items-end gap-4 pb-1">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
+                        <input id="page-field-38"
+                          aria-label="Enable waitlist"
                           type="checkbox"
                           checked={formData.waitlistEnabled}
                           onChange={(e) => setFormData({ ...formData, waitlistEnabled: e.target.checked })}
-                          className="w-4 h-4 accent-black"
+                          className="size-4 accent-black"
                         />
                         <span className="text-sm">Enable waitlist</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input
+                        <input id="page-field-39"
+                          aria-label="Featured event"
                           type="checkbox"
                           checked={formData.featured}
                           onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                          className="w-4 h-4 accent-black"
+                          className="size-4 accent-black"
                         />
                         <span className="text-sm">Featured</span>
                       </label>
@@ -561,11 +584,12 @@ export default function AdminEventsPage() {
 
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input
+                      <input id="page-field-40"
+                        aria-label="Exclusive event (tier-gated)"
                         type="checkbox"
                         checked={formData.isExclusive}
                         onChange={(e) => setFormData({ ...formData, isExclusive: e.target.checked })}
-                        className="w-4 h-4 accent-black"
+                        className="size-4 accent-black"
                       />
                       <span className="text-sm">Exclusive event (tier-gated)</span>
                     </label>
@@ -573,8 +597,8 @@ export default function AdminEventsPage() {
 
                   {formData.isExclusive && (
                     <div>
-                      <label className="block text-xs tracking-wider text-gray-500 mb-2">MINIMUM TIER</label>
-                      <select
+                      <label htmlFor="page-minimum-tier-41" className="block text-xs tracking-wider text-gray-500 mb-2">MINIMUM TIER</label>
+                      <select aria-label="MINIMUM TIER" id="page-minimum-tier-41"
                         value={formData.requiredTier || "bronze"}
                         onChange={(e) => setFormData({ ...formData, requiredTier: e.target.value as LoyaltyTier })}
                         className="w-full px-4 py-3 border border-gray-200 focus:border-black outline-none transition bg-white"
@@ -600,7 +624,7 @@ export default function AdminEventsPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-black text-white text-sm tracking-wider hover:bg-gray-900 transition disabled:opacity-50"
+                    className="flex-1 py-3 bg-gray-950 text-white text-sm tracking-wider hover:bg-gray-900 transition disabled:opacity-50"
                   >
                     {isSubmitting ? "SAVING..." : editingEvent ? "UPDATE EVENT" : "CREATE EVENT"}
                   </button>
@@ -618,9 +642,9 @@ export default function AdminEventsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setViewingRSVPs(null)}
-          >
+            className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setViewingRSVPs(null)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -634,17 +658,14 @@ export default function AdminEventsPage() {
                   <p className="text-sm text-gray-500">{rsvpList.length} attendees</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    className="p-2 hover:bg-gray-100 transition rounded"
-                    title="Export"
-                  >
-                    <Export className="w-5 h-5" />
+                  <button aria-label="export" type="button" className="p-2 hover:bg-gray-100 transition rounded"
+                    title="Export">
+                    <Export className="size-5" />
                   </button>
-                  <button
-                    onClick={() => setViewingRSVPs(null)}
+                  <button aria-label="x" type="button" onClick={() => setViewingRSVPs(null)}
                     className="p-2 hover:bg-gray-100 transition rounded"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="size-5" />
                   </button>
                 </div>
               </div>
@@ -673,7 +694,7 @@ export default function AdminEventsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <Users className="size-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500">No RSVPs yet</p>
                   </div>
                 )}
@@ -682,6 +703,20 @@ export default function AdminEventsPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </AdminLayout>
+  );
+}
+
+export default function AdminEventsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <SpinnerGap className="size-8 animate-spin text-gray-400" />
+        </div>
+      }
+    >
+      <AdminEventsPageContent />
+    </Suspense>
   );
 }

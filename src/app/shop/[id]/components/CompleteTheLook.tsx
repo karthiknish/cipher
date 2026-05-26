@@ -78,8 +78,8 @@ export default function CompleteTheLook({ currentProduct, products }: CompleteTh
                   alt={product.name} 
                   fill 
                   className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                 sizes="(max-width: 768px) 100vw, 50vw" />
+                <div className="absolute inset-0 bg-gray-950/0 group-hover:bg-gray-950/10 transition-colors" />
               </div>
             </Link>
             <div className="flex justify-between items-start">
@@ -88,11 +88,10 @@ export default function CompleteTheLook({ currentProduct, products }: CompleteTh
                 <h3 className="font-medium">{product.name}</h3>
                 <p className="text-sm text-gray-600">${product.price}</p>
               </div>
-              <button 
-                onClick={() => handleQuickAdd(product)}
-                className="p-2 border border-gray-200 hover:border-black hover:bg-black hover:text-white transition"
+              <button aria-label="shopping bag" type="button" onClick={() => handleQuickAdd(product)}
+                className="p-2 border border-gray-200 hover:border-black hover:bg-gray-950 hover:text-white transition"
               >
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingBag className="size-4" />
               </button>
             </div>
           </motion.div>

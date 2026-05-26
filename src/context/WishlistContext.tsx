@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, doc, getDoc, setDoc } from "@/lib/firebase";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface WishlistItem {
   id: string;
@@ -34,106 +35,122 @@ const WishlistContext = createContext<WishlistContextType>({
   loading: true,
 });
 
-export const useWishlist = () => useContext(WishlistContext);
+export const useWishlist = () => use(WishlistContext);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const convexItems = useQuery(
+    api.wishlists.getMine,
+    user ? {} : "skip"
+  );
+  const setItemsMutation = useMutation(api.wishlists.setItems);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [synced, setSynced] = useState(false);
 
-  // Load wishlist from localStorage first, then try Firebase
   useEffect(() => {
-    const loadWishlist = async () => {
-      // Always load from localStorage first (instant)
+    const storageKey = user
+      ? `${WISHLIST_STORAGE_KEY}_${user.uid}`
+      : WISHLIST_STORAGE_KEY;
+    const stored =
+      typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
+    if (stored) {
+      try {
+        setWishlist(JSON.parse(stored));
+      } catch {
+        /* ignore */
+      }
+    } else if (!user) {
+      setWishlist([]);
+    }
+    setLoading(false);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (user && convexItems !== undefined) {
+      const items = (convexItems as WishlistItem[]) ?? [];
+      if (items.length > 0 || synced) {
+        setWishlist(items);
+        localStorage.setItem(
+          `${WISHLIST_STORAGE_KEY}_${user.uid}`,
+          JSON.stringify(items)
+        );
+      }
+      setSynced(true);
+    }
+  }, [user, convexItems, synced]);
+
+  const persist = useCallback(
+    (items: WishlistItem[]) => {
+      const storageKey = user
+        ? `${WISHLIST_STORAGE_KEY}_${user.uid}`
+        : WISHLIST_STORAGE_KEY;
       if (typeof window !== "undefined") {
-        const storageKey = user ? `${WISHLIST_STORAGE_KEY}_${user.uid}` : WISHLIST_STORAGE_KEY;
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          try {
-            setWishlist(JSON.parse(stored));
-          } catch {
-            // Invalid data
-          }
-        }
+        localStorage.setItem(storageKey, JSON.stringify(items));
       }
-      setLoading(false);
-      
-      // Then try to sync with Firebase in background (non-blocking)
       if (user) {
-        try {
-          const wishlistDoc = await getDoc(doc(db, "wishlists", user.uid));
-          if (wishlistDoc.exists()) {
-            const firebaseItems = wishlistDoc.data().items || [];
-            setWishlist(firebaseItems);
-            // Update localStorage cache
-            localStorage.setItem(`${WISHLIST_STORAGE_KEY}_${user.uid}`, JSON.stringify(firebaseItems));
-          }
-        } catch {
-          // Silently fail - use localStorage data
-        }
+        setItemsMutation({ items }).catch(() => {});
       }
-    };
+    },
+    [user, setItemsMutation]
+  );
 
-    loadWishlist();
-  }, [user]);
+  const isInWishlist = useCallback(
+    (productId: string) => wishlist.some((item) => item.id === productId),
+    [wishlist]
+  );
 
-  // Save wishlist changes
-  useEffect(() => {
-    if (loading) return;
-
-    // Save to localStorage immediately
-    if (typeof window !== "undefined") {
-      const storageKey = user ? `${WISHLIST_STORAGE_KEY}_${user.uid}` : WISHLIST_STORAGE_KEY;
-      localStorage.setItem(storageKey, JSON.stringify(wishlist));
-    }
-
-    // Sync to Firebase in background (non-blocking)
-    if (user) {
-      setDoc(doc(db, "wishlists", user.uid), { items: wishlist }).catch(() => {
-        // Silently fail - localStorage is the source of truth
+  const addToWishlist = useCallback(
+    (item: Omit<WishlistItem, "addedAt">) => {
+      setWishlist((prev) => {
+        if (prev.some((i) => i.id === item.id)) return prev;
+        const next = [...prev, { ...item, addedAt: Date.now() }];
+        persist(next);
+        return next;
       });
-    }
-  }, [wishlist, user, loading]);
+    },
+    [persist]
+  );
 
-  const isInWishlist = useCallback((productId: string) => {
-    return wishlist.some(item => item.id === productId);
-  }, [wishlist]);
+  const removeFromWishlist = useCallback(
+    (productId: string) => {
+      setWishlist((prev) => {
+        const next = prev.filter((item) => item.id !== productId);
+        persist(next);
+        return next;
+      });
+    },
+    [persist]
+  );
 
-  const addToWishlist = useCallback((item: Omit<WishlistItem, "addedAt">) => {
-    setWishlist(prev => {
-      if (prev.some(i => i.id === item.id)) return prev;
-      return [...prev, { ...item, addedAt: Date.now() }];
-    });
-  }, []);
-
-  const removeFromWishlist = useCallback((productId: string) => {
-    setWishlist(prev => prev.filter(item => item.id !== productId));
-  }, []);
-
-  const toggleWishlist = useCallback((item: Omit<WishlistItem, "addedAt">) => {
-    if (isInWishlist(item.id)) {
-      removeFromWishlist(item.id);
-    } else {
-      addToWishlist(item);
-    }
-  }, [isInWishlist, removeFromWishlist, addToWishlist]);
+  const toggleWishlist = useCallback(
+    (item: Omit<WishlistItem, "addedAt">) => {
+      if (isInWishlist(item.id)) removeFromWishlist(item.id);
+      else addToWishlist(item);
+    },
+    [isInWishlist, removeFromWishlist, addToWishlist]
+  );
 
   const clearWishlist = useCallback(() => {
     setWishlist([]);
-  }, []);
+    persist([]);
+  }, [persist]);
 
-  return (
-    <WishlistContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         wishlist,
         isInWishlist,
         addToWishlist,
         removeFromWishlist,
         toggleWishlist,
         clearWishlist,
-        loading,
-      }}
-    >
+        loading: user ? loading || convexItems === undefined : loading,
+      }),
+    [addToWishlist, clearWishlist, isInWishlist, removeFromWishlist, toggleWishlist, wishlist]
+  );
+
+  return (
+    <WishlistContext.Provider value={contextValue}>
       {children}
     </WishlistContext.Provider>
   );

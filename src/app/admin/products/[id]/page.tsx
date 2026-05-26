@@ -29,7 +29,7 @@ export default function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: productId } = use(params);
-  const router = useRouter();
+  const { push } = useRouter();
   const { user, loading: authLoading, userRole } = useAuth();
   const { products, updateProduct, deleteProduct } = useProducts();
   const toast = useToast();
@@ -48,45 +48,45 @@ export default function EditProductPage({
 
   // Form states
   const [newTag, setNewTag] = useState("");
-  const [newColor, setNewColor] = useState<ColorVariant>(getInitialColor());
-  const [formData, setFormData] = useState<ProductFormData>(getInitialFormData());
+  const [newColor, setNewColor] = useState<ColorVariant>(() => getInitialColor());
+  const [formData, setFormData] = useState<ProductFormData>(() => getInitialFormData());
 
   const isAdmin = userRole?.isAdmin ?? false;
 
   // Load existing product data - only once when products are first available
   useEffect(() => {
-    if (products.length > 0 && isLoading) {
-      const product = products.find((p) => p.id === productId);
-      if (product) {
-        setFormData({
-          name: product.name,
-          price: product.price,
-          comparePrice: product.comparePrice || 0,
-          category: product.category,
-          description: product.description,
-          shortDescription: product.shortDescription || "",
-          image: product.image,
-          images: product.images || [],
-          sizes: product.sizes || ["S", "M", "L", "XL"],
-          sizeStock:
-            product.sizeStock ||
-            product.sizes?.map((s) => ({ size: s, stock: 10 })) ||
-            [],
-          colors: product.colors || [],
-          inStock: product.inStock ?? true,
-          sku: product.sku || "",
-          weight: product.weight || 0,
-          material: product.material || "",
-          careInstructions: product.careInstructions || "",
-          tags: product.tags || [],
-          featured: product.featured || false,
-          isNew: product.isNew || false,
-        });
-      }
-      setIsLoading(false);
-      // Mark initial load complete after a tick to allow formData to settle
-      setTimeout(() => setInitialLoadComplete(true), 100);
+    if (!(products.length > 0 && isLoading)) return;
+
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      setFormData({
+        name: product.name,
+        price: product.price,
+        comparePrice: product.comparePrice || 0,
+        category: product.category,
+        description: product.description,
+        shortDescription: product.shortDescription || "",
+        image: product.image,
+        images: product.images || [],
+        sizes: product.sizes || ["S", "M", "L", "XL"],
+        sizeStock:
+          product.sizeStock ||
+          product.sizes?.map((s) => ({ size: s, stock: 10 })) ||
+          [],
+        colors: product.colors || [],
+        inStock: product.inStock ?? true,
+        sku: product.sku || "",
+        weight: product.weight || 0,
+        material: product.material || "",
+        careInstructions: product.careInstructions || "",
+        tags: product.tags || [],
+        featured: product.featured || false,
+        isNew: product.isNew || false,
+      });
     }
+    setIsLoading(false);
+    const timer = setTimeout(() => setInitialLoadComplete(true), 100);
+    return () => clearTimeout(timer);
   }, [products, productId, isLoading]);
   
   // Wrapper for setFormData that marks unsaved changes
@@ -156,7 +156,7 @@ export default function EditProductPage({
     if (success) {
       setHasUnsavedChanges(false);
       toast.success(`${formData.name} updated successfully`);
-      router.push("/admin?tab=products");
+      push("/admin?tab=products");
     } else {
       toast.error("Failed to update product");
     }
@@ -171,7 +171,7 @@ export default function EditProductPage({
 
     if (success) {
       toast.success(`${formData.name} deleted successfully`);
-      router.push("/admin?tab=products");
+      push("/admin?tab=products");
     } else {
       toast.error("Failed to delete product");
     }
@@ -194,15 +194,9 @@ export default function EditProductPage({
 
     setIsGeneratingAI(true);
     try {
-      // Get the auth token for the API request
-      const token = await user.getIdToken();
-      
-      const response = await fetch("/api/generate-product-details", {
+      const { adminFetch } = await import("@/lib/admin-api");
+      const response = await adminFetch("/api/generate-product-details", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
         body: JSON.stringify({
           name: formData.name,
           category: formData.category,
@@ -240,7 +234,7 @@ export default function EditProductPage({
   if (authLoading || isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -249,8 +243,8 @@ export default function EditProductPage({
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-red-100 flex items-center justify-center mb-6">
-          <ShieldWarning className="w-10 h-10 text-red-500" />
+        <div className="size-20 bg-red-100 flex items-center justify-center mb-6">
+          <ShieldWarning className="size-10 text-red-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">ACCESS DENIED</h1>
         <p className="text-gray-500 mb-6">
@@ -267,8 +261,8 @@ export default function EditProductPage({
   if (!products.find((p) => p.id === productId)) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="w-20 h-20 bg-amber-100 flex items-center justify-center mb-6">
-          <Warning className="w-10 h-10 text-amber-500" />
+        <div className="size-20 bg-amber-100 flex items-center justify-center mb-6">
+          <Warning className="size-10 text-amber-500" />
         </div>
         <h1 className="text-3xl font-light tracking-tight mb-4">
           PRODUCT NOT FOUND

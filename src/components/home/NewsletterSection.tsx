@@ -41,7 +41,7 @@ export default function NewsletterSection() {
           className="max-w-2xl mx-auto text-center"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6">
-            <Sparkle className="w-4 h-4" weight="fill" />
+            <Sparkle className="size-4" weight="fill" />
             <span className="text-sm tracking-wider">GET 10% OFF YOUR FIRST ORDER</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
@@ -58,12 +58,12 @@ export default function NewsletterSection() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-green-500/20 border border-green-500/30 p-6 rounded-xl"
             >
-              <Check className="w-10 h-10 text-green-400 mx-auto mb-3" weight="bold" />
+              <Check className="size-10 text-green-400 mx-auto mb-3" weight="bold" />
               <p className="text-green-300 font-medium">{message}</p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-              <input
+              <input aria-label="Enter your email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -78,8 +78,8 @@ export default function NewsletterSection() {
               >
                 {status === "loading" ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    SUBSCRIBING...
+                    <SpinnerGap className="size-4 animate-spin" />
+                    SUBSCRIBING…
                   </>
                 ) : (
                   "SUBSCRIBE"
@@ -94,7 +94,7 @@ export default function NewsletterSection() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center justify-center gap-2 mt-4 text-red-400"
             >
-              <Warning className="w-4 h-4" />
+              <Warning className="size-4" />
               <span className="text-sm">{message}</span>
             </motion.div>
           )}

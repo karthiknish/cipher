@@ -10,15 +10,15 @@ const SERVICE_FEATURES = [
 
 export default function ServiceBar() {
   return (
-    <section className="bg-black text-white py-5 border-b border-white/10">
+    <section className="bg-gray-950 text-white py-5 border-b border-white/10">
       <div className="w-full px-6 md:px-12">
         <div className="flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-4">
-          {SERVICE_FEATURES.map((feature, i) => (
+          {SERVICE_FEATURES.map((feature) => (
             <div
-              key={i}
+              key={feature.title}
               className="flex items-center gap-3 text-sm text-white/70"
             >
-              <feature.icon className="w-4 h-4" />
+              <feature.icon className="size-4" />
               <span className="tracking-wide">{feature.title}</span>
             </div>
           ))}

@@ -19,7 +19,7 @@ export function CLVOverview({ clvPredictions, customerCount }: CLVOverviewProps)
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-medium flex items-center gap-2">
-            <ChartLineUp className="w-5 h-5" />
+            <ChartLineUp className="size-5" />
             Customer Lifetime Value Predictions
           </h3>
           <p className="text-gray-500 text-sm mt-1">AI-powered analytics for your customer base</p>
@@ -31,7 +31,7 @@ export function CLVOverview({ clvPredictions, customerCount }: CLVOverviewProps)
           <p className="text-gray-500 text-xs mb-1">TOTAL PREDICTED CLV</p>
           <p className="text-3xl font-light">${totalPredictedCLV.toLocaleString()}</p>
           <p className="text-emerald-600 text-xs mt-1 flex items-center gap-1">
-            <TrendUp className="w-3 h-3" /> 12-month projection
+            <TrendUp className="size-3" /> 12-month projection
           </p>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

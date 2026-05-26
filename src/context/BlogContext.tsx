@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, Timestamp } from "firebase/firestore";
+import { createContext, use, ReactNode, useMemo } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface BlogPost {
   id: string;
@@ -12,10 +12,7 @@ export interface BlogPost {
   coverImage: string;
   category: string;
   tags: string[];
-  author: {
-    name: string;
-    avatar: string;
-  };
+  author: { name: string; avatar: string };
   status: "draft" | "published" | "scheduled";
   publishedAt: Date | null;
   scheduledFor: Date | null;
@@ -31,7 +28,9 @@ interface BlogContextType {
   loading: boolean;
   getPost: (slug: string) => BlogPost | undefined;
   getPostById: (id: string) => BlogPost | undefined;
-  createPost: (post: Omit<BlogPost, "id" | "createdAt" | "updatedAt" | "views" | "likes">) => Promise<BlogPost>;
+  createPost: (
+    post: Omit<BlogPost, "id" | "createdAt" | "updatedAt" | "views" | "likes">
+  ) => Promise<BlogPost>;
   updatePost: (id: string, updates: Partial<BlogPost>) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
   publishPost: (id: string) => Promise<void>;
@@ -44,143 +43,158 @@ interface BlogContextType {
   categories: string[];
 }
 
+const categories = [
+  "Trends",
+  "Style Guide",
+  "Behind the Scenes",
+  "Tips & Tricks",
+  "Culture",
+  "Interviews",
+];
+
 const BlogContext = createContext<BlogContextType | undefined>(undefined);
 
-const categories = ["Trends", "Style Guide", "Behind the Scenes", "Tips & Tricks", "Culture", "Interviews"];
-
-// Helper to convert Firestore timestamps to Date
-const convertTimestamp = (timestamp: Timestamp | Date | null): Date | null => {
-  if (!timestamp) return null;
-  if (timestamp instanceof Timestamp) {
-    return timestamp.toDate();
-  }
-  return timestamp;
-};
+function mapPost(p: {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  category: string;
+  tags: string[];
+  author: { name: string; avatar: string };
+  status: "draft" | "published" | "scheduled";
+  publishedAt: number | null;
+  scheduledFor: number | null;
+  readTime: number;
+  views: number;
+  likes: number;
+  createdAt: number;
+  updatedAt: number;
+}): BlogPost {
+  return {
+    ...p,
+    publishedAt: p.publishedAt ? new Date(p.publishedAt) : null,
+    scheduledFor: p.scheduledFor ? new Date(p.scheduledFor) : null,
+    createdAt: new Date(p.createdAt),
+    updatedAt: new Date(p.updatedAt),
+  };
+}
 
 export function BlogProvider({ children }: { children: ReactNode }) {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const rawPosts = useQuery(api.blogs.list);
+  const createMutation = useMutation(api.blogs.create);
+  const updateMutation = useMutation(api.blogs.update);
+  const publishMutation = useMutation(api.blogs.publish);
+  const unpublishMutation = useMutation(api.blogs.unpublish);
+  const removeMutation = useMutation(api.blogs.remove);
+  const incViews = useMutation(api.blogs.incrementViews);
+  const incLikes = useMutation(api.blogs.incrementLikes);
 
-  // Subscribe to Firestore blogs collection
-  useEffect(() => {
-    const blogsRef = collection(db, "blogs");
-    const q = query(blogsRef, orderBy("createdAt", "desc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const blogPosts: BlogPost[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: data.title,
-          slug: data.slug,
-          excerpt: data.excerpt,
-          content: data.content,
-          coverImage: data.coverImage,
-          category: data.category,
-          tags: data.tags || [],
-          author: data.author,
-          status: data.status,
-          publishedAt: convertTimestamp(data.publishedAt),
-          scheduledFor: convertTimestamp(data.scheduledFor),
-          readTime: data.readTime,
-          views: data.views || 0,
-          likes: data.likes || 0,
-          createdAt: convertTimestamp(data.createdAt) || new Date(),
-          updatedAt: convertTimestamp(data.updatedAt) || new Date(),
-        } as BlogPost;
-      });
-      setPosts(blogPosts);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching blogs:", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const loading = rawPosts === undefined;
+  const posts = rawPosts?.map(mapPost) ?? [];
 
   const getPost = (slug: string) => posts.find((p) => p.slug === slug);
   const getPostById = (id: string) => posts.find((p) => p.id === id);
 
-  const createPost = async (postData: Omit<BlogPost, "id" | "createdAt" | "updatedAt" | "views" | "likes">): Promise<BlogPost> => {
-    const docRef = await addDoc(collection(db, "blogs"), {
-      ...postData,
-      views: 0,
-      likes: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  const createPost = async (
+    postData: Omit<BlogPost, "id" | "createdAt" | "updatedAt" | "views" | "likes">
+  ): Promise<BlogPost> => {
+    const id = await createMutation({
+      title: postData.title,
+      slug: postData.slug,
+      excerpt: postData.excerpt,
+      content: postData.content,
+      coverImage: postData.coverImage,
+      category: postData.category,
+      tags: postData.tags,
+      author: postData.author,
+      status: postData.status,
+      publishedAt: postData.publishedAt?.getTime() ?? null,
+      scheduledFor: postData.scheduledFor?.getTime() ?? null,
+      readTime: postData.readTime,
     });
-    
-    const newPost: BlogPost = {
+    return {
       ...postData,
-      id: docRef.id,
+      id,
       views: 0,
       likes: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    return newPost;
   };
 
   const updatePost = async (id: string, updates: Partial<BlogPost>) => {
-    const docRef = doc(db, "blogs", id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: new Date(),
+    await updateMutation({
+      id,
+      patch: {
+        ...(updates.title !== undefined && { title: updates.title }),
+        ...(updates.slug !== undefined && { slug: updates.slug }),
+        ...(updates.excerpt !== undefined && { excerpt: updates.excerpt }),
+        ...(updates.content !== undefined && { content: updates.content }),
+        ...(updates.coverImage !== undefined && { coverImage: updates.coverImage }),
+        ...(updates.category !== undefined && { category: updates.category }),
+        ...(updates.tags !== undefined && { tags: updates.tags }),
+        ...(updates.author !== undefined && { author: updates.author }),
+        ...(updates.status !== undefined && { status: updates.status }),
+        ...(updates.publishedAt !== undefined && {
+          publishedAt: updates.publishedAt?.getTime() ?? null,
+        }),
+        ...(updates.scheduledFor !== undefined && {
+          scheduledFor: updates.scheduledFor?.getTime() ?? null,
+        }),
+        ...(updates.readTime !== undefined && { readTime: updates.readTime }),
+        ...(updates.views !== undefined && { views: updates.views }),
+        ...(updates.likes !== undefined && { likes: updates.likes }),
+      },
     });
   };
 
   const deletePost = async (id: string) => {
-    const docRef = doc(db, "blogs", id);
-    await deleteDoc(docRef);
+    await removeMutation({ id });
   };
 
   const publishPost = async (id: string) => {
-    await updatePost(id, { status: "published", publishedAt: new Date() });
+    await publishMutation({ id });
   };
 
   const unpublishPost = async (id: string) => {
-    await updatePost(id, { status: "draft", publishedAt: null });
+    await unpublishMutation({ id });
   };
 
   const incrementViews = async (id: string) => {
-    const post = posts.find((p) => p.id === id);
-    if (post) {
-      const docRef = doc(db, "blogs", id);
-      await updateDoc(docRef, { views: post.views + 1 });
-    }
+    await incViews({ id });
   };
 
   const likePost = async (id: string) => {
-    const post = posts.find((p) => p.id === id);
-    if (post) {
-      const docRef = doc(db, "blogs", id);
-      await updateDoc(docRef, { likes: post.likes + 1 });
-    }
+    await incLikes({ id });
   };
 
   const getPublishedPosts = () =>
-    posts.filter((p) => p.status === "published").sort((a, b) => 
-      (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0)
-    );
+    posts
+      .filter((p) => p.status === "published")
+      .sort(
+        (a, b) =>
+          (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0)
+      );
 
   const getPostsByCategory = (category: string) =>
     posts.filter((p) => p.category === category && p.status === "published");
 
   const searchPosts = (query: string) => {
-    const lowercaseQuery = query.toLowerCase();
+    const q = query.toLowerCase();
     return posts.filter(
       (p) =>
         p.status === "published" &&
-        (p.title.toLowerCase().includes(lowercaseQuery) ||
-          p.excerpt.toLowerCase().includes(lowercaseQuery) ||
-          p.tags.some((tag) => tag.toLowerCase().includes(lowercaseQuery)))
+        (p.title.toLowerCase().includes(q) ||
+          p.excerpt.toLowerCase().includes(q) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(q)))
     );
   };
 
-  return (
-    <BlogContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         posts,
         loading,
         getPost,
@@ -196,17 +210,19 @@ export function BlogProvider({ children }: { children: ReactNode }) {
         getPostsByCategory,
         searchPosts,
         categories,
-      }}
-    >
+      }),
+    [categories, createPost, deletePost, getPost, getPostById, getPostsByCategory, getPublishedPosts, incrementViews, likePost, loading, posts, publishPost, searchPosts, unpublishPost, updatePost]
+  );
+
+  return (
+    <BlogContext.Provider value={contextValue}>
       {children}
     </BlogContext.Provider>
   );
 }
 
 export function useBlog() {
-  const context = useContext(BlogContext);
-  if (!context) {
-    throw new Error("useBlog must be used within a BlogProvider");
-  }
+  const context = use(BlogContext);
+  if (!context) throw new Error("useBlog must be used within a BlogProvider");
   return context;
 }

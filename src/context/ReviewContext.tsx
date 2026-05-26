@@ -1,8 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { db, collection, doc, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, updateDoc, getDoc, setDoc } from "@/lib/firebase";
-import { Timestamp, increment } from "firebase/firestore";
+import { useConvex } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 // ============================================
 // Types
@@ -113,45 +113,63 @@ const ReviewContext = createContext<ReviewContextType>({
   loading: false,
 });
 
-export const useReviews = () => useContext(ReviewContext);
+export const useReviews = () => use(ReviewContext);
 
 // ============================================
 // Provider
 // ============================================
 
+function mapReview(r: {
+  id: string;
+  productId: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  rating: number;
+  title: string;
+  comment: string;
+  media?: unknown;
+  images?: string[];
+  verifiedPurchase: boolean;
+  helpful: number;
+  notHelpful: number;
+  adminReply?: AdminReply & { createdAt?: number | Date };
+  featured: boolean;
+  status: string;
+  createdAt: number;
+  updatedAt?: number;
+}): Review {
+  return {
+    id: r.id,
+    productId: r.productId,
+    userId: r.userId,
+    userEmail: r.userEmail,
+    userName: r.userName,
+    rating: r.rating,
+    title: r.title,
+    comment: r.comment,
+    media: r.media as ReviewMedia[] | undefined,
+    images: r.images,
+    verifiedPurchase: r.verifiedPurchase,
+    helpful: r.helpful,
+    notHelpful: r.notHelpful,
+    featured: r.featured,
+    status: r.status as Review["status"],
+    createdAt: new Date(r.createdAt),
+    updatedAt: r.updatedAt ? new Date(r.updatedAt) : undefined,
+    adminReply: r.adminReply
+      ? {
+          ...r.adminReply,
+          createdAt: new Date(r.adminReply.createdAt ?? Date.now()),
+        }
+      : undefined,
+  };
+}
+
 export const ReviewProvider = ({ children }: { children: ReactNode }) => {
   const { user, userRole } = useAuth();
+  const convex = useConvex();
   const [loading, setLoading] = useState(false);
-
-  // Helper to convert Firestore document to Review
-  const docToReview = useCallback((docSnapshot: { id: string; data: () => Record<string, unknown> }): Review => {
-    const data = docSnapshot.data();
-    return {
-      id: docSnapshot.id,
-      productId: data.productId as string,
-      userId: data.userId as string,
-      userEmail: data.userEmail as string,
-      userName: data.userName as string,
-      rating: data.rating as number,
-      title: data.title as string,
-      comment: data.comment as string,
-      media: data.media as ReviewMedia[] | undefined,
-      images: data.images as string[] | undefined,
-      verifiedPurchase: data.verifiedPurchase as boolean || false,
-      helpful: data.helpful as number || 0,
-      notHelpful: data.notHelpful as number || 0,
-      adminReply: data.adminReply ? {
-        ...data.adminReply as AdminReply,
-        createdAt: (data.adminReply as { createdAt: Timestamp }).createdAt instanceof Timestamp 
-          ? (data.adminReply as { createdAt: Timestamp }).createdAt.toDate() 
-          : new Date((data.adminReply as { createdAt: string | number | Date }).createdAt),
-      } : undefined,
-      featured: data.featured as boolean || false,
-      status: data.status as Review["status"] || "approved",
-      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt as string | number | Date),
-      updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt ? new Date(data.updatedAt as string | number | Date) : undefined,
-    };
-  }, []);
 
   // Get reviews for a product with filtering/sorting
   const getProductReviews = useCallback(async (
@@ -165,11 +183,9 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
   ): Promise<Review[]> => {
     setLoading(true);
     try {
-      const reviewsRef = collection(db, "reviews");
-      const q = query(reviewsRef, where("productId", "==", productId));
-      const snapshot = await getDocs(q);
-      
-      let reviews = snapshot.docs.map(docToReview);
+      let reviews = (
+        await convex.query(api.reviews.listByProduct, { productId })
+      ).map((r) => mapReview(r as never));
 
       // Filter only approved reviews for non-admins
       if (!userRole?.isAdmin) {
@@ -210,7 +226,7 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, [userRole, docToReview]);
+  }, [userRole, convex]);
 
   // Get review statistics for a product
   const getReviewStats = useCallback(async (productId: string): Promise<ReviewStats> => {
@@ -268,35 +284,24 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      // Check if user already reviewed
-      const reviewsRef = collection(db, "reviews");
-      const q = query(
-        reviewsRef,
-        where("productId", "==", productId),
-        where("userId", "==", user.uid)
-      );
-      const existing = await getDocs(q);
-      
-      return existing.empty;
+      return await convex.query(api.reviews.canUserReview, { productId });
     } catch {
       return false;
     }
-  }, [user]);
+  }, [user, convex]);
 
   // Get user's own reviews
   const getUserReviews = useCallback(async (): Promise<Review[]> => {
     if (!user) return [];
     
     try {
-      const reviewsRef = collection(db, "reviews");
-      const q = query(reviewsRef, where("userId", "==", user.uid));
-      const snapshot = await getDocs(q);
-      
-      return snapshot.docs.map(docToReview).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return (await convex.query(api.reviews.listByUser, {}))
+        .map((r) => mapReview(r as never))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch {
       return [];
     }
-  }, [user, docToReview]);
+  }, [user, convex]);
 
   // Add a new review
   const addReview = useCallback(async (
@@ -310,40 +315,25 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
       const canReview = await canUserReview(review.productId);
       if (!canReview) return false;
 
-      // Check if user has purchased this product (verified purchase)
-      let verifiedPurchase = review.verifiedPurchase;
-      try {
-        const ordersRef = collection(db, "orders");
-        const ordersQuery = query(ordersRef, where("userId", "==", user.uid));
-        const ordersSnapshot = await getDocs(ordersQuery);
-        
-        verifiedPurchase = ordersSnapshot.docs.some(docSnap => {
-          const orderData = docSnap.data();
-          return orderData.items?.some((item: { productId: string }) => item.productId === review.productId);
-        });
-      } catch {
-        // If we can't verify, keep the original value
-      }
-
-      await addDoc(collection(db, "reviews"), {
-        ...review,
-        verifiedPurchase,
-        userId: user.uid,
-        userEmail: user.email,
-        userName: user.displayName || user.email?.split("@")[0] || "Anonymous",
-        helpful: 0,
-        notHelpful: 0,
-        status: "approved", // Auto-approve for now, could be "pending" for moderation
-        createdAt: serverTimestamp(),
+      await convex.mutation(api.reviews.create, {
+        productId: review.productId,
+        rating: review.rating,
+        title: review.title,
+        comment: review.comment,
+        media: review.media,
+        images: review.images,
+        verifiedPurchase: review.verifiedPurchase,
+        userEmail: user.email ?? "",
+        userName:
+          user.displayName || user.email?.split("@")[0] || "Anonymous",
       });
-
       return true;
     } catch {
       return false;
     } finally {
       setLoading(false);
     }
-  }, [user, canUserReview]);
+  }, [user, canUserReview, convex]);
 
   // Update a review
   const updateReview = useCallback(async (
@@ -354,25 +344,14 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(true);
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      const reviewSnap = await getDoc(reviewRef);
-      
-      if (!reviewSnap.exists() || reviewSnap.data().userId !== user.uid) {
-        return false;
-      }
-
-      await updateDoc(reviewRef, {
-        ...updates,
-        updatedAt: serverTimestamp(),
-      });
-
+      await convex.mutation(api.reviews.update, { id: reviewId, patch: updates });
       return true;
     } catch {
       return false;
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, convex]);
 
   // Delete a review
   const deleteReview = useCallback(async (reviewId: string): Promise<boolean> => {
@@ -380,78 +359,37 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(true);
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      const reviewSnap = await getDoc(reviewRef);
-      
-      // User can delete their own review, admin can delete any
-      if (!reviewSnap.exists()) return false;
-      if (reviewSnap.data().userId !== user.uid && !userRole?.isAdmin) {
-        return false;
-      }
-
-      await deleteDoc(reviewRef);
+      await convex.mutation(api.reviews.remove, { id: reviewId });
       return true;
     } catch {
       return false;
     } finally {
       setLoading(false);
     }
-  }, [user, userRole]);
+  }, [user, userRole, convex]);
 
   // Vote on a review
   const voteHelpful = useCallback(async (reviewId: string, isHelpful: boolean): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      const voteRef = doc(db, "reviewVotes", `${user.uid}_${reviewId}`);
-      const voteSnap = await getDoc(voteRef);
-      const reviewRef = doc(db, "reviews", reviewId);
-
-      if (voteSnap.exists()) {
-        const existingVote = voteSnap.data().helpful as boolean;
-        
-        if (existingVote === isHelpful) {
-          // Remove vote
-          await deleteDoc(voteRef);
-          await updateDoc(reviewRef, {
-            [isHelpful ? "helpful" : "notHelpful"]: increment(-1),
-          });
-        } else {
-          // Change vote
-          await setDoc(voteRef, { helpful: isHelpful, odId: user.uid, reviewId });
-          await updateDoc(reviewRef, {
-            [isHelpful ? "helpful" : "notHelpful"]: increment(1),
-            [!isHelpful ? "helpful" : "notHelpful"]: increment(-1),
-          });
-        }
-      } else {
-        // New vote
-        await setDoc(voteRef, { helpful: isHelpful, odId: user.uid, reviewId });
-        await updateDoc(reviewRef, {
-          [isHelpful ? "helpful" : "notHelpful"]: increment(1),
-        });
-      }
-
+      await convex.mutation(api.reviews.vote, { reviewId, isHelpful });
       return true;
     } catch {
       return false;
     }
-  }, [user]);
+  }, [user, convex]);
 
   // Get user's vote on a review
   const getUserVote = useCallback(async (reviewId: string): Promise<"helpful" | "not-helpful" | null> => {
     if (!user) return null;
     
     try {
-      const voteRef = doc(db, "reviewVotes", `${user.uid}_${reviewId}`);
-      const voteSnap = await getDoc(voteRef);
-      
-      if (!voteSnap.exists()) return null;
-      return voteSnap.data().helpful ? "helpful" : "not-helpful";
+      return await convex.query(api.reviews.getUserVote, { reviewId });
     } catch {
       return null;
     }
-  }, [user]);
+  }, [user, convex]);
 
   // Admin: Get all reviews
   const getAllReviews = useCallback(async (): Promise<Review[]> => {
@@ -459,83 +397,70 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(true);
     try {
-      const reviewsRef = collection(db, "reviews");
-      const snapshot = await getDocs(reviewsRef);
-      
-      return snapshot.docs.map(docToReview).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return (await convex.query(api.reviews.listAll, {}))
+        .map((r) => mapReview(r as never))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch {
       return [];
     } finally {
       setLoading(false);
     }
-  }, [userRole, docToReview]);
+  }, [userRole, convex]);
 
   // Admin: Moderate a review
   const moderateReview = useCallback(async (reviewId: string, status: "approved" | "rejected"): Promise<boolean> => {
     if (!userRole?.isAdmin) return false;
     
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      await updateDoc(reviewRef, { status, updatedAt: serverTimestamp() });
+      await convex.mutation(api.reviews.moderate, { id: reviewId, status });
       return true;
     } catch {
       return false;
     }
-  }, [userRole]);
+  }, [userRole, convex]);
 
   // Admin: Add reply to a review
   const addAdminReply = useCallback(async (reviewId: string, content: string): Promise<boolean> => {
     if (!userRole?.isAdmin || !user) return false;
     
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      await updateDoc(reviewRef, {
-        adminReply: {
-          id: `reply_${Date.now()}`,
-          content,
-          authorName: user.displayName || "Cipher Team",
-          createdAt: serverTimestamp(),
-        },
-        updatedAt: serverTimestamp(),
+      await convex.mutation(api.reviews.setAdminReply, {
+        id: reviewId,
+        content,
+        authorName: user.displayName || "Cipher Team",
       });
       return true;
     } catch {
       return false;
     }
-  }, [userRole, user]);
+  }, [userRole, user, convex]);
 
   // Admin: Delete reply from a review
   const deleteAdminReply = useCallback(async (reviewId: string): Promise<boolean> => {
     if (!userRole?.isAdmin) return false;
     
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      await updateDoc(reviewRef, {
-        adminReply: null,
-        updatedAt: serverTimestamp(),
-      });
+      await convex.mutation(api.reviews.clearAdminReply, { id: reviewId });
       return true;
     } catch {
       return false;
     }
-  }, [userRole]);
+  }, [userRole, convex]);
 
   // Admin: Feature/unfeature a review
   const featureReview = useCallback(async (reviewId: string, featured: boolean): Promise<boolean> => {
     if (!userRole?.isAdmin) return false;
     
     try {
-      const reviewRef = doc(db, "reviews", reviewId);
-      await updateDoc(reviewRef, { featured, updatedAt: serverTimestamp() });
+      await convex.mutation(api.reviews.setFeatured, { id: reviewId, featured });
       return true;
     } catch {
       return false;
     }
-  }, [userRole]);
+  }, [userRole, convex]);
 
-  return (
-    <ReviewContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         getProductReviews,
         getReviewStats,
         canUserReview,
@@ -552,8 +477,12 @@ export const ReviewProvider = ({ children }: { children: ReactNode }) => {
         featureReview,
         getAverageRating,
         loading,
-      }}
-    >
+      }),
+    [addAdminReply, addReview, canUserReview, deleteAdminReply, deleteReview, featureReview, getAllReviews, getAverageRating, getProductReviews, getReviewStats, getUserReviews, getUserVote, loading, moderateReview, updateReview, voteHelpful]
+  );
+
+  return (
+    <ReviewContext.Provider value={contextValue}>
       {children}
     </ReviewContext.Provider>
   );

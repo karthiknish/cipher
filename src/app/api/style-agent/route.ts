@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { buildStyleAgentCatalog } from "@/lib/server-products";
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, rateLimitHeaders } from "@/lib/rate-limit";
 import { rateLimitedResponse, badRequestResponse, sanitizeString, internalServerErrorResponse, parseJsonBody, publicErrorMessage } from "@/lib/api-auth";
 
-const STYLE_AGENT_PROMPT = `
-You are a fashion style expert AI for CIPHER, a premium streetwear brand. Your job is to recommend products based on the user's described vibe, style, mood, or needs.
-
-AVAILABLE PRODUCTS (use these exact IDs):
-1. id: "1" - Cipher Hoodie ($89) - Premium heavyweight cotton hoodie, relaxed fit, embroidered logo. Colors: Black, Charcoal, Navy, Cream. Good for: cozy, casual, streetwear, layering, winter, calm, comfort
-2. id: "2" - Street Tee ($45) - Oversized organic cotton tee, minimal branding. Colors: Black, White, Gray. Good for: everyday, casual, summer, minimalist, basics, focused, professional
-3. id: "3" - Cargo Pants ($95) - Functional cargo pants, multiple pockets, ripstop fabric. Colors: Black, Olive, Khaki. Good for: utility, streetwear, edgy, tactical, functional, adventurous, rebellious
-4. id: "4" - Cap ($35) - Classic 6-panel cap, adjustable strap. Colors: Black, White. Good for: accessories, casual, streetwear, sun protection, playful
-5. id: "5" - Oversized Tee ($55) - Vintage wash, dropped shoulders. Colors: Black, White, Sage, Rust. Good for: vintage, relaxed, trendy, oversized look, playful, dopamine dressing
-6. id: "6" - Tactical Vest ($120) - Utility vest with modular attachments. Colors: Black, Olive, Gray. Good for: techwear, utility, edgy, statement piece, layering, confident, rebellious
-7. id: "7" - Slim Joggers ($75) - Tapered fit joggers, zip pockets. Colors: Black, Gray, Navy. Good for: athleisure, comfort, sporty, travel, cozy, calm, work from home
-8. id: "8" - Crossbody Bag ($65) - Mini crossbody bag, water-resistant. Colors: Black, Olive. Good for: accessories, utility, hands-free, everyday carry, adventurous
-9. id: "9" - Beanie ($30) - Ribbed knit beanie, soft acrylic. Colors: Black, Charcoal, Cream. Good for: winter, cozy, streetwear, cold weather, calm, comfort
-10. id: "10" - Windbreaker ($110) - Lightweight windbreaker, packable. Colors: Black, Silver, Navy. Good for: outerwear, rain, travel, layering, spring, adventurous, professional
-
+const STYLE_AGENT_INSTRUCTIONS = `
 MOOD-BASED STYLING:
 - Calm: Soft neutrals, comfortable fits - hoodies, joggers, beanies
 - Playful: Bold colors, fun pieces - oversized tees (Sage, Rust), caps, vibrant accessories
@@ -67,6 +54,15 @@ User: "date night outfit"
 Response: {"products": ["2", "3", "6"], "reasoning": "Date night confidence: A clean tee as your base, cargo pants for that cool factor, and the tactical vest to make a memorable impression. You'll turn heads.", "moodDetected": "confident", "tip": "Wear something that makes YOU feel good - confidence is the best accessory."}
 `;
 
+async function buildStyleAgentPrompt(): Promise<string> {
+  const catalog = await buildStyleAgentCatalog();
+  return `You are a fashion style expert AI for CIPHER, a premium streetwear brand. Your job is to recommend products based on the user's described vibe, style, mood, or needs.
+
+AVAILABLE PRODUCTS (use these exact IDs from the catalog):
+${catalog}
+${STYLE_AGENT_INSTRUCTIONS}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
@@ -108,12 +104,14 @@ export async function POST(request: NextRequest) {
       enhancedQuery = `${enhancedQuery} Context: ${sanitizedContext}`;
     }
 
+    const styleAgentPrompt = await buildStyleAgentPrompt();
+
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash",
       contents: [
         {
           role: "user",
-          parts: [{ text: STYLE_AGENT_PROMPT }],
+          parts: [{ text: styleAgentPrompt }],
         },
         {
           role: "model",

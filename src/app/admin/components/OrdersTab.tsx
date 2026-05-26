@@ -14,7 +14,7 @@ export function OrdersTab({ orders, onStatusChange }: OrdersTabProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500 border border-gray-200">
-        <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-30" />
+        <ShoppingBag className="size-12 mx-auto mb-4 opacity-30" />
         <p>No orders found</p>
       </div>
     );
@@ -48,7 +48,7 @@ export function OrdersTab({ orders, onStatusChange }: OrdersTabProps) {
                     </option>
                   ))}
                 </select>
-                <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
+                <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 size-3 pointer-events-none" />
               </div>
               <span className="font-medium">${order.total.toFixed(2)}</span>
             </div>
@@ -56,9 +56,12 @@ export function OrdersTab({ orders, onStatusChange }: OrdersTabProps) {
 
           <div className="flex flex-wrap gap-2 mb-4">
             {order.items.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2">
+              <div
+                key={`${order.id}-${item.productId ?? item.name}-${item.size}-${idx}`}
+                className="flex items-center gap-2 bg-gray-50 px-3 py-2"
+              >
                 <div className="w-8 h-10 bg-gray-200 relative overflow-hidden">
-                  <Image src={item.image} alt={item.name} fill className="object-cover" />
+                  <Image src={item.image} alt={item.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                 </div>
                 <div>
                   <p className="text-xs font-medium">{item.name}</p>

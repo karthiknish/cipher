@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, use, useState, useEffect, ReactNode, useMemo } from "react";
 
 export type MoodType = 
   | "calm" 
@@ -317,11 +317,8 @@ export function MoodStyleProvider({ children }: { children: ReactNode }) {
   const getMoodFromContext = (context: string): MoodType => {
     const lowerContext = context.toLowerCase();
     
-    for (const trigger of CONTEXT_TRIGGERS) {
-      if (lowerContext.includes(trigger.condition)) {
-        return trigger.suggestedMood;
-      }
-    }
+    const trigger = CONTEXT_TRIGGERS.find((t) => lowerContext.includes(t.condition));
+    if (trigger) return trigger.suggestedMood;
 
     // Default mapping for common contexts
     if (lowerContext.includes("date") || lowerContext.includes("romantic")) return "romantic";
@@ -370,9 +367,8 @@ export function MoodStyleProvider({ children }: { children: ReactNode }) {
     return MOOD_STYLE_MAP[mood];
   };
 
-  return (
-    <MoodStyleContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         currentMood,
         dailyRecommendation,
         quizProgress,
@@ -388,15 +384,19 @@ export function MoodStyleProvider({ children }: { children: ReactNode }) {
         deactivateDopamineMode,
         getGreeting,
         getMoodStyleInfo,
-      }}
-    >
+      }),
+    [activateDopamineMode, answerQuiz, completeQuiz, currentMood, dailyRecommendation, deactivateDopamineMode, getGreeting, getMoodFromContext, getMoodStyleInfo, isDopamineMode, quizAnswers, quizProgress, resetQuiz, setMood, startQuiz]
+  );
+
+  return (
+    <MoodStyleContext.Provider value={contextValue}>
       {children}
     </MoodStyleContext.Provider>
   );
 }
 
 export function useMoodStyle() {
-  const context = useContext(MoodStyleContext);
+  const context = use(MoodStyleContext);
   if (context === undefined) {
     throw new Error("useMoodStyle must be used within a MoodStyleProvider");
   }

@@ -47,7 +47,7 @@ export default function Chatbot() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi there! 👋 I'm the CIPHER style assistant. Ask me what to wear, describe your mood, or tell me about your plans — I'll curate the perfect look for you!",
+      content: "Hi — I'm the CIPHER style assistant. Ask what to wear, describe your mood, or tell me your plans and I'll curate a look for you.",
       timestamp: new Date(),
     },
   ]);
@@ -66,9 +66,9 @@ export default function Chatbot() {
 
   // Focus input when chat opens
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   // Check if message is style/mood related
@@ -127,12 +127,11 @@ export default function Chatbot() {
         }
       } else {
         // Use regular chat for general questions
-        const history = messages
-          .filter((m) => m.id !== "welcome")
-          .map((m) => ({
-            role: m.role,
-            content: m.content,
-          }));
+        const history: { role: string; content: string }[] = [];
+        for (const m of messages) {
+          if (m.id === "welcome") continue;
+          history.push({ role: m.role, content: m.content });
+        }
 
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -185,7 +184,7 @@ export default function Chatbot() {
       {/* Chat Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
+        className="fixed bottom-6 right-6 z-50 size-14 bg-gray-950 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-colors"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Toggle chat"
@@ -199,7 +198,7 @@ export default function Chatbot() {
               exit={{ rotate: 90, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <X className="w-6 h-6" />
+              <X className="size-6" />
             </motion.div>
           ) : (
             <motion.div
@@ -209,7 +208,7 @@ export default function Chatbot() {
               exit={{ rotate: -90, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChatCircle className="w-6 h-6" weight="fill" />
+              <ChatCircle className="size-6" weight="fill" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -227,9 +226,9 @@ export default function Chatbot() {
             style={{ height: "min(600px, calc(100vh - 8rem))" }}
           >
             {/* Header */}
-            <div className="bg-black text-white px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
-                <Sparkle className="w-5 h-5" weight="fill" />
+            <div className="bg-gray-950 text-white px-5 py-4 flex items-center gap-3">
+              <div className="size-10 bg-white/10 rounded-full flex items-center justify-center">
+                <Sparkle className="size-5" weight="fill" />
               </div>
               <div className="flex-1">
                 <h3 className="font-medium tracking-wide text-sm">CIPHER STYLE ASSISTANT</h3>
@@ -237,11 +236,10 @@ export default function Chatbot() {
                   {currentMood ? `Mood: ${currentMood.primaryMood}` : "AI-Powered Styling"}
                 </p>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
+              <button aria-label="x" type="button" onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-white/10 rounded-full transition"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" />
               </button>
             </div>
 
@@ -255,23 +253,23 @@ export default function Chatbot() {
                   className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       message.role === "user"
-                        ? "bg-black text-white"
+                        ? "bg-gray-950 text-white"
                         : "bg-gray-200 text-gray-600"
                     }`}
                   >
                     {message.role === "user" ? (
-                      <User className="w-4 h-4" weight="fill" />
+                      <User className="size-4" weight="fill" />
                     ) : (
-                      <Robot className="w-4 h-4" weight="fill" />
+                      <Robot className="size-4" weight="fill" />
                     )}
                   </div>
                   <div className="max-w-[80%]">
                     <div
                       className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                         message.role === "user"
-                          ? "bg-black text-white"
+                          ? "bg-gray-950 text-white"
                           : "bg-white text-gray-800 border border-gray-200"
                       }`}
                     >
@@ -312,12 +310,12 @@ export default function Chatbot() {
                   animate={{ opacity: 1 }}
                   className="flex gap-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0">
-                    <Robot className="w-4 h-4" weight="fill" />
+                  <div className="size-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center flex-shrink-0">
+                    <Robot className="size-4" weight="fill" />
                   </div>
                   <div className="bg-white border border-gray-200 px-4 py-3 flex items-center gap-2">
-                    <SpinnerGap className="w-4 h-4 animate-spin text-gray-400" />
-                    <span className="text-sm text-gray-500">Thinking...</span>
+                    <SpinnerGap className="size-4 animate-spin text-gray-400" />
+                    <span className="text-sm text-gray-500">Thinking…</span>
                   </div>
                 </motion.div>
               )}
@@ -331,8 +329,7 @@ export default function Chatbot() {
                 <p className="text-xs text-gray-400 mb-2">Quick questions:</p>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_QUESTIONS.map((question) => (
-                    <button
-                      key={question}
+                    <button type="button" key={question}
                       onClick={() => handleQuickQuestion(question)}
                       className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 transition rounded-full"
                     >
@@ -348,7 +345,7 @@ export default function Chatbot() {
               onSubmit={handleSubmit}
               className="p-4 border-t border-gray-200 bg-white flex gap-2"
             >
-              <input
+              <input aria-label="Ask what to wear, describe your mood..."
                 ref={inputRef}
                 type="text"
                 value={input}
@@ -360,9 +357,9 @@ export default function Chatbot() {
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="px-4 py-3 bg-black text-white hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-3 bg-gray-950 text-white hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <PaperPlaneTilt className="w-4 h-4" weight="fill" />
+                <PaperPlaneTilt className="size-4" weight="fill" />
               </button>
             </form>
           </motion.div>

@@ -81,9 +81,9 @@ export default function SizeRecommendationModal({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" 
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/60 z-50 flex items-center justify-center p-4" 
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }} 
         animate={{ scale: 1, opacity: 1 }} 
@@ -95,29 +95,27 @@ export default function SizeRecommendationModal({
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-xl font-light tracking-tight flex items-center gap-2">
-                <Sparkle className="w-5 h-5" /> SIZE FINDER
+                <Sparkle className="size-5" /> SIZE FINDER
               </h2>
               <p className="text-xs text-gray-400 mt-1">AI-powered size recommendation</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 transition">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 transition">
+              <X className="size-5" />
             </button>
           </div>
         </div>
         <div className="p-6">
           <div className="flex gap-2 mb-6">
-            <button 
-              onClick={() => setMode("quick")} 
+            <button type="button" onClick={() => setMode("quick")} 
               className={`flex-1 py-3 text-sm tracking-wider transition ${
-                mode === "quick" ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
+                mode === "quick" ? "bg-gray-950 text-white" : "bg-gray-100 hover:bg-gray-200"
               }`}
             >
               QUICK
             </button>
-            <button 
-              onClick={() => setMode("detailed")} 
+            <button type="button" onClick={() => setMode("detailed")} 
               className={`flex-1 py-3 text-sm tracking-wider transition ${
-                mode === "detailed" ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
+                mode === "detailed" ? "bg-gray-950 text-white" : "bg-gray-100 hover:bg-gray-200"
               }`}
             >
               DETAILED
@@ -126,8 +124,8 @@ export default function SizeRecommendationModal({
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">HEIGHT (CM)</label>
-                <input 
+                <label htmlFor="SizeRecommendationModal-height-cm-41" className="block text-xs tracking-wider text-gray-500 mb-2">HEIGHT (CM)</label>
+                <input aria-label="HEIGHT (CM)" id="SizeRecommendationModal-height-cm-41" 
                   type="number" 
                   value={height} 
                   onChange={(e) => setHeight(Number(e.target.value))} 
@@ -135,8 +133,8 @@ export default function SizeRecommendationModal({
                 />
               </div>
               <div>
-                <label className="block text-xs tracking-wider text-gray-500 mb-2">WEIGHT (KG)</label>
-                <input 
+                <label htmlFor="SizeRecommendationModal-weight-kg-42" className="block text-xs tracking-wider text-gray-500 mb-2">WEIGHT (KG)</label>
+                <input aria-label="WEIGHT (KG)" id="SizeRecommendationModal-weight-kg-42" 
                   type="number" 
                   value={weight} 
                   onChange={(e) => setWeight(Number(e.target.value))} 
@@ -147,8 +145,8 @@ export default function SizeRecommendationModal({
             {mode === "detailed" && (
               <>
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">CHEST (CM)</label>
-                  <input 
+                  <label htmlFor="SizeRecommendationModal-chest-cm-43" className="block text-xs tracking-wider text-gray-500 mb-2">CHEST (CM)</label>
+                  <input aria-label="CHEST (CM)" id="SizeRecommendationModal-chest-cm-43" 
                     type="number" 
                     value={chest} 
                     onChange={(e) => setChest(Number(e.target.value))} 
@@ -157,8 +155,8 @@ export default function SizeRecommendationModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">WAIST (CM)</label>
-                  <input 
+                  <label htmlFor="SizeRecommendationModal-waist-cm-44" className="block text-xs tracking-wider text-gray-500 mb-2">WAIST (CM)</label>
+                  <input aria-label="WAIST (CM)" id="SizeRecommendationModal-waist-cm-44" 
                     type="number" 
                     value={waist} 
                     onChange={(e) => setWaist(Number(e.target.value))} 
@@ -167,8 +165,8 @@ export default function SizeRecommendationModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs tracking-wider text-gray-500 mb-2">HIPS (CM)</label>
-                  <input 
+                  <label htmlFor="SizeRecommendationModal-hips-cm-45" className="block text-xs tracking-wider text-gray-500 mb-2">HIPS (CM)</label>
+                  <input aria-label="HIPS (CM)" id="SizeRecommendationModal-hips-cm-45" 
                     type="number" 
                     value={hips} 
                     onChange={(e) => setHips(Number(e.target.value))} 
@@ -179,16 +177,17 @@ export default function SizeRecommendationModal({
               </>
             )}
           </div>
-          <div className="mt-6">
-            <label className="block text-xs tracking-wider text-gray-500 mb-3">FIT PREFERENCE</label>
-            <div className="flex gap-2">
+          <fieldset className="mt-6">
+            <legend className="block text-xs tracking-wider text-gray-500 mb-3">FIT PREFERENCE</legend>
+            <div className="flex gap-2" role="radiogroup" aria-label="Fit preference">
               {(["slim", "regular", "relaxed"] as const).map((fit) => (
-                <button 
-                  key={fit} 
+                <button type="button" key={fit} 
+                  role="radio"
+                  aria-checked={fitPreference === fit}
                   onClick={() => setFitPreference(fit)} 
                   className={`flex-1 py-3 text-sm tracking-wider capitalize transition ${
                     fitPreference === fit 
-                      ? "bg-black text-white" 
+                      ? "bg-gray-950 text-white" 
                       : "border border-gray-200 hover:border-black"
                   }`}
                 >
@@ -196,11 +195,9 @@ export default function SizeRecommendationModal({
                 </button>
               ))}
             </div>
-          </div>
-          <button 
-            onClick={handleCalculate} 
-            className="w-full bg-black text-white py-4 text-sm tracking-wider font-medium mt-6 hover:bg-gray-900 transition"
-          >
+          </fieldset>
+          <button type="button" onClick={handleCalculate} 
+            className="w-full bg-gray-950 text-white py-4 text-sm tracking-wider font-medium mt-6 hover:bg-gray-900 transition">
             FIND MY SIZE
           </button>
           {recommendation && (
@@ -210,7 +207,7 @@ export default function SizeRecommendationModal({
               className="mt-6 p-6 bg-green-50 border border-green-200"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-green-100 flex items-center justify-center">
+                <div className="size-12 bg-green-100 flex items-center justify-center">
                   <span className="text-xl font-bold text-green-700">{recommendation.recommendedSize}</span>
                 </div>
                 <div>
@@ -222,10 +219,8 @@ export default function SizeRecommendationModal({
               {recommendation.alternativeSize && (
                 <p className="text-xs text-gray-500 mb-4">Alternative: {recommendation.alternativeSize}</p>
               )}
-              <button 
-                onClick={handleSelectRecommended} 
-                className="w-full bg-green-600 text-white py-3 text-sm tracking-wider font-medium hover:bg-green-700 transition"
-              >
+              <button type="button" onClick={handleSelectRecommended} 
+                className="w-full bg-green-600 text-white py-3 text-sm tracking-wider font-medium hover:bg-green-700 transition">
                 SELECT {recommendation.recommendedSize}
               </button>
             </motion.div>

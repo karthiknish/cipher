@@ -17,25 +17,25 @@ export default function HeroSection() {
   return (
     <section ref={heroRef} className="relative h-screen w-full overflow-hidden">
       <motion.div style={{ y: heroY }} className="absolute inset-0">
-        <div className="hidden md:block relative w-full h-full">
+        <div className="hidden md:block relative size-full">
           <Image
             src="/hero.png"
             alt="Cipher Collection"
             fill
             className="object-cover"
             priority
-          />
+           sizes="(max-width: 768px) 100vw, 50vw" />
         </div>
-        <div className="block md:hidden relative w-full h-full">
+        <div className="block md:hidden relative size-full">
           <Image
             src="/hero-mobile.png"
             alt="Cipher Collection"
             fill
             className="object-cover"
             priority
-          />
+           sizes="(max-width: 768px) 100vw, 50vw" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/20 via-transparent to-gray-950/40" />
       </motion.div>
 
       <motion.div
@@ -56,7 +56,7 @@ export default function HeroSection() {
             className="inline-flex items-center gap-3 px-10 py-4 bg-white text-black text-sm tracking-wider font-medium hover:bg-white/90 transition-all rounded-full"
           >
             SHOP NOW
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="size-4" />
           </Link>
         </motion.div>
 
@@ -71,7 +71,7 @@ export default function HeroSection() {
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <ArrowDown className="w-5 h-5" />
+            <ArrowDown className="size-5" />
           </motion.div>
         </motion.div>
       </motion.div>

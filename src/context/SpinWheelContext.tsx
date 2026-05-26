@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { createContext, use, useState, useCallback, ReactNode, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { db, doc, getDoc, setDoc, serverTimestamp } from "@/lib/firebase";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface WheelSegment {
   id: string;
@@ -86,6 +87,8 @@ function getNextSpinTime(lastSpinTime: number): Date {
 
 export function SpinWheelProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const convexSpin = useQuery(api.userExtras.getSpinResult, user ? {} : "skip");
+  const setSpinMut = useMutation(api.userExtras.setSpinResult);
   const [segments] = useState<WheelSegment[]>(DEFAULT_SEGMENTS);
   const [hasSpun, setHasSpun] = useState(false);
   const [showWheel, setShowWheel] = useState(false);
@@ -98,68 +101,35 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
   // Require login to spin
   const requiresLogin = !user;
 
-  // Load spin data from Firebase (only for logged-in users)
   useEffect(() => {
-    const loadSpinData = async () => {
-      // Reset state when user changes
-      setResult(null);
+    setResult(null);
+    setHasSpun(false);
+    setNextSpinTime(null);
+    if (!user) {
+      setCanSpinToday(false);
+      setIsLoading(false);
+      return;
+    }
+    if (convexSpin === undefined) return;
+    setIsLoading(false);
+    if (!convexSpin) {
+      setCanSpinToday(true);
+      return;
+    }
+    const data = convexSpin as SpinResult & { spunAt: number };
+    const spinTime = data.spunAt;
+    if (canSpinAgain(spinTime)) {
+      setCanSpinToday(true);
       setHasSpun(false);
-      setNextSpinTime(null);
-      
-      if (!user) {
-        // Not logged in - can't spin
-        setCanSpinToday(false);
-        setIsLoading(false);
-        return;
+    } else {
+      setCanSpinToday(false);
+      setHasSpun(true);
+      setNextSpinTime(getNextSpinTime(spinTime));
+      if (data.expiresAt > Date.now() && data.segment?.type !== "tryAgain") {
+        setResult(data);
       }
-      
-      setIsLoading(true);
-      
-      try {
-        // Load from Firebase for logged-in users
-        const spinDocRef = doc(db, "spinWheelResults", user.uid);
-        const spinDoc = await getDoc(spinDocRef);
-        
-        if (spinDoc.exists()) {
-          const data = spinDoc.data();
-          const spinTime = data.spunAt?.toDate?.()?.getTime() || data.spunAt;
-          
-          if (spinTime) {
-            // Check if can spin again (24 hours rule)
-            if (canSpinAgain(spinTime)) {
-              setCanSpinToday(true);
-              setHasSpun(false);
-              setResult(null);
-            } else {
-              setCanSpinToday(false);
-              setHasSpun(true);
-              setNextSpinTime(getNextSpinTime(spinTime));
-              
-              // Load the result if reward is still valid
-              if (data.expiresAt > Date.now() && data.segment?.type !== "tryAgain") {
-                setResult({
-                  segment: data.segment,
-                  code: data.code,
-                  expiresAt: data.expiresAt,
-                  spunAt: spinTime,
-                });
-              }
-            }
-          }
-        } else {
-          // First time for this user - can spin
-          setCanSpinToday(true);
-        }
-      } catch (error) {
-        console.error("Error loading spin data:", error);
-        setCanSpinToday(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSpinData();
-  }, [user]);
+    }
+  }, [user, convexSpin]);
 
   const spin = useCallback(async (): Promise<WheelSegment> => {
     if (!user) {
@@ -194,24 +164,14 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
     setNextSpinTime(getNextSpinTime(now));
     setIsSpinning(false);
 
-    // Save to Firebase
     try {
-      const spinDocRef = doc(db, "spinWheelResults", user.uid);
-      await setDoc(spinDocRef, {
-        segment: winningSegment,
-        code: spinResult.code,
-        expiresAt: spinResult.expiresAt,
-        spunAt: now,
-        userId: user.uid,
-        userEmail: user.email,
-        updatedAt: serverTimestamp(),
-      });
+      await setSpinMut({ result: spinResult });
     } catch (error) {
       console.error("Error saving spin result:", error);
     }
 
     return winningSegment;
-  }, [user, canSpinToday, isSpinning, segments]);
+  }, [user, canSpinToday, isSpinning, segments, setSpinMut]);
 
   const dismissWheel = useCallback(() => {
     setShowWheel(false);
@@ -224,9 +184,8 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
     }
   }, [result]);
 
-  return (
-    <SpinWheelContext.Provider
-      value={{
+  const contextValue = useMemo(
+    () => ({
         segments,
         hasSpun,
         showWheel,
@@ -240,15 +199,19 @@ export function SpinWheelProvider({ children }: { children: ReactNode }) {
         applyReward,
         isLoading,
         requiresLogin,
-      }}
-    >
+      }),
+    [applyReward, canSpinToday, dismissWheel, hasSpun, isLoading, isSpinning, nextSpinTime, requiresLogin, result, segments, setShowWheel, showWheel, spin]
+  );
+
+  return (
+    <SpinWheelContext.Provider value={contextValue}>
       {children}
     </SpinWheelContext.Provider>
   );
 }
 
 export function useSpinWheel() {
-  const context = useContext(SpinWheelContext);
+  const context = use(SpinWheelContext);
   if (!context) {
     throw new Error("useSpinWheel must be used within SpinWheelProvider");
   }

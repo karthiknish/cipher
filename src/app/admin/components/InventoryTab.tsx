@@ -43,28 +43,28 @@ export function InventoryTab({
       {/* Alert Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-rose-50 border border-rose-200 p-6">
-          <Warning className="w-5 h-5 text-rose-500 mb-2" />
+          <Warning className="size-5 text-rose-500 mb-2" />
           <p className="text-2xl font-medium text-rose-700">
             {inventoryForecast.filter(i => i.daysUntilStockout < 7).length}
           </p>
           <p className="text-xs text-rose-600 tracking-wider">CRITICAL (&lt;7 DAYS)</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 p-6">
-          <Clock className="w-5 h-5 text-amber-500 mb-2" />
+          <Clock className="size-5 text-amber-500 mb-2" />
           <p className="text-2xl font-medium text-amber-700">
             {inventoryForecast.filter(i => i.daysUntilStockout >= 7 && i.daysUntilStockout < 14).length}
           </p>
           <p className="text-xs text-amber-600 tracking-wider">LOW STOCK (7-14 DAYS)</p>
         </div>
         <div className="bg-emerald-50 border border-emerald-200 p-6">
-          <CheckCircle className="w-5 h-5 text-emerald-500 mb-2" />
+          <CheckCircle className="size-5 text-emerald-500 mb-2" />
           <p className="text-2xl font-medium text-emerald-700">
             {inventoryForecast.filter(i => i.daysUntilStockout >= 14).length}
           </p>
           <p className="text-xs text-emerald-600 tracking-wider">HEALTHY STOCK</p>
         </div>
         <div className="bg-sky-50 border border-sky-200 p-6">
-          <TrendUp className="w-5 h-5 text-sky-500 mb-2" />
+          <TrendUp className="size-5 text-sky-500 mb-2" />
           <p className="text-2xl font-medium text-sky-700">
             {inventoryForecast.filter(i => i.trend === "up").length}
           </p>
@@ -76,7 +76,7 @@ export function InventoryTab({
       {inventoryForecast.filter(i => i.reorderSuggested).length > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Warning className="w-6 h-6 text-amber-600" />
+            <Warning className="size-6 text-amber-600" />
             <div>
               <h3 className="font-medium">Reorder Suggestions</h3>
               <p className="text-sm text-gray-600">
@@ -137,7 +137,7 @@ export function InventoryTab({
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-12 bg-gray-100 relative overflow-hidden flex-shrink-0">
-                          <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
+                          <Image src={item.product.image} alt={item.product.name} fill className="object-cover"  sizes="(max-width: 768px) 100vw, 50vw" />
                         </div>
                         <div>
                           <p className="font-medium text-sm">{item.product.name}</p>
@@ -151,23 +151,22 @@ export function InventoryTab({
                           <input
                             type="number"
                             min="0"
+                            aria-label={`Stock quantity for ${item.product.name}`}
                             value={stockInput}
                             onChange={(e) => setStockInput(e.target.value)}
                             className="w-20 px-2 py-1 border border-gray-300 text-sm focus:border-black outline-none"
                             placeholder={String(item.currentStock)}
                           />
-                          <button
-                            onClick={() => onUpdateStock(item.product.id)}
+                          <button type="button" aria-label={`Save stock for ${item.product.name}`} onClick={() => onUpdateStock(item.product.id)}
                             disabled={updatingStock}
                             className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="size-4" />
                           </button>
-                          <button
-                            onClick={() => { setEditingStock(null); setStockInput(""); }}
+                          <button type="button" aria-label="Cancel stock edit" onClick={() => { setEditingStock(null); setStockInput(""); }}
                             className="p-1 text-gray-400 hover:text-gray-600"
                           >
-                            <XCircle className="w-4 h-4" />
+                            <XCircle className="size-4" />
                           </button>
                         </div>
                       ) : (
@@ -191,19 +190,19 @@ export function InventoryTab({
                       <div className="flex items-center gap-1">
                         {item.trend === "up" && (
                           <>
-                            <TrendUp className="w-4 h-4 text-emerald-500" />
+                            <TrendUp className="size-4 text-emerald-500" />
                             <span className="text-xs text-emerald-600">Up</span>
                           </>
                         )}
                         {item.trend === "down" && (
                           <>
-                            <TrendDown className="w-4 h-4 text-rose-500" />
+                            <TrendDown className="size-4 text-rose-500" />
                             <span className="text-xs text-rose-600">Down</span>
                           </>
                         )}
                         {item.trend === "stable" && (
                           <>
-                            <Pulse className="w-4 h-4 text-slate-400" />
+                            <Pulse className="size-4 text-slate-400" />
                             <span className="text-xs text-slate-500">Stable</span>
                           </>
                         )}
@@ -220,13 +219,13 @@ export function InventoryTab({
                           <input
                             type="number"
                             min="1"
+                            aria-label={`Restock quantity for ${item.product.name}`}
                             value={restockInput}
                             onChange={(e) => setRestockInput(e.target.value)}
                             className="w-16 px-2 py-1 border border-gray-300 text-sm focus:border-black outline-none"
                             placeholder="+Qty"
                           />
-                          <button
-                            onClick={() => onRestock(item.product.id)}
+                          <button type="button" onClick={() => onRestock(item.product.id)}
                             disabled={updatingStock || !restockInput}
                             className="text-xs bg-emerald-600 text-white px-2 py-1 hover:bg-emerald-700 disabled:opacity-50"
                           >
@@ -234,15 +233,14 @@ export function InventoryTab({
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => {
+                        <button type="button" onClick={() => {
                             setEditingStock(item.product.id);
                             setStockInput(String(item.currentStock));
                             setRestockInput("");
                           }}
                           className="text-xs text-gray-500 hover:text-black transition flex items-center gap-1"
                         >
-                          <Pencil className="w-3 h-3" />
+                          <Pencil className="size-3" />
                           Edit
                         </button>
                       )}
@@ -262,7 +260,7 @@ export function InventoryTab({
             <h3 className="font-medium">Stock Level Projections</h3>
             <p className="text-xs text-gray-500 mt-1">Estimated days until stockout by category</p>
           </div>
-          <ChartBar className="w-5 h-5 text-gray-400" />
+          <ChartBar className="size-5 text-gray-400" />
         </div>
         <div className="space-y-4">
           {CATEGORIES.map(category => {

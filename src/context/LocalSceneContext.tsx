@@ -1,23 +1,9 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 import { useLoyalty } from "./LoyaltyContext";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  doc, 
-  onSnapshot, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy,
-  increment,
-  serverTimestamp,
-  Timestamp,
-  getDocs
-} from "firebase/firestore";
+import { useQuery, useMutation, useConvex } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 // Types
 export type EventType = "popup" | "meetup" | "launch" | "workshop";
@@ -430,51 +416,48 @@ const TIER_HIERARCHY: Record<LoyaltyTier, number> = {
 export function LocalSceneProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { profile: loyaltyProfile } = useLoyalty();
-  
-  const [events, setEvents] = useState<CipherEvent[]>(SAMPLE_EVENTS);
-  const [stores, setStores] = useState<StoreLocation[]>(SAMPLE_STORES);
-  const [userRSVPs, setUserRSVPs] = useState<EventRSVP[]>([]);
-  const [userLocation, setUserLocation] = useState<UserLocationPrefs | null>(null);
-  const [loading, setLoading] = useState(true);
+  const convex = useConvex();
 
-  // Load user location preferences from localStorage
+  const convexEvents = useQuery(api.events.listEvents);
+  const convexStores = useQuery(api.events.listStores);
+  const convexRsvps = useQuery(
+    api.events.listUserRsvps,
+    user ? {} : "skip"
+  );
+
+  const createEventMutation = useMutation(api.events.createEvent);
+  const updateEventMutation = useMutation(api.events.updateEvent);
+  const removeEventMutation = useMutation(api.events.removeEvent);
+  const createStoreMutation = useMutation(api.events.createStore);
+  const updateStoreMutation = useMutation(api.events.updateStore);
+  const rsvpMutation = useMutation(api.events.rsvp);
+  const cancelRsvpMutation = useMutation(api.events.cancelRsvp);
+  const checkInMutation = useMutation(api.events.checkIn);
+
+  const [userLocation, setUserLocation] = useState<UserLocationPrefs | null>(null);
+
+  const events: CipherEvent[] =
+    convexEvents === undefined
+      ? []
+      : convexEvents.length > 0
+        ? (convexEvents as CipherEvent[])
+        : SAMPLE_EVENTS;
+
+  const stores: StoreLocation[] =
+    convexStores === undefined
+      ? []
+      : convexStores.length > 0
+        ? (convexStores as StoreLocation[])
+        : SAMPLE_STORES;
+
+  const userRSVPs: EventRSVP[] = (convexRsvps ?? []) as EventRSVP[];
+
+  const loading = convexEvents === undefined || convexStores === undefined;
+
   useEffect(() => {
     const stored = localStorage.getItem("cipher_user_location");
-    if (stored) {
-      setUserLocation(JSON.parse(stored));
-    }
-    setLoading(false);
+    if (stored) setUserLocation(JSON.parse(stored));
   }, []);
-
-  // Load user RSVPs from Firebase
-  useEffect(() => {
-    if (!user) {
-      setUserRSVPs([]);
-      return;
-    }
-
-    const loadRSVPs = async () => {
-      try {
-        const rsvpsRef = collection(db, "eventRSVPs");
-        const q = query(rsvpsRef, where("userId", "==", user.uid));
-        const snapshot = await getDocs(q);
-        const rsvps: EventRSVP[] = [];
-        snapshot.forEach((doc) => {
-          rsvps.push({ id: doc.id, ...doc.data() } as EventRSVP);
-        });
-        setUserRSVPs(rsvps);
-      } catch (error) {
-        console.error("Error loading RSVPs:", error);
-        // Load from localStorage as fallback
-        const stored = localStorage.getItem(`cipher_rsvps_${user.uid}`);
-        if (stored) {
-          setUserRSVPs(JSON.parse(stored));
-        }
-      }
-    };
-
-    loadRSVPs();
-  }, [user]);
 
   // Event functions
   const getEventById = useCallback((id: string) => {
@@ -513,89 +496,6 @@ export function LocalSceneProvider({ children }: { children: ReactNode }) {
     });
   }, [events, userLocation]);
 
-  // RSVP functions
-  const rsvpToEvent = useCallback(async (eventId: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    const event = events.find(e => e.id === eventId);
-    if (!event) return false;
-
-    // Check eligibility
-    const eligibility = checkEligibility(eventId);
-    if (!eligibility.eligible) return false;
-
-    const isWaitlist = event.rsvpCount >= event.capacity;
-    
-    const rsvp: EventRSVP = {
-      id: `rsvp-${Date.now()}`,
-      eventId,
-      userId: user.uid,
-      userEmail: user.email || "",
-      userName: user.displayName || "Guest",
-      status: isWaitlist ? "waitlist" : "confirmed",
-      createdAt: Date.now()
-    };
-
-    try {
-      await setDoc(doc(db, "eventRSVPs", rsvp.id), rsvp);
-      await updateDoc(doc(db, "events", eventId), {
-        rsvpCount: increment(1)
-      });
-    } catch (error) {
-      console.error("Error saving RSVP to Firebase:", error);
-      // Save locally as fallback
-      const stored = localStorage.getItem(`cipher_rsvps_${user.uid}`);
-      const localRSVPs = stored ? JSON.parse(stored) : [];
-      localRSVPs.push(rsvp);
-      localStorage.setItem(`cipher_rsvps_${user.uid}`, JSON.stringify(localRSVPs));
-    }
-
-    setUserRSVPs(prev => [...prev, rsvp]);
-    setEvents(prev => prev.map(e => 
-      e.id === eventId ? { ...e, rsvpCount: e.rsvpCount + 1 } : e
-    ));
-    
-    return true;
-  }, [user, events]);
-
-  const cancelRSVP = useCallback(async (eventId: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    const rsvp = userRSVPs.find(r => r.eventId === eventId && r.userId === user.uid);
-    if (!rsvp) return false;
-
-    try {
-      await deleteDoc(doc(db, "eventRSVPs", rsvp.id));
-      await updateDoc(doc(db, "events", eventId), {
-        rsvpCount: increment(-1)
-      });
-    } catch (error) {
-      console.error("Error cancelling RSVP:", error);
-      // Update locally
-      const stored = localStorage.getItem(`cipher_rsvps_${user.uid}`);
-      if (stored) {
-        const localRSVPs = JSON.parse(stored).filter((r: EventRSVP) => r.id !== rsvp.id);
-        localStorage.setItem(`cipher_rsvps_${user.uid}`, JSON.stringify(localRSVPs));
-      }
-    }
-
-    setUserRSVPs(prev => prev.filter(r => r.id !== rsvp.id));
-    setEvents(prev => prev.map(e => 
-      e.id === eventId ? { ...e, rsvpCount: Math.max(0, e.rsvpCount - 1) } : e
-    ));
-    
-    return true;
-  }, [user, userRSVPs]);
-
-  const getUserRSVP = useCallback((eventId: string) => {
-    if (!user) return undefined;
-    return userRSVPs.find(r => r.eventId === eventId && r.userId === user.uid);
-  }, [user, userRSVPs]);
-
-  const hasUserRSVPd = useCallback((eventId: string) => {
-    return !!getUserRSVP(eventId);
-  }, [getUserRSVP]);
-
   const checkEligibility = useCallback((eventId: string): { eligible: boolean; reason?: string } => {
     const event = events.find(e => e.id === eventId);
     if (!event) return { eligible: false, reason: "Event not found" };
@@ -617,6 +517,44 @@ export function LocalSceneProvider({ children }: { children: ReactNode }) {
       reason: `Requires ${event.requiredTier.charAt(0).toUpperCase() + event.requiredTier.slice(1)} tier or higher` 
     };
   }, [events, user, loyaltyProfile]);
+
+  const rsvpToEvent = useCallback(
+    async (eventId: string): Promise<boolean> => {
+      if (!user) return false;
+      const eligibility = checkEligibility(eventId);
+      if (!eligibility.eligible) return false;
+      const result = await rsvpMutation({
+        eventId,
+        userEmail: user.email || "",
+        userName: user.displayName || "Guest",
+      });
+      return result.ok;
+    },
+    [user, rsvpMutation, checkEligibility]
+  );
+
+  const cancelRSVP = useCallback(
+    async (eventId: string): Promise<boolean> => {
+      if (!user) return false;
+      return await cancelRsvpMutation({ eventId });
+    },
+    [user, cancelRsvpMutation]
+  );
+
+  const getUserRSVP = useCallback(
+    (eventId: string) => {
+      if (!user) return undefined;
+      return userRSVPs.find(
+        (r) => r.eventId === eventId && r.userId === user.uid
+      );
+    },
+    [user, userRSVPs]
+  );
+
+  const hasUserRSVPd = useCallback(
+    (eventId: string) => !!getUserRSVP(eventId),
+    [getUserRSVP]
+  );
 
   // Store functions
   const getStoreById = useCallback((id: string) => {
@@ -685,103 +623,148 @@ export function LocalSceneProvider({ children }: { children: ReactNode }) {
   }, [updateUserLocation]);
 
   // Admin functions
-  const createEvent = useCallback(async (eventData: Omit<CipherEvent, "id" | "createdAt" | "rsvpCount">): Promise<string | null> => {
-    const id = `event-${Date.now()}`;
-    const newEvent: CipherEvent = {
-      ...eventData,
-      id,
-      createdAt: Date.now(),
-      rsvpCount: 0
-    };
+  const createEvent = useCallback(
+    async (
+      eventData: Omit<CipherEvent, "id" | "createdAt" | "rsvpCount">
+    ): Promise<string | null> => {
+      return await createEventMutation({
+        title: eventData.title,
+        description: eventData.description,
+        type: eventData.type,
+        imageUrl: eventData.imageUrl,
+        location: eventData.location,
+        startDate: eventData.startDate,
+        endDate: eventData.endDate,
+        timezone: eventData.timezone,
+        capacity: eventData.capacity,
+        waitlistEnabled: eventData.waitlistEnabled,
+        isExclusive: eventData.isExclusive,
+        requiredTier: eventData.requiredTier,
+        exclusiveProductIds: eventData.exclusiveProductIds,
+        featuredProductIds: eventData.featuredProductIds,
+        status: eventData.status,
+        featured: eventData.featured,
+        createdBy: eventData.createdBy,
+      });
+    },
+    [createEventMutation]
+  );
 
-    try {
-      await setDoc(doc(db, "events", id), newEvent);
-    } catch (error) {
-      console.error("Error creating event:", error);
-    }
-
-    setEvents(prev => [...prev, newEvent]);
-    return id;
-  }, []);
-
-  const updateEvent = useCallback(async (id: string, updates: Partial<CipherEvent>): Promise<boolean> => {
-    try {
-      await updateDoc(doc(db, "events", id), updates);
-    } catch (error) {
-      console.error("Error updating event:", error);
-    }
-
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
-    return true;
-  }, []);
-
-  const deleteEvent = useCallback(async (id: string): Promise<boolean> => {
-    try {
-      await deleteDoc(doc(db, "events", id));
-    } catch (error) {
-      console.error("Error deleting event:", error);
-    }
-
-    setEvents(prev => prev.filter(e => e.id !== id));
-    return true;
-  }, []);
-
-  const createStore = useCallback(async (storeData: Omit<StoreLocation, "id">): Promise<string | null> => {
-    const id = `store-${Date.now()}`;
-    const newStore: StoreLocation = { ...storeData, id };
-
-    try {
-      await setDoc(doc(db, "stores", id), newStore);
-    } catch (error) {
-      console.error("Error creating store:", error);
-    }
-
-    setStores(prev => [...prev, newStore]);
-    return id;
-  }, []);
-
-  const updateStore = useCallback(async (id: string, updates: Partial<StoreLocation>): Promise<boolean> => {
-    try {
-      await updateDoc(doc(db, "stores", id), updates);
-    } catch (error) {
-      console.error("Error updating store:", error);
-    }
-
-    setStores(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
-    return true;
-  }, []);
-
-  const checkInUser = useCallback(async (eventId: string, rsvpId: string): Promise<boolean> => {
-    try {
-      await updateDoc(doc(db, "eventRSVPs", rsvpId), {
-        status: "checked-in",
-        checkedInAt: Date.now()
+  const updateEvent = useCallback(
+    async (id: string, updates: Partial<CipherEvent>): Promise<boolean> => {
+      const base = events.find((e) => e.id === id);
+      if (!base) return false;
+      const merged = { ...base, ...updates };
+      await updateEventMutation({
+        id,
+        patch: {
+          title: merged.title,
+          description: merged.description,
+          type: merged.type,
+          imageUrl: merged.imageUrl,
+          location: merged.location,
+          startDate: merged.startDate,
+          endDate: merged.endDate,
+          timezone: merged.timezone,
+          capacity: merged.capacity,
+          waitlistEnabled: merged.waitlistEnabled,
+          isExclusive: merged.isExclusive,
+          requiredTier: merged.requiredTier,
+          exclusiveProductIds: merged.exclusiveProductIds,
+          featuredProductIds: merged.featuredProductIds,
+          status: merged.status,
+          featured: merged.featured,
+          createdBy: merged.createdBy,
+        },
       });
       return true;
-    } catch (error) {
-      console.error("Error checking in user:", error);
-      return false;
-    }
-  }, []);
+    },
+    [events, updateEventMutation]
+  );
 
-  const getEventRSVPs = useCallback(async (eventId: string): Promise<EventRSVP[]> => {
-    try {
-      const rsvpsRef = collection(db, "eventRSVPs");
-      const q = query(rsvpsRef, where("eventId", "==", eventId));
-      const snapshot = await getDocs(q);
-      const rsvps: EventRSVP[] = [];
-      snapshot.forEach((doc) => {
-        rsvps.push({ id: doc.id, ...doc.data() } as EventRSVP);
+  const deleteEvent = useCallback(
+    async (id: string): Promise<boolean> => {
+      await removeEventMutation({ id });
+      return true;
+    },
+    [removeEventMutation]
+  );
+
+  const createStore = useCallback(
+    async (storeData: Omit<StoreLocation, "id">): Promise<string | null> => {
+      return await createStoreMutation({
+        name: storeData.name,
+        type: storeData.type,
+        address: storeData.address,
+        city: storeData.city,
+        state: storeData.state,
+        zip: storeData.zip,
+        country: storeData.country,
+        coordinates: storeData.coordinates,
+        hours: storeData.hours,
+        hasPickup: storeData.hasPickup,
+        exclusiveProductIds: storeData.exclusiveProductIds,
+        phone: storeData.phone,
+        email: storeData.email,
+        isActive: storeData.isActive,
+        imageUrl: storeData.imageUrl,
       });
-      return rsvps;
-    } catch (error) {
-      console.error("Error loading event RSVPs:", error);
-      return [];
-    }
-  }, []);
+    },
+    [createStoreMutation]
+  );
 
-  return (
-    <LocalSceneContext.Provider value={{
+  const updateStore = useCallback(
+    async (id: string, updates: Partial<StoreLocation>): Promise<boolean> => {
+      const base = stores.find((s) => s.id === id);
+      if (!base) return false;
+      const merged = { ...base, ...updates };
+      await updateStoreMutation({
+        id,
+        patch: {
+          name: merged.name,
+          type: merged.type,
+          address: merged.address,
+          city: merged.city,
+          state: merged.state,
+          zip: merged.zip,
+          country: merged.country,
+          coordinates: merged.coordinates,
+          hours: merged.hours,
+          hasPickup: merged.hasPickup,
+          exclusiveProductIds: merged.exclusiveProductIds,
+          phone: merged.phone,
+          email: merged.email,
+          isActive: merged.isActive,
+          imageUrl: merged.imageUrl,
+        },
+      });
+      return true;
+    },
+    [stores, updateStoreMutation]
+  );
+
+  const checkInUser = useCallback(
+    async (eventId: string, userId: string): Promise<boolean> => {
+      try {
+        await checkInMutation({ eventId, userId });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [checkInMutation]
+  );
+
+  const getEventRSVPs = useCallback(
+    async (eventId: string): Promise<EventRSVP[]> => {
+      const list = await convex.query(api.events.listEventRsvps, { eventId });
+      return list as EventRSVP[];
+    },
+    [convex]
+  );
+
+  const contextValue = useMemo(
+    () => ({
       events,
       stores,
       userRSVPs,
@@ -810,14 +793,19 @@ export function LocalSceneProvider({ children }: { children: ReactNode }) {
       updateStore,
       checkInUser,
       getEventRSVPs
-    }}>
+    }),
+    [cancelRSVP, checkEligibility, checkInUser, createEvent, createStore, deleteEvent, events, getEventById, getEventRSVPs, getEventsByType, getExclusiveItems, getFeaturedEvent, getNearbyEvents, getNearbyStores, getPickupStores, getStoreById, getUpcomingEvents, getUserRSVP, hasUserRSVPd, loading, requestLocationPermission, rsvpToEvent, stores, updateEvent, updateStore, updateUserLocation, userLocation, userRSVPs]
+  );
+
+  return (
+    <LocalSceneContext.Provider value={contextValue}>
       {children}
     </LocalSceneContext.Provider>
   );
 }
 
 export function useLocalScene() {
-  const context = useContext(LocalSceneContext);
+  const context = use(LocalSceneContext);
   if (!context) {
     throw new Error("useLocalScene must be used within a LocalSceneProvider");
   }

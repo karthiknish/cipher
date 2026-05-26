@@ -59,20 +59,18 @@ export function NearbyEventsNotification() {
           initial={{ opacity: 0, y: 100, x: "-50%" }}
           animate={{ opacity: 1, y: 0, x: "-50%" }}
           exit={{ opacity: 0, y: 100, x: "-50%" }}
-          className="fixed bottom-6 left-1/2 z-50 w-[90%] max-w-md bg-black text-white p-4 shadow-2xl"
+          className="fixed bottom-6 left-1/2 z-50 w-[90%] max-w-md bg-gray-950 text-white p-4 shadow-2xl"
         >
           {/* Close Button */}
-          <button
-            onClick={handleDismiss}
-            className="absolute top-3 right-3 text-white/60 hover:text-white transition"
-          >
-            <X className="w-5 h-5" />
+          <button aria-label="x" type="button" onClick={handleDismiss}
+            className="absolute top-3 right-3 text-white/60 hover:text-white transition">
+            <X className="size-5" />
           </button>
 
           {/* Icon */}
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-white/10 flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-6 h-6 text-white" weight="fill" />
+            <div className="size-12 bg-white/10 flex items-center justify-center flex-shrink-0">
+              <MapPin className="size-6 text-white" weight="fill" />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -95,11 +93,9 @@ export function NearbyEventsNotification() {
             >
               View Event
             </Link>
-            <button
-              onClick={handleRemindLater}
-              className="px-4 py-2.5 border border-white/30 text-white text-sm hover:bg-white/10 transition flex items-center gap-2"
-            >
-              <Bell className="w-4 h-4" />
+            <button aria-label="bell" type="button" onClick={handleRemindLater}
+              className="px-4 py-2.5 border border-white/30 text-white text-sm hover:bg-white/10 transition flex items-center gap-2">
+              <Bell className="size-4" />
               Later
             </button>
           </div>
@@ -123,7 +119,7 @@ export function NearbyEventsBadge() {
       href="/events"
       className="flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full hover:bg-purple-200 transition"
     >
-      <Calendar className="w-3.5 h-3.5" />
+      <Calendar className="size-3.5" />
       {nearbyEvents.length} nearby
     </Link>
   );

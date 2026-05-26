@@ -22,7 +22,7 @@ export function NewProductHeader({
               href="/admin?tab=products"
               className="p-2 hover:bg-gray-100 transition rounded-lg"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="size-5" />
             </Link>
             <div>
               <h1 className="text-xl font-light tracking-tight">NEW PRODUCT</h1>
@@ -38,18 +38,16 @@ export function NewProductHeader({
             >
               Cancel
             </Link>
-            <button
-              onClick={onSubmit}
+            <button type="button" onClick={onSubmit}
               disabled={isSubmitting || !canSubmit}
-              className="px-6 py-2 bg-black text-white text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center gap-2 rounded"
-            >
+              className="px-6 py-2 bg-gray-950 text-white text-sm tracking-wider font-medium hover:bg-gray-900 transition disabled:opacity-50 flex items-center gap-2 rounded">
               {isSubmitting ? (
                 <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" /> CREATING...
+                  <SpinnerGap className="size-4 animate-spin" /> CREATING…
                 </>
               ) : (
                 <>
-                  <FloppyDisk className="w-4 h-4" /> CREATE PRODUCT
+                  <FloppyDisk className="size-4" /> CREATE PRODUCT
                 </>
               )}
             </button>

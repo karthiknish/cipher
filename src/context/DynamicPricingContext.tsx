@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { db } from "@/lib/firebase";
-import { collection, doc, onSnapshot, setDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { createContext, use, ReactNode, useCallback, useMemo } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface PricingRule {
   id: string;
@@ -48,43 +48,27 @@ interface DynamicPricingContextType {
 const DynamicPricingContext = createContext<DynamicPricingContextType | undefined>(undefined);
 
 export function DynamicPricingProvider({ children }: { children: ReactNode }) {
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
+  const convexRules = useQuery(api.pricingRules.list);
+  const createRuleMut = useMutation(api.pricingRules.create);
+  const updateRuleMut = useMutation(api.pricingRules.update);
+  const removeRuleMut = useMutation(api.pricingRules.remove);
+  const toggleRuleMut = useMutation(api.pricingRules.toggle);
 
-  // Subscribe to pricing rules
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "pricingRules"),
-      (snapshot) => {
-        const rules: PricingRule[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          rules.push({
-            id: doc.id,
-            type: data.type,
-            productId: data.productId,
-            category: data.category,
-            discountPercent: data.discountPercent,
-            discountAmount: data.discountAmount,
-            multiplier: data.multiplier,
-            minQuantity: data.minQuantity,
-            startTime: data.startTime?.toDate(),
-            endTime: data.endTime?.toDate(),
-            isActive: data.isActive,
-            priority: data.priority || 0,
-            conditions: data.conditions,
-          });
-        });
-        // Sort by priority (higher first)
-        rules.sort((a, b) => b.priority - a.priority);
-        setPricingRules(rules);
-      },
-      (error) => {
-        console.error("Error fetching pricing rules:", error);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
+  const pricingRules: PricingRule[] = (convexRules ?? []).map((r) => ({
+    id: r.id,
+    type: r.type as PricingRule["type"],
+    productId: r.productId,
+    category: r.category,
+    discountPercent: r.discountPercent,
+    discountAmount: r.discountAmount,
+    multiplier: r.multiplier,
+    minQuantity: r.minQuantity,
+    startTime: r.startTime ? new Date(r.startTime) : undefined,
+    endTime: r.endTime ? new Date(r.endTime) : undefined,
+    isActive: r.isActive,
+    priority: r.priority,
+    conditions: r.conditions as PricingRule["conditions"],
+  }));
 
   const isRuleApplicable = useCallback((
     rule: PricingRule,
@@ -246,10 +230,19 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
 
   const createRule = async (rule: Omit<PricingRule, "id">): Promise<string | null> => {
     try {
-      const id = `rule_${Date.now()}`;
-      await setDoc(doc(db, "pricingRules", id), {
-        ...rule,
-        createdAt: serverTimestamp(),
+      const id = await createRuleMut({
+        type: rule.type,
+        productId: rule.productId,
+        category: rule.category,
+        discountPercent: rule.discountPercent,
+        discountAmount: rule.discountAmount,
+        multiplier: rule.multiplier,
+        minQuantity: rule.minQuantity,
+        startTime: rule.startTime?.getTime(),
+        endTime: rule.endTime?.getTime(),
+        isActive: rule.isActive,
+        priority: rule.priority,
+        conditions: rule.conditions,
       });
       return id;
     } catch (error) {
@@ -260,10 +253,25 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
 
   const updateRule = async (id: string, updates: Partial<PricingRule>): Promise<boolean> => {
     try {
-      await setDoc(doc(db, "pricingRules", id), {
-        ...updates,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+      const existing = pricingRules.find((r) => r.id === id);
+      if (!existing) return false;
+      await updateRuleMut({
+        id,
+        patch: {
+          type: updates.type ?? existing.type,
+          productId: updates.productId ?? existing.productId,
+          category: updates.category ?? existing.category,
+          discountPercent: updates.discountPercent ?? existing.discountPercent,
+          discountAmount: updates.discountAmount ?? existing.discountAmount,
+          multiplier: updates.multiplier ?? existing.multiplier,
+          minQuantity: updates.minQuantity ?? existing.minQuantity,
+          startTime: (updates.startTime ?? existing.startTime)?.getTime(),
+          endTime: (updates.endTime ?? existing.endTime)?.getTime(),
+          isActive: updates.isActive ?? existing.isActive,
+          priority: updates.priority ?? existing.priority,
+          conditions: updates.conditions ?? existing.conditions,
+        },
+      });
       return true;
     } catch (error) {
       console.error("Error updating pricing rule:", error);
@@ -273,8 +281,7 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
 
   const deleteRule = async (id: string): Promise<boolean> => {
     try {
-      const { deleteDoc } = await import("firebase/firestore");
-      await deleteDoc(doc(db, "pricingRules", id));
+      await removeRuleMut({ id });
       return true;
     } catch (error) {
       console.error("Error deleting pricing rule:", error);
@@ -283,9 +290,12 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleRule = async (id: string): Promise<boolean> => {
-    const rule = pricingRules.find(r => r.id === id);
-    if (!rule) return false;
-    return updateRule(id, { isActive: !rule.isActive });
+    try {
+      await toggleRuleMut({ id });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const getActiveFlashSales = useCallback((): PricingRule[] => {
@@ -304,8 +314,8 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
     );
   }, [pricingRules]);
 
-  return (
-    <DynamicPricingContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       pricingRules,
       getDynamicPrice,
       createRule,
@@ -314,14 +324,19 @@ export function DynamicPricingProvider({ children }: { children: ReactNode }) {
       toggleRule,
       getActiveFlashSales,
       getProductRules,
-    }}>
+    }),
+    [createRule, deleteRule, getActiveFlashSales, getDynamicPrice, getProductRules, pricingRules, toggleRule, updateRule]
+  );
+
+  return (
+    <DynamicPricingContext.Provider value={contextValue}>
       {children}
     </DynamicPricingContext.Provider>
   );
 }
 
 export function useDynamicPricing() {
-  const context = useContext(DynamicPricingContext);
+  const context = use(DynamicPricingContext);
   if (!context) {
     throw new Error("useDynamicPricing must be used within a DynamicPricingProvider");
   }

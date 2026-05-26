@@ -45,9 +45,9 @@ export function CLVDetailsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+      className="fixed inset-0 bg-gray-950/50 z-50 flex items-center justify-center p-4"
+      role="presentation"
+    ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={onClose} />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -64,8 +64,8 @@ export function CLVDetailsModal({
               </div>
               <p className="text-sm text-gray-500">Customer Lifetime Value Analysis</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="w-5 h-5" />
+            <button aria-label="x" type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -75,7 +75,7 @@ export function CLVDetailsModal({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gradient-to-br from-emerald-50 to-emerald-50 p-4 rounded-lg border border-emerald-100">
               <div className="flex items-center gap-2 mb-2">
-                <Wallet className="w-4 h-4 text-emerald-600" />
+                <Wallet className="size-4 text-emerald-600" />
                 <span className="text-xs text-emerald-600 font-medium">PREDICTED CLV</span>
               </div>
               <p className="text-2xl font-medium text-emerald-700">${predictedCLV}</p>
@@ -88,7 +88,7 @@ export function CLVDetailsModal({
               "bg-emerald-50 border-emerald-100"
             }`}>
               <div className="flex items-center gap-2 mb-2">
-                <Warning className={`w-4 h-4 ${
+                <Warning className={`size-4 ${
                   churnRisk === "high" ? "text-rose-600" :
                   churnRisk === "medium" ? "text-amber-600" :
                   "text-emerald-600"
@@ -109,7 +109,7 @@ export function CLVDetailsModal({
             
             <div className="bg-sky-50 p-4 rounded-lg border border-sky-100">
               <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-sky-600" />
+                <Target className="size-4 text-sky-600" />
                 <span className="text-xs text-sky-600 font-medium">PURCHASE PROB.</span>
               </div>
               <p className="text-2xl font-medium text-sky-700">{nextPurchaseProbability}%</p>
@@ -118,7 +118,7 @@ export function CLVDetailsModal({
             
             <div className="bg-violet-50 p-4 rounded-lg border border-violet-100">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-violet-600" />
+                <Clock className="size-4 text-violet-600" />
                 <span className="text-xs text-violet-600 font-medium">NEXT PURCHASE</span>
               </div>
               <p className="text-2xl font-medium text-violet-700">
@@ -156,9 +156,9 @@ export function CLVDetailsModal({
               <h4 className="text-sm font-medium mb-4">Category Preferences</h4>
               <div className="space-y-2">
                 {customer.categories.length > 0 ? (
-                  customer.categories.map((cat, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-black rounded-full" />
+                  customer.categories.map((cat) => (
+                    <div key={cat} className="flex items-center gap-2">
+                      <div className="size-2 bg-gray-950 rounded-full" />
                       <span className="text-sm">{cat}</span>
                     </div>
                   ))
@@ -172,13 +172,13 @@ export function CLVDetailsModal({
           {/* AI Recommendations */}
           <div className="bg-gradient-to-r from-sky-50 to-sky-100 p-4 rounded-lg border border-sky-100">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkle className="w-5 h-5 text-sky-600" />
+              <Sparkle className="size-5 text-sky-600" />
               <h4 className="font-medium text-sky-900">AI Retention Recommendations</h4>
             </div>
             <div className="space-y-2">
-              {recommendations.map((rec, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <ChartLineUp className="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" />
+              {recommendations.map((rec) => (
+                <div key={rec} className="flex items-start gap-2">
+                  <ChartLineUp className="size-4 text-sky-500 mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-sky-800">{rec}</span>
                 </div>
               ))}
@@ -187,11 +187,10 @@ export function CLVDetailsModal({
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button
-              onClick={() => onSendEmail(customer)}
-              className="flex-1 bg-black text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-800 flex items-center justify-center gap-2"
+            <button aria-label="envelope" type="button" onClick={() => onSendEmail(customer)}
+              className="flex-1 bg-gray-950 text-white py-3 text-sm tracking-wider font-medium hover:bg-gray-800 flex items-center justify-center gap-2"
             >
-              <Envelope className="w-4 h-4" />
+              <Envelope className="size-4" />
               SEND PERSONALIZED EMAIL
             </button>
           </div>

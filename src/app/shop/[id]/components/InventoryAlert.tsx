@@ -58,7 +58,7 @@ export default function InventoryAlert({ productId }: InventoryAlertProps) {
               : "bg-amber-50 text-amber-700 border border-amber-200"
           }`}
         >
-          <Warning className="w-4 h-4" />
+          <Warning className="size-4" />
           <span className="font-medium">
             {isVeryLowStock 
               ? `Only ${alert.stock} left!` 
@@ -67,16 +67,16 @@ export default function InventoryAlert({ productId }: InventoryAlertProps) {
         </motion.div>
       )}
 
-      {/* Live Viewers Alert - Real-time from Firebase */}
+      {/* Live Viewers Alert - real-time from Convex */}
       {stableViewerCount > 0 && (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="flex items-center gap-2 text-sm text-gray-600"
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="size-4" />
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="size-2 bg-green-500 rounded-full animate-pulse" />
             {stableViewerCount} {stableViewerCount === 1 ? "person is" : "people are"} viewing this right now
           </span>
         </motion.div>

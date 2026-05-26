@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useCallback, ReactNode } from "react";
+import { createContext, use, useCallback, ReactNode, useMemo } from "react";
 import { useProducts, Product, ColorVariant } from "./ProductContext";
 import { useSizeRecommendation, UserMeasurements } from "./SizeRecommendationContext";
 import { useUserProfile } from "./UserProfileContext";
@@ -158,7 +158,7 @@ const SmartMatchContext = createContext<SmartMatchContextType>({
     hasCompleteProfile: () => false,
 });
 
-export const useSmartMatch = () => useContext(SmartMatchContext);
+export const useSmartMatch = () => use(SmartMatchContext);
 
 export const SmartMatchProvider = ({ children }: { children: ReactNode }) => {
     const { products } = useProducts();
@@ -242,20 +242,39 @@ export const SmartMatchProvider = ({ children }: { children: ReactNode }) => {
 
         // Direct color matches (highest value)
         for (const productColor of productColorNames) {
-            if (userColors.some(uc => productColor.includes(uc) || uc.includes(productColor))) {
+            let matched = false;
+            for (const uc of userColors) {
+                if (productColor.includes(uc) || uc.includes(productColor)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) {
                 score += 40;
                 matchedColors.push(productColor);
             }
         }
 
         // Color family matches (medium value)
-        for (const [family, colors] of Object.entries(COLOR_FAMILIES)) {
-            const productInFamily = productColorNames.some(pc =>
-                colors.some(fc => pc.includes(fc))
-            );
-            const userInFamily = userColors.some(uc =>
-                colors.some(fc => uc.includes(fc))
-            );
+        for (const [, familyColors] of Object.entries(COLOR_FAMILIES)) {
+            let productInFamily = false;
+            outerPc: for (const pc of productColorNames) {
+                for (const fc of familyColors) {
+                    if (pc.includes(fc)) {
+                        productInFamily = true;
+                        break outerPc;
+                    }
+                }
+            }
+            let userInFamily = false;
+            outerUc: for (const uc of userColors) {
+                for (const fc of familyColors) {
+                    if (uc.includes(fc)) {
+                        userInFamily = true;
+                        break outerUc;
+                    }
+                }
+            }
 
             if (productInFamily && userInFamily) {
                 score += 20;
@@ -384,17 +403,20 @@ export const SmartMatchProvider = ({ children }: { children: ReactNode }) => {
         return hasMeasurements || hasStylePrefs;
     }, [measurements, profile]);
 
-    return (
-        <SmartMatchContext.Provider
-            value={{
+          const contextValue = useMemo(
+    () => ({
                 classifyBodyType,
                 getStyleArchetype,
                 calculateProductMatch,
                 getTopMatches,
                 getPerfectMatches,
                 hasCompleteProfile,
-            }}
-        >
+            }),
+    [calculateProductMatch, classifyBodyType, getPerfectMatches, getStyleArchetype, getTopMatches, hasCompleteProfile]
+  );
+
+  return (
+    <SmartMatchContext.Provider value={contextValue}>
             {children}
         </SmartMatchContext.Provider>
     );

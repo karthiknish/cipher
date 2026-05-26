@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
     
     // Only allow certain domains for security
     const allowedDomains = [
-      "firebasestorage.googleapis.com",
-      "storage.googleapis.com",
+      "convex.cloud",
       "lh3.googleusercontent.com",
       "images.unsplash.com",
       "via.placeholder.com",
@@ -66,6 +65,7 @@ export async function GET(request: NextRequest) {
       },
       redirect: "follow",
       signal: controller.signal,
+      cache: "no-store",
     });
 
     clearTimeout(timeout);

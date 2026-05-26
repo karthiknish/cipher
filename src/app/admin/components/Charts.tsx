@@ -6,8 +6,8 @@ export function MiniBarChart({ data, maxValue }: { data: number[]; maxValue: num
     <div className="flex items-end gap-1 h-12">
       {data.map((value, i) => (
         <div
-          key={i}
-          className="flex-1 bg-black/80 rounded-sm transition-all hover:bg-black"
+          key={`bar-${i}-${value}`}
+          className="flex-1 bg-gray-950/80 rounded-sm transition-all hover:bg-gray-950"
           style={{ height: `${(value / maxValue) * 100}%`, minHeight: value > 0 ? "4px" : "0" }}
         />
       ))}
@@ -22,8 +22,8 @@ export function DonutChart({ data }: { data: { label: string; value: number; col
 
   if (total === 0) {
     return (
-      <div className="relative w-32 h-32 mx-auto">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
+      <div className="relative size-32 mx-auto">
+        <svg viewBox="0 0 100 100" className="size-full">
           <circle cx="50" cy="50" r="40" fill="none" stroke="#f3f4f6" strokeWidth="20" />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -34,8 +34,8 @@ export function DonutChart({ data }: { data: { label: string; value: number; col
   }
 
   return (
-    <div className="relative w-32 h-32 mx-auto">
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+    <div className="relative size-32 mx-auto">
+      <svg viewBox="0 0 100 100" className="size-full -rotate-90">
         {data.map((item, i) => {
           const angle = (item.value / total) * 360;
           const startAngle = currentAngle;
@@ -53,7 +53,7 @@ export function DonutChart({ data }: { data: { label: string; value: number; col
           
           return (
             <path
-              key={i}
+              key={item.label}
               d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
               fill={item.color}
               className="transition-opacity hover:opacity-80"

@@ -19,6 +19,11 @@ const TIER_ICONS: Record<LoyaltyTier, React.ElementType> = {
 
 export default function LoyaltySection() {
   const { profile, redeemReward, applyReferralCode, setBirthday, loading } = useLoyalty();
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
   const [referralInput, setReferralInput] = useState("");
   const [referralLoading, setReferralLoading] = useState(false);
   const [referralSuccess, setReferralSuccess] = useState(false);
@@ -37,7 +42,7 @@ export default function LoyaltySection() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <SpinnerGap className="w-8 h-8 animate-spin text-gray-400" />
+        <SpinnerGap className="size-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -45,7 +50,7 @@ export default function LoyaltySection() {
   if (!profile) {
     return (
       <div className="text-center py-12 bg-gray-50">
-        <Gift className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <Gift className="size-12 mx-auto mb-4 text-gray-300" />
         <p className="text-gray-500 mb-4">Sign in to join CIPHER Rewards</p>
       </div>
     );
@@ -116,13 +121,13 @@ export default function LoyaltySection() {
         }}
       >
         <div className="absolute top-0 right-0 opacity-10">
-          <TierIcon className="w-40 h-40 -mt-8 -mr-8" />
+          <TierIcon className="size-40 -mt-8 -mr-8" />
         </div>
         
         <div className="relative">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <TierIcon className="w-6 h-6" />
+            <div className="size-12 bg-white/20 rounded-full flex items-center justify-center">
+              <TierIcon className="size-6" />
             </div>
             <div>
               <p className="text-white/70 text-xs tracking-wider">CIPHER REWARDS</p>
@@ -160,20 +165,17 @@ export default function LoyaltySection() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
-        <button
-          onClick={() => setShowRewards(true)}
+        <button aria-label="gift" type="button" onClick={() => setShowRewards(true)}
           className="p-4 border border-gray-200 hover:border-black transition text-left"
         >
-          <Gift className="w-5 h-5 mb-2 text-purple-500" />
+          <Gift className="size-5 mb-2 text-purple-500" />
           <p className="font-medium">Redeem Rewards</p>
           <p className="text-xs text-gray-500">{availableRewards.length} rewards available</p>
         </button>
         
-        <button
-          onClick={handleCopyReferral}
-          className="p-4 border border-gray-200 hover:border-black transition text-left"
-        >
-          <ShareNetwork className="w-5 h-5 mb-2 text-blue-500" />
+        <button aria-label="share network" type="button" onClick={handleCopyReferral}
+          className="p-4 border border-gray-200 hover:border-black transition text-left">
+          <ShareNetwork className="size-5 mb-2 text-blue-500" />
           <p className="font-medium">Share & Earn</p>
           <p className="text-xs text-gray-500">
             {copiedCode ? "Code copied!" : `${profile.referralCount} referrals`}
@@ -184,22 +186,22 @@ export default function LoyaltySection() {
       {/* Tier Benefits */}
       <div className="bg-gray-50 p-6 rounded-lg">
         <h4 className="font-medium mb-4 flex items-center gap-2">
-          <Crown className="w-4 h-4 text-amber-500" />
+          <Crown className="size-4 text-amber-500" />
           Your {tierConfig.name} Benefits
         </h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="size-4 text-green-500" />
             <span className="text-sm">{tierConfig.pointsMultiplier}x points on purchases</span>
           </div>
           {tierConfig.discountPercentage > 0 && (
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="size-4 text-green-500" />
               <span className="text-sm">{tierConfig.discountPercentage}% member discount</span>
             </div>
           )}
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="size-4 text-green-500" />
             <span className="text-sm">
               Free shipping over ${tierConfig.freeShippingThreshold}
               {tierConfig.freeShippingThreshold === 0 && " (always free!)"}
@@ -207,18 +209,18 @@ export default function LoyaltySection() {
           </div>
           {tierConfig.earlyAccess && (
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="size-4 text-green-500" />
               <span className="text-sm">Early access to drops</span>
             </div>
           )}
           {tierConfig.exclusiveProducts && (
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="size-4 text-green-500" />
               <span className="text-sm">Exclusive products</span>
             </div>
           )}
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+            <CheckCircle className="size-4 text-green-500" />
             <span className="text-sm">{tierConfig.birthdayBonus} birthday bonus pts</span>
           </div>
         </div>
@@ -227,7 +229,7 @@ export default function LoyaltySection() {
       {/* Referral Section */}
       <div className="border border-gray-200 p-6">
         <h4 className="font-medium mb-4 flex items-center gap-2">
-          <ShareNetwork className="w-4 h-4" />
+          <ShareNetwork className="size-4" />
           Refer Friends & Earn
         </h4>
         
@@ -237,11 +239,9 @@ export default function LoyaltySection() {
             <div className="flex-1 bg-gray-50 p-3 font-mono tracking-wider">
               {profile.referralCode}
             </div>
-            <button 
-              onClick={handleCopyReferral}
-              className="px-4 bg-black text-white hover:bg-gray-800 transition flex items-center gap-2"
-            >
-              {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <button aria-label="check" type="button" onClick={handleCopyReferral}
+              className="px-4 bg-gray-950 text-white hover:bg-gray-800 transition flex items-center gap-2">
+              {copiedCode ? <Check className="size-4" /> : <Copy className="size-4" />}
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
@@ -255,16 +255,15 @@ export default function LoyaltySection() {
             <div className="flex gap-2">
               <input
                 type="text"
+                aria-label="Referral code"
                 value={referralInput}
                 onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
                 placeholder="Enter code"
                 className="flex-1 px-4 py-3 border border-gray-200 focus:border-black outline-none"
               />
-              <button
-                onClick={handleApplyReferral}
+              <button type="button" onClick={handleApplyReferral}
                 disabled={referralLoading || !referralInput.trim()}
-                className="bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50"
-              >
+                className="bg-gray-950 text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50">
                 {referralLoading ? "..." : "APPLY"}
               </button>
             </div>
@@ -276,7 +275,7 @@ export default function LoyaltySection() {
         
         {referralSuccess && (
           <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3">
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="size-5" />
             <span className="text-sm">Referral code applied! 100 bonus points added.</span>
           </div>
         )}
@@ -285,7 +284,7 @@ export default function LoyaltySection() {
       {/* Birthday Bonus */}
       <div className="border border-gray-200 p-6">
         <h4 className="font-medium mb-4 flex items-center gap-2">
-          <CalendarBlank className="w-4 h-4" />
+          <CalendarBlank className="size-4" />
           Birthday Bonus
         </h4>
         <p className="text-sm text-gray-500 mb-4">
@@ -294,15 +293,14 @@ export default function LoyaltySection() {
         <div className="flex gap-2">
           <input
             type="date"
+            aria-label="Birthday"
             value={birthdayInput}
             onChange={(e) => setBirthdayInput(e.target.value)}
             className="flex-1 px-4 py-3 border border-gray-200 focus:border-black outline-none"
           />
-          <button
-            onClick={handleSaveBirthday}
+          <button type="button" onClick={handleSaveBirthday}
             disabled={!birthdayInput || birthdayInput === profile.birthday}
-            className="bg-black text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50"
-          >
+            className="bg-gray-950 text-white px-6 py-3 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50">
             SAVE
           </button>
         </div>
@@ -314,8 +312,8 @@ export default function LoyaltySection() {
           <h4 className="font-medium">Recent Activity</h4>
         </div>
         <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-          {profile.transactions.slice(-5).reverse().map((tx, i) => (
-            <div key={i} className="p-4 flex items-center justify-between">
+          {profile.transactions.slice(-5).reverse().map((tx) => (
+            <div key={`${tx.description}-${tx.createdAt}`} className="p-4 flex items-center justify-between">
               <div>
                 <p className="text-sm">{tx.description}</p>
                 <p className="text-xs text-gray-500">
@@ -331,19 +329,19 @@ export default function LoyaltySection() {
       </div>
 
       {/* Active Rewards */}
-      {profile.redeemedRewards.filter(r => !r.isUsed && r.expiresAt > Date.now()).length > 0 && (
+      {now !== null && profile.redeemedRewards.filter(r => !r.isUsed && r.expiresAt > now).length > 0 && (
         <div className="border border-gray-200">
           <div className="p-4 border-b border-gray-100">
             <h4 className="font-medium flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-purple-500" />
+              <Ticket className="size-4 text-purple-500" />
               Your Active Rewards
             </h4>
           </div>
           <div className="divide-y divide-gray-100">
             {profile.redeemedRewards
-              .filter(r => !r.isUsed && r.expiresAt > Date.now())
-              .map((reward, i) => (
-                <div key={i} className="p-4 flex items-center justify-between">
+              .filter(r => !r.isUsed && r.expiresAt > now!)
+              .map((reward) => (
+                <div key={reward.code} className="p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium">{reward.rewardName}</p>
                     <p className="text-xs text-gray-500">
@@ -353,11 +351,10 @@ export default function LoyaltySection() {
                       Expires: {new Date(reward.expiresAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(reward.code)}
+                  <button aria-label="copy" type="button" onClick={() => navigator.clipboard.writeText(reward.code)}
                     className="p-2 hover:bg-gray-100 transition"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="size-4" />
                   </button>
                 </div>
               ))}
@@ -372,9 +369,9 @@ export default function LoyaltySection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowRewards(false)}
-          >
+            className="fixed inset-0 bg-gray-950/60 z-50 flex items-center justify-center p-4"
+            role="presentation"
+          ><button type="button" aria-label="Close" className="absolute inset-0 w-full h-full cursor-default" onClick={() => setShowRewards(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -390,8 +387,8 @@ export default function LoyaltySection() {
                       Available: {profile.availablePoints.toLocaleString()} pts
                     </p>
                   </div>
-                  <button onClick={() => setShowRewards(false)} className="p-2 hover:bg-gray-100">
-                    <X className="w-5 h-5" />
+                  <button type="button" onClick={() => setShowRewards(false)} className="p-2 hover:bg-gray-100">
+                    <X className="size-5" />
                   </button>
                 </div>
               </div>
@@ -419,16 +416,15 @@ export default function LoyaltySection() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleRedeemReward(reward.id)}
+                      <button type="button" onClick={() => handleRedeemReward(reward.id)}
                         disabled={!canAfford || redeemingReward === reward.id}
-                        className="w-full mt-2 bg-black text-white py-2 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full mt-2 bg-gray-950 text-white py-2 text-sm tracking-wider hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {redeemingReward === reward.id ? (
-                          <SpinnerGap className="w-4 h-4 animate-spin" />
+                          <SpinnerGap className="size-4 animate-spin" />
                         ) : (
                           <>
-                            <Gift className="w-4 h-4" />
+                            <Gift className="size-4" />
                             {canAfford ? "REDEEM" : "NOT ENOUGH POINTS"}
                           </>
                         )}
