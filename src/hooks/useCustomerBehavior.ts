@@ -1,8 +1,7 @@
-"use client";
 import { useEffect, useRef, useCallback } from "react";
 import { useCustomerBehavior } from "@/context/CustomerBehaviorContext";
 import { useCart } from "@/context/CartContext";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation";
 
 /**
  * Hook for tracking product page views with time spent

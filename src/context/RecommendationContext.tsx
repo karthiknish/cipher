@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useState, useCallback, useEffect, ReactNode, useMemo } from "react";
 import { useProducts, Product } from "./ProductContext";
 import { useAuth } from "./AuthContext";

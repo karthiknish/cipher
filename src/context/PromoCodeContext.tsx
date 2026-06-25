@@ -1,7 +1,6 @@
-"use client";
 import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export interface PromoCode {
   code: string;
@@ -178,7 +177,14 @@ export const PromoCodeProvider = ({ children }: { children: ReactNode }) => {
         calculateDiscount,
         getAvailableCodes,
       }),
-    [appliedCode, applyCode, calculateDiscount, discount, getAvailableCodes, removeCode, validateCode]
+    [
+	appliedCode,
+	applyCode,
+	discount,
+	getAvailableCodes,
+	removeCode,
+	validateCode
+]
   );
 
   return (

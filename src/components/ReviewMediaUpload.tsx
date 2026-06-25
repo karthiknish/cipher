@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useRef } from "react";
 import { Upload, SpinnerGap } from "@phosphor-icons/react";
 import { ReviewMedia } from "@/context/ReviewContext";

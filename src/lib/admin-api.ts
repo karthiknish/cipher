@@ -1,5 +1,3 @@
-"use client";
-
 import { getSessionBearerToken } from "@/lib/session-token";
 
 /**

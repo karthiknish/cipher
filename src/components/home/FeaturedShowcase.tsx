@@ -1,6 +1,5 @@
-"use client";
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/Link";
+import Image from "@/components/NextImage";
 import { useState, useEffect } from "react";
 import { motion, viewportAnimations, scaleIn, transitions, hoverEffects } from "@/lib/motion";
 import { ArrowRight } from "@phosphor-icons/react";

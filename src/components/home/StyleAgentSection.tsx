@@ -1,6 +1,5 @@
-"use client";
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/Link";
+import Image from "@/components/NextImage";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { ArrowRight, Sparkle, MagnifyingGlass, SpinnerGap, ShoppingBag, Heart, Moon, Confetti, Brain, Lightning, Coffee, Fire, Palette, Trophy } from "@phosphor-icons/react";

@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useState, useCallback, ReactNode, useMemo } from "react";
 
 export interface CompareItem {

@@ -1,8 +1,7 @@
-"use client";
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "@/components/Link";
+import Image from "@/components/NextImage";
+import { useRouter } from "@/lib/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";

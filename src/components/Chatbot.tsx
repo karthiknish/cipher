@@ -1,10 +1,9 @@
-"use client";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { ChatCircle, X, PaperPlaneTilt, SpinnerGap, Robot, User, Sparkle, Lightning, Moon, Coffee, Heart } from "@phosphor-icons/react";
 import { useMoodStyle, MoodType } from "@/context/MoodStyleContext";
 import { useProducts } from "@/context/ProductContext";
-import Link from "next/link";
+import Link from "@/components/Link";
 
 interface Message {
   id: string;
@@ -32,7 +31,7 @@ function cleanResponse(text: string): string {
     // Remove markdown headers
     .replace(/^#+\s*/gm, '')
     // Remove markdown bullet points and replace with clean format
-    .replace(/^[\*\-]\s+/gm, '• ')
+    .replace(/^[*\-]\s+/gm, '• ')
     // Remove numbered list formatting but keep numbers
     .replace(/^\d+\.\s+/gm, (match) => match)
     // Clean up multiple line breaks

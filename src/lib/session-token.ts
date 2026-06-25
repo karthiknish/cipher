@@ -1,5 +1,3 @@
-"use client";
-
 import { authClient } from "@/lib/auth-client";
 
 /** Convex JWT for Bearer auth on Next.js API routes. */

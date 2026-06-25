@@ -1,4 +1,3 @@
-"use client";
 import { ArrowRight, Gift } from "@phosphor-icons/react";
 import { useSpinWheel } from "@/context/SpinWheelContext";
 

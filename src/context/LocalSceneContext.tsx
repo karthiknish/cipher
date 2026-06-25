@@ -1,9 +1,8 @@
-"use client";
 import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 import { useLoyalty } from "./LoyaltyContext";
 import { useQuery, useMutation, useConvex } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 // Types
 export type EventType = "popup" | "meetup" | "launch" | "workshop";

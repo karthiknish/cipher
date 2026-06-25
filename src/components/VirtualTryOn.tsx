@@ -1,8 +1,7 @@
-"use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { motion, AnimatePresence } from "@/lib/motion";
-import NextImage from "next/image";
+import NextImage from "@/components/NextImage";
 import { useAuth } from "@/context/AuthContext";
 import { compressImageForTryOn } from "@/lib/compress-image";
 import { 
@@ -210,7 +209,7 @@ export default function VirtualTryOn({
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error("Failed to load product image. Please try again.");
+      throw new Error("Failed to load product image. Please try again.", { cause: error });
     }
   };
 

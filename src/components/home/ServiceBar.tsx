@@ -1,4 +1,3 @@
-"use client";
 import { Truck, ArrowsClockwise, ShieldCheck, CreditCard } from "@phosphor-icons/react";
 
 const SERVICE_FEATURES = [

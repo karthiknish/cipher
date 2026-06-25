@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, fadeIn, expandCollapse } from "@/lib/motion";
-import Image from "next/image";
+import Image from "@/components/NextImage";
 import { 
   MapPin, 
   Clock, 

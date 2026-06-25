@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { convex } from "@/lib/convex";

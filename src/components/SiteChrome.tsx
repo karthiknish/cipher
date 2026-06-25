@@ -1,6 +1,4 @@
-"use client";
-
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation";
 import Chatbot from "@/components/Chatbot";
 import ActivityTicker from "@/components/ActivityTicker";
 import SpinWheel from "@/components/SpinWheel";

@@ -13,12 +13,17 @@
 # testing
 /coverage
 
-# next.js
+# next.js (legacy)
 /.next/
 /out/
 
-# production
+# vite / tanstack start build output
+/dist/
+/.output/
 /build
+
+# generated route tree
+/src/routeTree.gen.ts
 
 # AI agent / IDE tool configs (local only)
 .agents/

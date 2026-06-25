@@ -1,8 +1,7 @@
-"use client";
 import { createContext, use, useState, useCallback, ReactNode, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export interface WheelSegment {
   id: string;

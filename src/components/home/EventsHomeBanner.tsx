@@ -1,8 +1,6 @@
-"use client";
-
 import { motion, viewportAnimations, createViewportAnimation, withDelay, transitions } from "@/lib/motion";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/NextImage";
+import Link from "@/components/Link";
 import { Calendar, MapPin, ArrowRight, Users, Lightning } from "@phosphor-icons/react";
 import { useLocalScene } from "@/context/LocalSceneContext";
 

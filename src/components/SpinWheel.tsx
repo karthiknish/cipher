@@ -1,8 +1,7 @@
-"use client";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { useSpinWheel, WheelSegment } from "@/context/SpinWheelContext";
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   X,
   Gift,

@@ -1,8 +1,7 @@
-"use client";
 import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export interface WishlistItem {
   id: string;

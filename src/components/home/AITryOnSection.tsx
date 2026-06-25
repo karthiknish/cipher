@@ -1,5 +1,4 @@
-"use client";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, viewportAnimations } from "@/lib/motion";
 import { ArrowRight, Play, Sparkle, Check, Camera, TShirt, Lightning, Upload, User, MagicWand } from "@phosphor-icons/react";

@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useState, useEffect, ReactNode, useMemo } from "react";
 
 export type MoodType = 

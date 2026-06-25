@@ -1,7 +1,6 @@
-"use client";
 import { createContext, use, ReactNode, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export interface BlogPost {
   id: string;
@@ -211,7 +210,22 @@ export function BlogProvider({ children }: { children: ReactNode }) {
         searchPosts,
         categories,
       }),
-    [categories, createPost, deletePost, getPost, getPostById, getPostsByCategory, getPublishedPosts, incrementViews, likePost, loading, posts, publishPost, searchPosts, unpublishPost, updatePost]
+    [
+	createPost,
+	deletePost,
+	getPost,
+	getPostById,
+	getPostsByCategory,
+	getPublishedPosts,
+	incrementViews,
+	likePost,
+	loading,
+	posts,
+	publishPost,
+	searchPosts,
+	unpublishPost,
+	updatePost
+]
   );
 
   return (

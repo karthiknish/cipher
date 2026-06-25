@@ -1,6 +1,5 @@
-"use client";
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import Image from "@/components/NextImage";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { 
   MagnifyingGlass, 
@@ -67,11 +66,11 @@ export default function PexelsImagePicker({
   const [selectedPhoto, setSelectedPhoto] = useState<PexelsPhoto | null>(null);
   const [mode, setMode] = useState<"curated" | "search">("curated");
 
-  const PEXELS_API_KEY = process.env.NEXT_PUBLIC_PEXELS_API_KEY || "";
+  const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY || "";
 
   const fetchPhotos = useCallback(async (searchQuery: string, pageNum: number = 1) => {
     if (!PEXELS_API_KEY) {
-      setError("Pexels API key not configured. Add NEXT_PUBLIC_PEXELS_API_KEY to your environment.");
+      setError("Pexels API key not configured. Add VITE_PEXELS_API_KEY to your environment.");
       return;
     }
 

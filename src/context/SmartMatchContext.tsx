@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useCallback, ReactNode, useMemo } from "react";
 import { useProducts, Product, ColorVariant } from "./ProductContext";
 import { useSizeRecommendation, UserMeasurements } from "./SizeRecommendationContext";

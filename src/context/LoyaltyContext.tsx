@@ -1,8 +1,7 @@
-"use client";
 import { createContext, use, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 // Tier Definitions
 export type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
@@ -498,7 +497,7 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
   const applyReferralCode = async (code: string): Promise<boolean> => {
     if (!user || !profile) return false;
     const { ConvexHttpClient } = await import("convex/browser");
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const client = new ConvexHttpClient(import.meta.env.VITE_CONVEX_URL!);
     const referrerData = (await client.query(api.loyalty.getByReferralCode, {
       code,
     })) as LoyaltyProfile | null;
@@ -558,7 +557,7 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
     reason: string
   ) => {
     const { ConvexHttpClient } = await import("convex/browser");
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const client = new ConvexHttpClient(import.meta.env.VITE_CONVEX_URL!);
     const loyaltyData = (await client.query(api.loyalty.getByUserId, {
       userId,
     })) as LoyaltyProfile | null;
@@ -588,7 +587,7 @@ export function LoyaltyProvider({ children }: { children: ReactNode }) {
 
   const getAllLoyaltyProfiles = async (): Promise<LoyaltyProfile[]> => {
     const { ConvexHttpClient } = await import("convex/browser");
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const client = new ConvexHttpClient(import.meta.env.VITE_CONVEX_URL!);
     const list = await client.query(api.loyalty.listAll, {});
     return (list as LoyaltyProfile[]).sort(
       (a, b) => b.lifetimePoints - a.lifetimePoints

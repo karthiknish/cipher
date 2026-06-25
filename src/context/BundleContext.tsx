@@ -1,7 +1,6 @@
-"use client";
 import { createContext, use, useCallback, ReactNode, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useProducts, Product } from "./ProductContext";
 
 export interface Bundle {

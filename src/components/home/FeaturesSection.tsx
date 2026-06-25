@@ -1,4 +1,3 @@
-"use client";
 import { motion, viewportAnimations, staggerDelay } from "@/lib/motion";
 import { Sparkle, Brain, Trophy, ShieldCheck } from "@phosphor-icons/react";
 

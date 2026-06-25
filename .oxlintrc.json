@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxc/refs/heads/nicolo/json-schema/npm/oxc_configuration/schema.json",
+  "plugins": ["react", "react-perf", "import", "jsdoc"],
+  "categories": {
+    "correctness": "error",
+    "perf": "warn",
+    "suspicious": "warn",
+    "pedantic": "off"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true,
+    "node": true
+  },
+  "settings": {
+    "react": {
+      "version": "19"
+    }
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    ".output/**",
+    "node_modules/**",
+    ".next/**",
+    "src/routeTree.gen.ts",
+    "convex/_generated/**",
+    "scripts/**"
+  ],
+  "rules": {
+    "no-unused-vars": "off",
+    "typescript/no-unused-vars": "warn",
+    "typescript/no-explicit-any": "off",
+    "react/no-unescaped-entities": "off",
+    "react/react-in-jsx-scope": "off",
+    "import/no-default-export": "off"
+  }
+}

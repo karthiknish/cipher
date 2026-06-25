@@ -1,5 +1,4 @@
-"use client";
-import Image from "next/image";
+import Image from "@/components/NextImage";
 import { useState } from "react";
 import { motion, AnimatePresence, viewportAnimations, staggerDelay, fadeInUp } from "@/lib/motion";
 import { Quotes, Star } from "@phosphor-icons/react";

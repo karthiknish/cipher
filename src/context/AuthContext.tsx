@@ -1,9 +1,7 @@
-"use client";
-
 import { createContext, use, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import type { AuthUser } from "@/lib/auth-types";
 
 interface UserRole {

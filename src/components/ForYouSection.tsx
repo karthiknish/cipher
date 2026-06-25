@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/NextImage";
+import Link from "@/components/Link";
 import { useSmartMatch, ProductMatchScore } from "@/context/SmartMatchContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";

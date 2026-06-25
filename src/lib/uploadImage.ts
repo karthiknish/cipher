@@ -1,12 +1,12 @@
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { authClient } from "./auth-client";
 
 function getConvexClient(): ConvexHttpClient {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const url = import.meta.env.VITE_CONVEX_URL;
   if (!url) {
-    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+    throw new Error("VITE_CONVEX_URL is not configured");
   }
   return new ConvexHttpClient(url);
 }
@@ -59,7 +59,7 @@ export async function uploadBase64Image(
   base64Data: string,
   path: string
 ): Promise<string> {
-  const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  const matches = base64Data.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
     throw new Error("Invalid base64 image data");
   }

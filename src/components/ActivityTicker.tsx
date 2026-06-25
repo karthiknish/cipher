@@ -1,7 +1,6 @@
-"use client";
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/NextImage";
+import Link from "@/components/Link";
 import { useLiveActivity, LiveActivity } from "@/context/LiveActivityContext";
 import { ShoppingBag, Heart, Eye, ShoppingCart, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "@/lib/motion";

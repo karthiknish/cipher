@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useState, useCallback, useMemo, ReactNode } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { X, CheckCircle, WarningCircle, Info, Warning } from "@phosphor-icons/react";

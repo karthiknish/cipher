@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, toastFromBottom } from "@/lib/motion";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { MapPin, X, Bell, Calendar } from "@phosphor-icons/react";
 import { useLocalScene } from "@/context/LocalSceneContext";
 

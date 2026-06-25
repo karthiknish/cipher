@@ -1,4 +1,3 @@
-"use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "@/lib/motion";
 import { Users, ShoppingBag, TrendUp, Timer } from "@phosphor-icons/react";

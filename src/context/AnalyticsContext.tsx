@@ -1,8 +1,7 @@
-"use client";
 import { createContext, use, useEffect, useCallback, useRef, ReactNode, useMemo } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "@/lib/navigation";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuth } from "./AuthContext";
 
 export interface PageViewEvent {

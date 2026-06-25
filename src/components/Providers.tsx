@@ -1,5 +1,3 @@
-"use client";
-
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";

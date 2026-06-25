@@ -1,8 +1,6 @@
-"use client";
-
 import { motion, hoverEffects, fadeInUp } from "@/lib/motion";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/NextImage";
+import Link from "@/components/Link";
 import { 
   MapPin, 
   Calendar, 

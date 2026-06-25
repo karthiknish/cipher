@@ -2,33 +2,27 @@
  * API Authentication & Authorization Utilities
  *
  * Uses Better Auth session tokens verified via Convex.
+ * Framework-agnostic: works with TanStack Start server routes (standard Request/Response).
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { fetchQuery } from "convex/nextjs";
-import { api } from "../../convex/_generated/api";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@convex/_generated/api";
 
 const ADMIN_EMAILS = new Set(["karthik.nishanth06@gmail.com"]);
 
-export function unauthorizedResponse(message = "Unauthorized"): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 401 }
-  );
+export function unauthorizedResponse(message = "Unauthorized"): Response {
+  return Response.json({ success: false, error: message }, { status: 401 });
 }
 
-export function forbiddenResponse(message = "Forbidden"): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 403 }
-  );
+export function forbiddenResponse(message = "Forbidden"): Response {
+  return Response.json({ success: false, error: message }, { status: 403 });
 }
 
 export function rateLimitedResponse(
   retryAfterSec: number,
   headers: Record<string, string> = {}
-): NextResponse {
-  return NextResponse.json(
+): Response {
+  return Response.json(
     {
       success: false,
       error: `Too many requests. Please try again in ${retryAfterSec} seconds.`,
@@ -43,20 +37,14 @@ export function rateLimitedResponse(
   );
 }
 
-export function badRequestResponse(message: string): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 400 }
-  );
+export function badRequestResponse(message: string): Response {
+  return Response.json({ success: false, error: message }, { status: 400 });
 }
 
 export function internalServerErrorResponse(
   message = "Internal server error"
-): NextResponse {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 500 }
-  );
+): Response {
+  return Response.json({ success: false, error: message }, { status: 500 });
 }
 
 export function publicErrorMessage(
@@ -73,8 +61,8 @@ export function publicErrorMessage(
 }
 
 export async function parseJsonBody<T = Record<string, unknown>>(
-  request: NextRequest
-): Promise<{ ok: true; data: T } | { ok: false; response: NextResponse }> {
+  request: Request
+): Promise<{ ok: true; data: T } | { ok: false; response: Response }> {
   try {
     const data = (await request.json()) as T;
     return { ok: true, data };
@@ -90,7 +78,7 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
 }
 
-function extractBearerToken(request: NextRequest): string | null {
+function extractBearerToken(request: Request): string | null {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -109,12 +97,15 @@ function extractBearerToken(request: NextRequest): string | null {
 async function verifyBetterAuthToken(
   token: string
 ): Promise<{ valid: boolean; userId?: string; email?: string; admin?: boolean }> {
-  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+  const convexUrl = process.env.VITE_CONVEX_URL;
+  if (!convexUrl) {
     return { valid: false };
   }
 
   try {
-    const sessionUser = await fetchQuery(api.users.getSessionUser, {}, { token });
+    const client = new ConvexHttpClient(convexUrl);
+    client.setAuth(token);
+    const sessionUser = await client.query(api.users.getSessionUser, {});
     if (!sessionUser) {
       return { valid: false };
     }
@@ -130,7 +121,7 @@ async function verifyBetterAuthToken(
 }
 
 export async function verifyAuthToken(
-  request: NextRequest
+  request: Request
 ): Promise<{ valid: boolean; userId?: string; email?: string; admin?: boolean }> {
   const token = extractBearerToken(request);
 
@@ -141,7 +132,7 @@ export async function verifyAuthToken(
   return verifyBetterAuthToken(token);
 }
 
-export async function isAdminUser(request: NextRequest): Promise<boolean> {
+export async function isAdminUser(request: Request): Promise<boolean> {
   const token = extractBearerToken(request);
 
   if (!token) {
@@ -161,7 +152,7 @@ export async function isAdminUser(request: NextRequest): Promise<boolean> {
   return Boolean(email && ADMIN_EMAILS.has(email));
 }
 
-export function verifyApiSecret(request: NextRequest): boolean {
+export function verifyApiSecret(request: Request): boolean {
   const apiSecret = process.env.API_SECRET_KEY;
 
   if (!apiSecret) {
@@ -174,7 +165,7 @@ export function verifyApiSecret(request: NextRequest): boolean {
 }
 
 export async function validateRequestSize(
-  request: NextRequest,
+  request: Request,
   maxSizeBytes: number
 ): Promise<string | null> {
   const contentLength = request.headers.get("content-length");
@@ -217,7 +208,7 @@ export function sanitizeString(input: string, maxLength = 1000): string {
 }
 
 export async function requireAuth(
-  request: NextRequest,
+  request: Request,
   options: { allowApiSecret?: boolean; requireAdmin?: boolean } = {}
 ): Promise<{ userId?: string; email?: string; isApiSecret?: boolean } | null> {
   const { allowApiSecret = false, requireAdmin = false } = options;

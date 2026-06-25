@@ -1,6 +1,5 @@
-"use client";
 import { useState, useRef, useCallback, useId } from "react";
-import Image from "next/image";
+import Image from "@/components/NextImage";
 import { Upload, X, Image as ImageIcon, SpinnerGap } from "@phosphor-icons/react";
 import { uploadImage, deleteImage, generateImagePath } from "@/lib/uploadImage";
 

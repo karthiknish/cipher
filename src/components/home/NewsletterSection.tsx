@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { motion, viewportAnimations } from "@/lib/motion";
 import { Sparkle, Check, SpinnerGap, Warning } from "@phosphor-icons/react";

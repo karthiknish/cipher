@@ -1,4 +1,3 @@
-"use client";
 import { createContext, use, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 
 export interface RecentlyViewedItem {

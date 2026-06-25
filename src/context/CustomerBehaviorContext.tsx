@@ -1,10 +1,9 @@
-"use client";
 import { createContext, use, useState, useEffect, useCallback, useRef, ReactNode, useMemo } from "react";
 import { useQuery, useMutation, useConvex } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuth } from "./AuthContext";
 
-const convexEnabled = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
+const convexEnabled = Boolean(import.meta.env.VITE_CONVEX_URL);
 
 // ============================================
 // Types
